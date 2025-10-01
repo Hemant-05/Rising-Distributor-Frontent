@@ -1,4 +1,4 @@
-package com.example.raising_india
+package com.rising.raising_india
 
 import io.flutter.embedding.android.FlutterActivity
 

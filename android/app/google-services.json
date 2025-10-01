@@ -7,9 +7,9 @@
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:657027117935:android:c8475fc85c1adaa8042e9a",
+        "mobilesdk_app_id": "1:657027117935:android:eefee4dea2613e0e042e9a",
         "android_client_info": {
-          "package_name": "com.example.raising_india"
+          "package_name": "com.rising.raising_india"
         }
       },
       "oauth_client": [],

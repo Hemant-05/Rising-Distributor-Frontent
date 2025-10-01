@@ -45,19 +45,23 @@ Widget onCompletedWidget(List<OrderModel> list) {
                             ),
                             child: imageList.isNotEmpty
                                 ? ClipRRect(
-                                    borderRadius: BorderRadius.circular(12),
-                                    child: Column(
-                                      children: [
-                                        Expanded(
-                                          child: Image.network(
-                                            imageList[0],
-                                            fit: BoxFit.cover,
-                                          ),
+                                  borderRadius: BorderRadius.circular(12),
+                                  child: Stack(
+                                    children: [
+                                      SizedBox(
+                                        height: 80,
+                                        width: 80,
+                                        child: Image.network(
+                                          imageList[0],
+                                          fit: BoxFit.cover,
                                         ),
-                                        Visibility(
+                                      ),
+                                      Align(
+                                        alignment: Alignment.bottomCenter,
+                                        child: Visibility(
                                           visible: list[index].items.length > 1,
                                           child: Container(
-                                            height: 20,
+                                            height: 15,
                                             width: 80,
                                             alignment: Alignment.center,
                                             color: AppColour.lightGrey,
@@ -69,9 +73,10 @@ Widget onCompletedWidget(List<OrderModel> list) {
                                             ),
                                           ),
                                         ),
-                                      ],
-                                    ),
-                                  )
+                                      ),
+                                    ],
+                                  ),
+                                )
                                 : Center(
                                     child: Text(
                                       'Error',
