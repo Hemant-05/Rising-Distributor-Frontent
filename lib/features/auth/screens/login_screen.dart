@@ -10,6 +10,7 @@ import 'package:raising_india/constant/ConString.dart';
 import 'package:raising_india/features/admin/home/screens/home_screen_a.dart';
 import 'package:raising_india/features/admin/pagination/main_screen_a.dart';
 import 'package:raising_india/features/auth/screens/signup_screen.dart';
+import 'package:raising_india/features/user/main_screen_u.dart';
 import 'package:raising_india/models/user_model.dart';
 import '../../../comman/bold_text_style.dart';
 import '../../user/home/screens/home_screen_u.dart';
@@ -55,7 +56,7 @@ class _LoginScreenState extends State<LoginScreen> {
             MaterialPageRoute(
               builder: (_) => state.user.role == admin
                   ? const MainScreenA()
-                  : const HomeScreenU(),
+                  : const MainScreenU(),
             ),
             (route) => false,
           );

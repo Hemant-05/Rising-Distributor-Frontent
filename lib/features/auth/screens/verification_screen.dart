@@ -9,6 +9,7 @@ import 'package:raising_india/constant/ConString.dart';
 import 'package:raising_india/features/admin/home/screens/home_screen_a.dart';
 import 'package:raising_india/features/auth/services/auth_service.dart';
 import 'package:raising_india/features/user/home/screens/home_screen_u.dart';
+import 'package:raising_india/features/user/main_screen_u.dart';
 import '../../../comman/bold_text_style.dart';
 import '../widgets/cus_text_field.dart';
 import '../../../comman/elevated_button_style.dart';
@@ -122,7 +123,7 @@ class _VerificationCodeScreenState extends State<VerificationCodeScreen> {
             context,
             MaterialPageRoute(
               builder: (context) =>
-                  widget.role == admin ? HomeScreenA() : HomeScreenU(),
+                  widget.role == admin ? HomeScreenA() : MainScreenU(),
             ),
             (route) => false,
           );

@@ -1,5 +1,6 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
+import 'package:persistent_bottom_nav_bar/persistent_bottom_nav_bar.dart';
 import 'package:raising_india/comman/simple_text_style.dart';
 import 'package:raising_india/constant/AppColour.dart';
 import 'package:raising_india/features/user/categories/screens/category_product_screen.dart';
@@ -25,11 +26,11 @@ Widget category_showing_widget(
     ),
     child: InkWell(
       onTap: () {
-        Navigator.push(
+        PersistentNavBarNavigator.pushNewScreen(
           context,
-          MaterialPageRoute(
-            builder: (context) => CategoryProductScreen(category: category.value),
-          ),
+          screen: CategoryProductScreen(category: category.value),
+          withNavBar: false,
+          pageTransitionAnimation: PageTransitionAnimation.cupertino,
         );
       },
       child: Column(

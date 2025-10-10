@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:persistent_bottom_nav_bar/persistent_bottom_nav_bar.dart';
 import 'package:raising_india/comman/simple_text_style.dart';
 import 'package:raising_india/constant/AppColour.dart';
 import 'package:raising_india/features/user/search/screens/product_search_screen.dart';
@@ -6,9 +7,11 @@ import 'package:raising_india/features/user/search/screens/product_search_screen
 Widget search_bar_widget(BuildContext context) {
   return InkWell(
     onTap: () {
-      Navigator.push(
+      PersistentNavBarNavigator.pushNewScreen(
         context,
-        MaterialPageRoute(builder: (_) => ProductSearchScreen()),
+        screen: ProductSearchScreen(),
+        withNavBar: false,
+        pageTransitionAnimation: PageTransitionAnimation.cupertino,
       );
     },
     child: Container(

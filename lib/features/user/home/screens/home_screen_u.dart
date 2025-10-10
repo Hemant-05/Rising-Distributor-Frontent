@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
+import 'package:persistent_bottom_nav_bar/persistent_bottom_nav_bar.dart';
 import 'package:raising_india/comman/cart_button.dart';
 import 'package:raising_india/comman/simple_text_style.dart';
 import 'package:raising_india/constant/AppColour.dart';
@@ -35,7 +36,9 @@ class _HomeScreenUState extends State<HomeScreenU> {
   @override
   void initState() {
     super.initState();
-    BlocProvider.of<CategoryProductBloc>(context,).add(FetchBestSellingProducts());
+    BlocProvider.of<CategoryProductBloc>(
+      context,
+    ).add(FetchBestSellingProducts());
     BlocProvider.of<OrderBloc>(context).add(LoadUserOngoingOrderEvent());
     BlocProvider.of<CategoryProductBloc>(context).add(FetchAllProducts());
   }
@@ -63,12 +66,14 @@ class _HomeScreenUState extends State<HomeScreenU> {
             color: AppColour.primary,
             backgroundColor: AppColour.white,
             onRefresh: () async {
-              context.read<CategoryProductBloc>().add(FetchBestSellingProducts());
+              context.read<CategoryProductBloc>().add(
+                FetchBestSellingProducts(),
+              );
               context.read<CategoryProductBloc>().add(FetchAllProducts());
               context.read<OrderBloc>().add(LoadUserOngoingOrderEvent());
             },
             child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 12,vertical: 8),
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
               child: CustomScrollView(
                 physics: const BouncingScrollPhysics(),
                 slivers: [
@@ -76,7 +81,7 @@ class _HomeScreenUState extends State<HomeScreenU> {
                   SliverToBoxAdapter(child: const SizedBox(height: 10)),
                   SliverToBoxAdapter(child: search_bar_widget(context)),
                   SliverToBoxAdapter(child: const SizedBox(height: 14)),
-                  SliverToBoxAdapter(child: const AddBannerWidget(),),
+                  SliverToBoxAdapter(child: const AddBannerWidget()),
                   SliverToBoxAdapter(child: const SizedBox(height: 10)),
                   SliverToBoxAdapter(child: _buildCategoriesStrip(context)),
                   SliverToBoxAdapter(child: const SizedBox(height: 10)),
@@ -84,24 +89,35 @@ class _HomeScreenUState extends State<HomeScreenU> {
                   SliverToBoxAdapter(child: const SizedBox(height: 10)),
                   SliverToBoxAdapter(child: _bestProductsHeader()),
                   SliverToBoxAdapter(child: const SizedBox(height: 10)),
-                  SliverToBoxAdapter(child: buildBestProductsHorizontal(context)),
+                  SliverToBoxAdapter(
+                    child: buildBestProductsHorizontal(context),
+                  ),
                   SliverToBoxAdapter(child: const SizedBox(height: 18)),
                   SliverToBoxAdapter(child: allProductsHeader()),
                   BlocBuilder<CategoryProductBloc, CategoryProductState>(
                     builder: (context, state) {
                       if (state.isLoading) {
                         return const SliverToBoxAdapter(
-                          child: SizedBox(height: 180, child: Center(child: CircularProgressIndicator())),
+                          child: SizedBox(
+                            height: 180,
+                            child: Center(child: CircularProgressIndicator()),
+                          ),
                         );
                       }
                       if (state.error != null) {
-                        return SliverToBoxAdapter(child: Center(child: Text(state.error!)));
+                        return SliverToBoxAdapter(
+                          child: Center(child: Text(state.error!)),
+                        );
                       }
                       if (state.allProducts.isEmpty) {
-                        return const SliverToBoxAdapter(child: Center(child: Text('No products')));
+                        return const SliverToBoxAdapter(
+                          child: Center(child: Text('No products')),
+                        );
                       }
                       // Use your existing ProductGrid here for All Products; only visuals changed via product_card below
-                      return SliverToBoxAdapter(child: ProductGrid(products: state.allProducts)); // ensure your bloc exposes 'products'
+                      return SliverToBoxAdapter(
+                        child: ProductGrid(products: state.allProducts),
+                      ); // ensure your bloc exposes 'products'
                     },
                   ),
                 ],
@@ -112,6 +128,7 @@ class _HomeScreenUState extends State<HomeScreenU> {
       },
     );
   }
+
   AppBar buildModernAppBar(BuildContext context) {
     return AppBar(
       backgroundColor: AppColour.white,
@@ -119,15 +136,13 @@ class _HomeScreenUState extends State<HomeScreenU> {
       titleSpacing: 12,
       title: Row(
         children: [
-          InkWell(
-            onTap: () {
-              context.read<ProfileBloc>().add(OnProfileOpened());
-              Navigator.push(context, MaterialPageRoute(builder: (context) => ProfileScreen()));
-            },
-            child: CircleAvatar(
-              radius: 18,
-              backgroundColor: AppColour.primary,
-              child: const Icon(Icons.person, color: Colors.white),
+          CircleAvatar(
+            radius: 16,
+            backgroundColor: AppColour.primary,
+            child: const Icon(
+              Icons.location_on_outlined,
+              size: 16,
+              color: Colors.white,
             ),
           ),
           const SizedBox(width: 10),
@@ -135,28 +150,59 @@ class _HomeScreenUState extends State<HomeScreenU> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('DELIVER TO', style: simple_text_style(color: AppColour.primary, fontSize: 11, fontWeight: FontWeight.bold)),
+                Text(
+                  'DELIVER TO',
+                  style: simple_text_style(
+                    color: AppColour.primary,
+                    fontSize: 11,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
                 GestureDetector(
-                  onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => SelectAddressScreen(isFromProfile: true))),
-                  child: Text(address.isNotEmpty ? address : 'Tap to add address...', maxLines: 1, overflow: TextOverflow.ellipsis,
-                      style: simple_text_style(fontSize: 14, fontWeight: FontWeight.w700)),
+                  onTap: () => PersistentNavBarNavigator.pushNewScreen(
+                    context,
+                    screen: const SelectAddressScreen(isFromProfile: true),
+                    withNavBar: false,
+                    pageTransitionAnimation: PageTransitionAnimation.cupertino,
+                  ),
+                  child: Text(
+                    address.isNotEmpty ? address : 'Tap to add address...',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: simple_text_style(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
                 ),
               ],
             ),
           ),
-          const SizedBox(width: 8),
-          cart_button(),
         ],
       ),
     );
   }
 
   Widget allProductsHeader() {
-    return Text('All Products', style: simple_text_style(color: AppColour.black, fontSize: 20, fontWeight: FontWeight.bold));
+    return Text(
+      'All Products',
+      style: simple_text_style(
+        color: AppColour.black,
+        fontSize: 20,
+        fontWeight: FontWeight.bold,
+      ),
+    );
   }
 
   Widget _bestProductsHeader() {
-    return Text('Best Products', style: simple_text_style(color: AppColour.black, fontSize: 20, fontWeight: FontWeight.bold));
+    return Text(
+      'Best Products',
+      style: simple_text_style(
+        color: AppColour.black,
+        fontSize: 20,
+        fontWeight: FontWeight.bold,
+      ),
+    );
   }
 
   Widget buildBestProductsHorizontal(BuildContext context) {
@@ -172,14 +218,17 @@ class _HomeScreenUState extends State<HomeScreenU> {
             return const Center(child: Text('No Best Selling Products'));
           }
           return ListView.separated(
-              physics: const BouncingScrollPhysics(),
-              scrollDirection: Axis.horizontal,
-              itemCount: list.length,
-              separatorBuilder: (_, __) => const SizedBox(width: 12),
-          itemBuilder: (context, i) => SizedBox(
-          width: 180,
-          child: product_card(product: list[i],isBig: true), // uses redesigned card below
-          ),
+            physics: const BouncingScrollPhysics(),
+            scrollDirection: Axis.horizontal,
+            itemCount: list.length,
+            separatorBuilder: (_, __) => const SizedBox(width: 12),
+            itemBuilder: (context, i) => SizedBox(
+              width: 180,
+              child: product_card(
+                product: list[i],
+                isBig: true,
+              ), // uses redesigned card below
+            ),
           );
         },
       ),
@@ -198,11 +247,22 @@ class _HomeScreenUState extends State<HomeScreenU> {
         borderRadius: BorderRadius.circular(14),
         color: AppColour.white,
         border: Border.all(color: statusColor.withOpacity(0.2)),
-        boxShadow: [BoxShadow(color: Colors.black12, blurRadius: 6, offset: const Offset(0, 2))],
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black12,
+            blurRadius: 6,
+            offset: const Offset(0, 2),
+          ),
+        ],
       ),
       child: InkWell(
         borderRadius: BorderRadius.circular(14),
-        onTap: () => Navigator.push(context, MaterialPageRoute(builder: (context) => OrderTrackingScreen(orderId: order.orderId))),
+        onTap: () => PersistentNavBarNavigator.pushNewScreen(
+          context,
+          screen: OrderTrackingScreen(orderId: order.orderId),
+          withNavBar: false,
+          pageTransitionAnimation: PageTransitionAnimation.cupertino,
+        ),
         child: Padding(
           padding: const EdgeInsets.all(12),
           child: Column(
@@ -210,25 +270,67 @@ class _HomeScreenUState extends State<HomeScreenU> {
             children: [
               Row(
                 children: [
-                  Expanded(child: Text('#${order.orderId.substring(0, 6)}', style: simple_text_style(color: AppColour.black, fontWeight: FontWeight.bold))),
+                  Expanded(
+                    child: Text(
+                      '#${order.orderId.substring(0, 6)}',
+                      style: simple_text_style(
+                        color: AppColour.black,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                    decoration: BoxDecoration(color: statusColor.withOpacity(0.15), borderRadius: BorderRadius.circular(20)),
-                    child: Text(_getStatusText(order.orderStatus), style: simple_text_style(color: statusColor, fontSize: 11, fontWeight: FontWeight.w700)),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 4,
+                    ),
+                    decoration: BoxDecoration(
+                      color: statusColor.withOpacity(0.15),
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    child: Text(
+                      _getStatusText(order.orderStatus),
+                      style: simple_text_style(
+                        color: statusColor,
+                        fontSize: 11,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
                   ),
                 ],
               ),
               const Spacer(),
-              Text('${order.items.length} ${order.items.length == 1 ? 'item' : 'items'}',
-                  style: simple_text_style(color: Colors.grey.shade700, fontSize: 12)),
+              Text(
+                '${order.items.length} ${order.items.length == 1 ? 'item' : 'items'}',
+                style: simple_text_style(
+                  color: Colors.grey.shade700,
+                  fontSize: 12,
+                ),
+              ),
               const SizedBox(height: 4),
-              Text(DateFormat('MMM d, h:mm a').format(order.createdAt), style: simple_text_style(color: Colors.black, fontSize: 11)),
+              Text(
+                DateFormat('MMM d, h:mm a').format(order.createdAt),
+                style: simple_text_style(color: Colors.black, fontSize: 11),
+              ),
               const SizedBox(height: 6),
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Text('Total', style: simple_text_style(color: Colors.grey.shade700, fontSize: 12)),
-                  Text('₹${order.total.toStringAsFixed(2)}', style: simple_text_style(color: AppColour.black, fontSize: 16, fontWeight: FontWeight.bold)),
+                  Text(
+                    'Total',
+                    style: simple_text_style(
+                      color: Colors.grey.shade700,
+                      fontSize: 12,
+                    ),
+                  ),
+                  Text(
+                    '₹${order.total.toStringAsFixed(2)}',
+                    style: simple_text_style(
+                      color: AppColour.black,
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
                 ],
               ),
             ],
@@ -268,28 +370,28 @@ class _HomeScreenUState extends State<HomeScreenU> {
             ? _buildOrderLoadingState()
             : state is OngoingOrderLoadedState
             ? Visibility(
-          visible: state.orderList.isNotEmpty,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text(
-                    'Ongoing Orders',
-                    style: simple_text_style(
-                      color: AppColour.black,
-                      fontSize: 22,
-                      fontWeight: FontWeight.bold,
+                visible: state.orderList.isNotEmpty,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          'Ongoing Orders',
+                          style: simple_text_style(
+                            color: AppColour.black,
+                            fontSize: 22,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ],
                     ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 12),
-              _buildOrdersList(state.orderList),
-            ],
-          ),
-        )
+                    const SizedBox(height: 12),
+                    _buildOrdersList(state.orderList),
+                  ],
+                ),
+              )
             : SizedBox();
       },
     );
@@ -337,7 +439,7 @@ class _HomeScreenUState extends State<HomeScreenU> {
     );
   }
 
-/*
+  /*
 
   Widget _buildOrderCard(OrderModel order) {
     Color statusColor = _getStatusColor(order.orderStatus);

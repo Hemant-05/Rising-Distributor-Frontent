@@ -1,6 +1,7 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:persistent_bottom_nav_bar/persistent_bottom_nav_bar.dart';
 import 'package:raising_india/comman/helper_functions.dart';
 import 'package:raising_india/comman/simple_text_style.dart';
 import 'package:raising_india/constant/AppColour.dart';
@@ -30,11 +31,11 @@ class product_card extends StatelessWidget {
           context.read<ProductFunBloc>().add(
             GetProductByID(productId: product.pid),
           );
-          Navigator.push(
+          PersistentNavBarNavigator.pushNewScreen(
             context,
-            MaterialPageRoute(
-              builder: (context) => ProductDetailsScreen(product: product),
-            ),
+            screen: ProductDetailsScreen(product: product),
+            withNavBar: false,
+            pageTransitionAnimation: PageTransitionAnimation.cupertino,
           );
         },
         child: Column(

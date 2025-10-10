@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'package:persistent_bottom_nav_bar/persistent_bottom_nav_bar.dart';
 import 'package:raising_india/comman/back_button.dart';
 import 'package:raising_india/comman/cart_button.dart';
 import 'package:raising_india/comman/simple_text_style.dart';
@@ -84,7 +85,12 @@ class _ProductSearchScreenState extends State<ProductSearchScreen> {
                         return ListTile(
                           onTap: (){
                             context.read<ProductFunBloc>().add(GetProductByID(productId: product.pid));
-                            Navigator.push(context, MaterialPageRoute(builder: (context) => ProductDetailsScreen(product: product),));
+                            PersistentNavBarNavigator.pushNewScreen(
+                              context,
+                              screen: ProductDetailsScreen(product: product,),
+                              withNavBar: false,
+                              pageTransitionAnimation: PageTransitionAnimation.cupertino,
+                            );
                           },
                           leading: ClipRRect(
                             borderRadius: BorderRadius.circular(8),

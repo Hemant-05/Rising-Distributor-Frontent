@@ -3,6 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:raising_india/features/admin/pagination/main_screen_a.dart';
 import 'package:raising_india/features/auth/services/auth_service.dart';
 import 'package:raising_india/features/on_boarding/screens/welcome_screen.dart';
+import 'package:raising_india/features/user/main_screen_u.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../constant/ConPath.dart';
 import '../features/auth/bloc/auth_bloc.dart';
@@ -24,7 +25,7 @@ class SplashScreen extends StatelessWidget {
           Navigator.pushReplacement(
             context,
             MaterialPageRoute(
-              builder: (_) => isAdmin ? MainScreenA() : const HomeScreenU(),
+              builder: (_) => isAdmin ? MainScreenA() : const MainScreenU(),
             ),
           );
         } else {

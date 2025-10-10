@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:persistent_bottom_nav_bar/persistent_bottom_nav_bar.dart';
 import 'package:raising_india/comman/simple_text_style.dart';
 import 'package:raising_india/constant/AppColour.dart';
 import 'package:raising_india/features/user/categories/screens/all_categories_screen.dart';
@@ -21,9 +22,11 @@ Widget categories_section(BuildContext context) {
           TextButton(
             onPressed: () {
               context.read<CategoryProductBloc>().add(FetchCategories());
-              Navigator.push(
+              PersistentNavBarNavigator.pushNewScreen(
                 context,
-                MaterialPageRoute(builder: (_) => AllCategoriesScreen()),
+                screen: AllCategoriesScreen(),
+                withNavBar: false,
+                pageTransitionAnimation: PageTransitionAnimation.cupertino,
               );
             },
             child: Text(

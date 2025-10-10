@@ -1,6 +1,8 @@
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'package:persistent_bottom_nav_bar/persistent_bottom_nav_bar.dart';
 import 'package:raising_india/comman/back_button.dart';
 import 'package:raising_india/comman/simple_text_style.dart';
 import 'package:raising_india/constant/AppColour.dart';
@@ -27,14 +29,11 @@ class ProfileScreen extends StatelessWidget {
       backgroundColor: AppColour.white,
       appBar: AppBar(
         automaticallyImplyLeading: false,
-        title: Row(
-          children: [
-            back_button(),
-            const SizedBox(width: 8),
-            Text('Profile', style: simple_text_style(fontSize: 18)),
-            const Spacer(),
-          ],
-        ),
+        title: Text('Profile', style: simple_text_style(
+          fontSize: 20,
+          fontWeight: FontWeight.w600,
+          color: AppColour.black,
+        ),),
         backgroundColor: AppColour.white,
       ),
       body: Padding(
@@ -111,27 +110,25 @@ class ProfileScreen extends StatelessWidget {
                 },
               ),
             ),
-            SizedBox(height: 16),
+            SizedBox(height: 8),
             customContainer(
               Column(
                 children: [
                   optionListTile(map_svg, 'Addresses', () {
-                    Navigator.push(
+                    PersistentNavBarNavigator.pushNewScreen(
                       context,
-                      MaterialPageRoute(
-                        builder: (context) =>
-                            SelectAddressScreen(isFromProfile: true),
-                      ),
+                      screen: SelectAddressScreen(isFromProfile: true),
+                      withNavBar: false,
+                      pageTransitionAnimation: PageTransitionAnimation.cupertino,
                     );
                   }),
                   optionListTile(coupon_svg, 'Coupons & Cashback\'s', () {
                     context.read<CouponBloc>().add(LoadUserCoupons());
-                    Navigator.push(
+                    PersistentNavBarNavigator.pushNewScreen(
                       context,
-                      MaterialPageRoute(
-                        builder: (context) =>
-                            CouponsScreen(isSelectionMode: false),
-                      ),
+                      screen: CouponsScreen(isSelectionMode: false,),
+                      withNavBar: false,
+                      pageTransitionAnimation: PageTransitionAnimation.cupertino,
                     );
                   }),
                 ],
@@ -140,25 +137,22 @@ class ProfileScreen extends StatelessWidget {
             customContainer(
               Column(
                 children: [
-                  optionListTile(notification_svg, 'Notifications', () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => NotificationsScreen(userId: userId,),
-                      ),
-                    );
-                  }),
                   optionListTile(receipt_svg, 'My Orders', () {
-                    Navigator.push(
+                    PersistentNavBarNavigator.pushNewScreen(
                       context,
-                      MaterialPageRoute(builder: (context) => OrderScreen()),
+                      screen: OrderScreen(),
+                      withNavBar: false,
+                      pageTransitionAnimation: PageTransitionAnimation.cupertino,
                     );
                   }),
                   optionListTile(policy_svg, 'Term & Conditions', () {
-                    Navigator.push(
+                    PersistentNavBarNavigator.pushNewScreen(
                       context,
-                      MaterialPageRoute(builder: (context) => PolicyScreen()),
+                      screen: PolicyScreen(),
+                      withNavBar: false,
+                      pageTransitionAnimation: PageTransitionAnimation.cupertino,
                     );
+
                   }),
                 ],
               ),
