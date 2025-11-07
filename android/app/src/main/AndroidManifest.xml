@@ -23,11 +23,11 @@
     <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE"/>
     <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE"/>
     <application
-        android:label="Rising India"
+        android:label="Rising Distributor"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher">
         <activity
-            android:name=".MainActivity"
+            android:name="com.rising.narmada_mart.MainActivity"
             android:exported="true"
             android:launchMode="singleTop"
             android:taskAffinity=""
