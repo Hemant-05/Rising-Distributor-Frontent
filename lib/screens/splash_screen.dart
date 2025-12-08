@@ -7,7 +7,6 @@ import 'package:raising_india/features/user/main_screen_u.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../constant/ConPath.dart';
 import '../features/auth/bloc/auth_bloc.dart';
-import '../features/user/home/screens/home_screen_u.dart';
 
 class SplashScreen extends StatelessWidget {
   const SplashScreen({super.key});

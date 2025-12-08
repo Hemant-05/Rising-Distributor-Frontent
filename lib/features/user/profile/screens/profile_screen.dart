@@ -1,9 +1,7 @@
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:persistent_bottom_nav_bar/persistent_bottom_nav_bar.dart';
-import 'package:raising_india/comman/back_button.dart';
 import 'package:raising_india/comman/simple_text_style.dart';
 import 'package:raising_india/constant/AppColour.dart';
 import 'package:raising_india/constant/ConPath.dart';
@@ -24,7 +22,10 @@ class ProfileScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    String userId = '';
+    // String userId = FirebaseAuth.instance.currentUser!.uid; // Firebase specific
+    // TODO: Get userId from your custom authentication system or UserBloc
+    String userId = ""; // Placeholder for now
+
     return Scaffold(
       backgroundColor: AppColour.white,
       appBar: AppBar(
@@ -52,7 +53,7 @@ class ProfileScreen extends StatelessWidget {
                       ),
                     );
                   } else if (state is OnProfileLoaded) {
-                    userId = state.user!.uid;
+                    userId = state.user!.uid; // Assuming UserBloc provides uid
                     return Row(
                       crossAxisAlignment: CrossAxisAlignment.center,
                       children: [
@@ -91,7 +92,7 @@ class ProfileScreen extends StatelessWidget {
                             ),
                             SizedBox(height: 10),
                             Text(
-                              '${state.user?.number}',
+                              '${state.user?.mobileNumber}',
                               style: simple_text_style(
                                 color: AppColour.lightGrey,
                               ),

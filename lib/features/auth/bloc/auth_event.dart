@@ -33,14 +33,6 @@ class GetLocationList extends UserEvent{}
 
 class UserLoggedOut extends UserEvent {}
 
-class VerifyCode extends UserEvent {
-  final String email;
-  final String code;
-  VerifyCode(this.code, this.email);
-  @override
-  List<Object?> get props => [code];
-}
-
 class SendVerificationCode extends UserEvent {
   final String email;
   SendVerificationCode(this.email);
@@ -82,9 +74,9 @@ class UserSignIn extends UserEvent {
   List<Object?> get props => [email, password];
 }
 
-class VerifyNumber extends UserEvent{
+class RegisterNumber extends UserEvent{
   final String number;
-  VerifyNumber(this.number);
+  RegisterNumber(this.number);
 }
 
 class VerifyOtp extends UserEvent{

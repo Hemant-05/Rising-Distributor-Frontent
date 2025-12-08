@@ -1,31 +1,27 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_auth/firebase_auth.dart';
+import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
-import 'package:google_maps_flutter/google_maps_flutter.dart';
-import 'package:raising_india/constant/ConString.dart';
-import 'package:raising_india/features/services/location_service.dart';
+import 'package:raising_india/config/api_endpoints.dart';
+import 'package:raising_india/constant/AppData.dart';
+import 'package:raising_india/error/exceptions.dart';
 import 'package:raising_india/models/address_model.dart';
+import 'package:raising_india/models/user_model.dart';
+import 'package:raising_india/network/dio_client.dart';
 import 'package:raising_india/services/notification_service.dart';
+import 'package:raising_india/services/service_locator.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import '../../../models/user_model.dart';
+import '../../../constant/ConString.dart' as ConString;
 
 class AuthService extends ChangeNotifier {
-  final FirebaseAuth _auth = FirebaseAuth.instance;
-  final FirebaseFirestore _db = FirebaseFirestore.instance;
-
   AppUser? _user;
   AppUser? get user => _user;
+  final DioClient _dioClient = getIt<DioClient>();
 
   AuthService() {
-    _auth.authStateChanges().listen(_onAuthStateChanged);
+    _onAuthStateChanged(_user);
   }
 
-  Future<void> _onAuthStateChanged(User? firebaseUser) async {
-    if (firebaseUser == null) {
-      _user = null;
-    } else {
-      _user = await getCurrentUser();
-    }
+  Future<void> _onAuthStateChanged(AppUser? user) async {
+    _user = user;
     notifyListeners();
   }
 
@@ -36,264 +32,315 @@ class AuthService extends ChangeNotifier {
     required String role,
   }) async {
     try {
-      final cred = await _auth.createUserWithEmailAndPassword(
-        email: email,
-        password: password,
-      );
+      final data = {'name': name, 'email': email, 'password': password};
+      Response<dynamic> response;
+      if(role == ConString.admin){
+        response = await _dioClient.post(
+          ApiEndpoints.registerAdmin,
+          data: data,
+        );
+      }else{
+        response = await _dioClient.post(
+          ApiEndpoints.registerUser,
+          data: data,
+        );
+      }
+
+      // Expecting response.data to be a map containing data -> user and tokens
+      final resp = response.data as Map<String, dynamic>;
+
+      // adapt to common shapes: data.user or user
+      final payload_data = resp['data'] ?? resp;
+
+      final userMap = payload_data['user'] ?? payload_data['admin'];
+
+      if (userMap == null) {
+        throw ServerException(message: 'User Data Not Found...');
+      }
+
+      final uid = userMap['uid']?.toString() ?? '';
+      userMap['role'] = role;
+      _user = AppUser.fromMap(userMap as Map<String, dynamic>, uid);
+
+      // store tokens if present
+      final tokens = payload_data['tokens'];
+
+      final accessToken = tokens['access_token'];
+      final refreshToken = tokens['refresh_token'];
+
+      await _persistTokens(accessToken?.toString(), refreshToken?.toString());
+
+      notifyListeners();
+
       // Refresh notification token after login
       await NotificationService.refreshToken();
-      final user = cred.user;
-      if (user != null) {
-        final appUser = AppUser(
-          uid: user.uid,
-          name: name,
-          email: email,
-          number: '',
-          role: role,
-          isVerified: false,
-          addressList: [],
-        );
-        if (admin == role) {
-          await _db.collection('admin').doc(user.uid).set(appUser.toMap());
-        } else {
-          await _db.collection('users').doc(user.uid).set(appUser.toMap());
-        }
-        _user = appUser;
-        notifyListeners();
-        return null;
-      }
-      return "User creation failed";
-    } on FirebaseAuthException catch (e) {
-      if (e.code == 'email-already-in-use') {
-        return "Email is already in use";
-      } else if (e.code == 'weak-password') {
-        return "Password is too weak";
-      } else if (e.code == 'invalid-email') {
-        return "Invalid email format";
-      } else if (e.code == 'network-request-failed') {
-        return "Network error, please try again";
-      } else {
-        return e.message;
-      }
+
+      return null;
+    } on DioException catch (e) {
+      // Map Dio errors using DioClient's handler where possible
+      final ex = mapDioException(e);
+      // our mapping returns Exception subclasses that have `message` field
+      if (ex is ServerException) return ex.message;
+      if (ex is AuthenticationException) return ex.message;
+      if (ex is ValidationException) return ex.message;
+      if (ex is NetworkException) return ex.message;
+      return 'An unexpected error occurred \n ${e.message}';
     } catch (e) {
-      return "Server is Busy, please try again later";
+      return e is Exception
+          ? e.toString()
+          : 'Server is Busy, please try again later';
     }
-  }
-
-  Future<String> verifyOtpAndLink(String smsCode, String verificationId,String phoneNumber) async {
-    try{
-      final PhoneAuthCredential credential = PhoneAuthProvider.credential(
-        verificationId: verificationId,
-        smsCode: smsCode,
-      );
-      return await linkPhoneNumber(credential,phoneNumber);
-    }catch(e){
-      print('Error verifying OTP: $e');
-      return 'Error verifying OTP';
-    }
-  }
-
-  Future<String> linkPhoneNumber(PhoneAuthCredential credential,String phoneNumber) async {
-    final user = _auth.currentUser;
-    if (user == null) return "Error No user signed in!";
-    try {
-      final userId = user.uid;
-      await user.linkWithCredential(credential);
-      var doc = await _db.collection('users').doc(userId).get();
-      if (doc.exists) {
-        doc.reference.update({'isVerified': true, 'number' : phoneNumber});
-      } else {
-        await _db.collection('admin').doc(userId).update({'isVerified': true,'number' : phoneNumber});
-      }
-      return 'Success Phone number linked!';
-    } on FirebaseAuthException catch (e) {
-      if (e.code == 'provider-already-linked') {
-        return 'Error Number already Linked';
-      } else if (e.code == 'credential-already-in-use') {
-        return 'Error Number is already in user !!!';
-      } else {
-        print('Error linking phone: ${e.message}');
-      }
-    }
-    return 'Error ......';
   }
 
   Future<String?> signIn(String email, String password) async {
     try {
-      final x = await _auth.signInWithEmailAndPassword(
-        email: email,
-        password: password,
-      );
-      await NotificationService.refreshToken();
-      return x.user != null ? null : "Invalid email or password";
-    } on FirebaseAuthException catch (e) {
-      if (e.code == 'user-not-found') {
-        return "No user found with this email";
-      } else if (e.code == 'wrong-password') {
-        return "Password is incorrect";
-      } else if (e.code == 'invalid-email') {
-        return "Invalid email format";
-      } else if (e.code == 'network-request-failed') {
-        return "Network error, please try again";
-      } else if (e.code == 'too-many-requests') {
-        return "Too many login attempts, please try again later";
-      } else if (e.code == 'invalid-credential') {
-        return "Email or password is invalid";
-      } else {
-        return e.message;
+      final data = {'email': email, 'password': password};
+
+      final response = await _dioClient.post(ApiEndpoints.login, data: data);
+
+      final resp = response.data as Map<String, dynamic>;
+      final statusCode = resp['statusCode'];
+      if(statusCode == 201) {
+        final payload_data = resp['data'] ?? resp;
+
+        final userMap = payload_data['user'] ?? payload_data['admin'];
+
+        if (userMap == null) {
+          throw ServerException(message: 'Invalid server response');
+        }
+
+        final uid = userMap['id']?.toString() ?? userMap['uid']?.toString() ??
+            '';
+        _user = AppUser.fromMap(userMap as Map<String, dynamic>, uid);
+
+        final accessToken = payload_data['access_token'] ??
+            resp['access_token'];
+        final refreshToken =
+            payload_data['refresh_token'] ?? resp['refresh_token'];
+
+        await _persistTokens(accessToken?.toString(), refreshToken?.toString());
+
+        notifyListeners();
+
+        await NotificationService.refreshToken();
+      }else{
+        throw Exception(['Error while creating Account...']);
       }
+      return null;
+    } on DioException catch (e) {
+      final ex = mapDioException(e);
+      if (ex is ServerException) return ex.message;
+      if (ex is AuthenticationException) return ex.message;
+      if (ex is ValidationException) return ex.message;
+      if (ex is NetworkException) return ex.message;
+      return 'An unexpected error occurred';
     } catch (e) {
-      return "An unknown error occurred";
+      return 'An unknown error occurred';
     }
   }
 
   Future<String?> sendVerificationCode(String email) async {
+    return 'ok';
+  }
+
+  Future<String?> registerNumber(String number) async {
+    final data = {"mobileNumber": number};
     try {
-      await _auth.sendPasswordResetEmail(email: email);
-      return 'ok';
-    } on FirebaseAuthException catch (e) {
-      return e.message;
+      final response = await _dioClient.post(
+        ApiEndpoints.registerMobile,
+        data: data,
+      );
+      final resp = response.data as Map<String, dynamic>; // Parse response data
+      final statusCode = response.statusCode;
+      if (statusCode == 200 || statusCode == 201) {
+        return resp['message']?.toString() ?? 'success';
+      } else {
+        return resp['message']?.toString() ?? 'Failed to register number with status: $statusCode';
+      }
+    } on DioException catch (e) {
+      final ex = mapDioException(e);
+      if (ex is ServerException) return ex.message;
+      if (ex is AuthenticationException) return ex.message;
+      if (ex is ValidationException) return ex.message;
+      if (ex is NetworkException) return ex.message;
+      return 'An unexpected error occurred: ${e.message}';
     } catch (e) {
-      return "An Unknow error occurred $e";
+      return e is Exception
+          ? e.toString()
+          : 'An unknown error occurred: ${e.toString()}';
     }
   }
 
-  Future<String?> verifyCode(String code) async {
+  Future<String?> verifyOTP(String code) async {
+    final data = {"otp": code};
     try {
-      return await _auth.verifyPasswordResetCode(code);
-    } on FirebaseAuthException catch (e) {
-      if (e.code == 'expired-action-code') {
-        return 'Code is Expired !!';
-      } else if (e.code == 'invalid-action-code') {
-        return 'Code is Invalid !!';
-      } else {
-        return 'Error occurred...';
+      final response = await _dioClient.post(
+        ApiEndpoints.verifyOtp,
+        data: data,
+      );
+      final resp = response.data as Map<String, dynamic>;
+      final statusCode = resp['statusCode'];
+      if(statusCode == 200) {
+        return 'success';
+      }else if(statusCode == 500){
+        throw Exception(['Number is already in use with different account...']);
       }
+    } on DioException catch (e) {
+      final ex = mapDioException(e);
+      if (ex is ServerException) return ex.message;
+      if (ex is AuthenticationException) return ex.message;
+      if (ex is ValidationException) return ex.message;
+      if (ex is NetworkException) return ex.message;
+      return 'An unexpected error occurred';
     } catch (e) {
-      return "An Unknow error occurred $e";
+      return 'An unknown error occurred ${e.toString()}';
     }
+    return 'fail';
   }
 
   Future<String?> resetPassword(String code, String newPass) async {
-    try {
-      await _auth.confirmPasswordReset(code: code, newPassword: newPass);
-      return 'ok';
-    } on FirebaseAuthException catch (e) {
-      return e.message;
-    } catch (e) {
-      return "An Unknow error occurred $e";
-    }
+    // TODO: Implement your own password reset logic
+    return 'ok';
   }
-
-  /* Future<String?> signInWithGoogle() async {
-    try {
-      final GoogleSignInAccount? googleUser = await GoogleSignIn().signIn();
-      if (googleUser == null) return "Google sign in aborted";
-      final GoogleSignInAuthentication googleAuth =
-          await googleUser.authentication;
-      final credential = GoogleAuthProvider.credential(
-        accessToken: googleAuth.accessToken,
-        idToken: googleAuth.idToken,
-      );
-      final userCred = await _auth.signInWithCredential(credential);
-      final user = userCred.user;
-      if (user != null) {
-        final doc = await _db.collection('users').doc(user.uid).get();
-        if (!doc.exists) {
-          final appUser = AppUser(
-            uid: user.uid,
-            name: user.displayName ?? '',
-            email: user.email ?? '',
-            number: '',
-            role: UserRole.USER,
-          );
-          await _db.collection('users').doc(user.uid).set(appUser.toMap());
-        }
-      }
-      return null;
-    } on FirebaseAuthException catch (e) {
-      return e.message;
-    } catch (e) {
-      return "An unknown error occurred";
-    }
-  } */
 
   Future<void> signOut() async {
     await NotificationService.clearToken();
     SharedPreferences prefs = await SharedPreferences.getInstance();
     prefs.setBool('rememberMe', false);
     prefs.remove('isAdmin');
-    notifyListeners();
-    await _auth.signOut();
+    // remove tokens
+    prefs.remove('access_token');
+    prefs.remove('refresh_token');
     _user = null;
+    notifyListeners();
   }
 
   Future<String?> updateUserLocation() async {
-    String userId = _auth.currentUser!.uid;
-    final position = await LocationService.getCurrentPosition();
-    if (position == null) return 'Location not available';
-
-    final address = await LocationService.getReadableAddress(
-      LatLng(position.latitude, position.longitude),
-    );
-
-    // Update user in Firestore
-    await _db.collection('users').doc(userId).update({
-      'addressList': FieldValue.arrayUnion([{}]),
-    });
-    return address;
+    // TODO: Implement your own logic to update user location
+    return 'Location updated';
   }
 
   Future<String?> addLocation(AddressModel address) async {
-    String userId = _auth.currentUser!.uid;
-    await _db.collection('users').doc(userId).update({
-      'addressList': FieldValue.arrayUnion([address.toMap()]),
-    });
+    // TODO: Implement your own logic to add a location
     return 'ok';
   }
 
   Future<String?> deleteLocationFromList(int index) async {
-    String userId = _auth.currentUser!.uid;
-    try {
-      // 1. Get the document
-      final doc = await FirebaseFirestore.instance
-          .collection('users')
-          .doc(userId)
-          .get();
-      // 2. Get the current list
-      List<dynamic> list = List.from(doc['addressList'] ?? []);
-      // 3. Check if index is valid
-      if (index >= 0 && index < list.length) {
-        // 4. Remove the item at index
-        list.removeAt(index);
-        // 5. Update the entire array
-        await doc.reference.update({'addressList': list});
-      }
-      return 'ok';
-    } catch (e) {
-      print('Error removing item: $e');
-      throw Exception('Failed to remove item');
-    }
+    // TODO: Implement your own logic to delete a location
+    return 'ok';
   }
 
   Future<List<AddressModel>> getLocationList() async {
-    var user = await getCurrentUser();
-    return user!.addressList;
+    // TODO: Return a list of addresses from your custom backend
+    return [];
   }
 
   Future<AppUser?> getCurrentUser() async {
-    final firebaseUser = _auth.currentUser;
-    if (firebaseUser == null) return null;
-    final user = await _db.collection('users').doc(firebaseUser.uid).get();
-    if (user.exists) {
-      return AppUser.fromMap(user.data()!, firebaseUser.uid);
+    try {
+      final response = await _dioClient.get(ApiEndpoints.me);
+      final resp = response.data as Map<String, dynamic>;
+      final statusCode = resp['statusCode'];
+      if(statusCode == 200) {
+        final payload_data = resp['data'] ?? resp;
+
+        final userMap = payload_data['user'] ?? payload_data['admin'] ?? payload_data['profile'];
+
+        if (userMap == null) {
+          throw ServerException(message: 'Invalid server response');
+        }
+
+        final uid = userMap['id']?.toString() ?? userMap['uid']?.toString() ??
+            '';
+        _user = AppUser.fromMap(userMap as Map<String, dynamic>, uid);
+
+        notifyListeners();
+
+        await NotificationService.refreshToken();
+      }else{
+        throw Exception(['Error while Fetching User Data...']);
+      }
+      return _user;
+    } on DioException catch (e) {
+      final ex = mapDioException(e);
+      if (ex is ServerException) {
+        print(ex.message);
+        return null;
+      }
+      if (ex is AuthenticationException) {
+        print(ex.message);
+        return null;
+      }
+      if (ex is ValidationException) {
+        print(ex.message);
+        return null;
+      }
+      if (ex is NetworkException) {
+        print(ex.message);
+        return null;
+      }
+      return null;
+    } catch (e) {
+      return null;
     }
-    final admin = await _db.collection('admin').doc(firebaseUser.uid).get();
-    if (admin.exists) {
-      final admin0 = AppUser.fromMap(admin.data()!, firebaseUser.uid);
-      return admin0;
+    return _user;
+  }
+
+  /// Refreshes the access token using the stored refresh token.
+  /// Returns the new access token if successful, otherwise null.
+  Future<String?> refreshToken() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final storedRefreshToken = prefs.getString('refresh_token');
+
+      if (storedRefreshToken == null) {
+        print("No refresh token found. User must re-authenticate.");
+        // Optionally, trigger a sign-out if no refresh token exists
+        await signOut();
+        return null;
+      }
+
+      final response = await _dioClient.post(
+        ApiEndpoints.refreshToken,
+        data: {'refresh_token': storedRefreshToken},
+      );
+      if(response.statusCode == 200){
+        final resp = response.data as Map<String, dynamic>;
+        final newAccessToken = resp['data']['access_token']?.toString();
+        final newRefreshToken = resp['data']['refresh_token']?.toString();
+
+        if (newAccessToken != null && newRefreshToken != null) {
+          await _persistTokens(newAccessToken, newRefreshToken);
+          return newAccessToken;
+        } else {
+          await signOut();
+          return null;
+        }
+      }else if(response.statusCode == 401){
+        throw Exception(response.statusMessage);
+      }
+      throw ServerException(message: 'Error While Refreshing Token...');
+    } on DioException catch (e) {
+      final ex = mapDioException(e);
+      if (ex is AuthenticationException) {
+        await signOut();
+      }
+      return null;
+    } catch (e) {
+      await signOut();
+      return null;
     }
-    print('returning null');
-    return null;
+  }
+
+  // Helper: persist tokens and set default header
+  Future<void> _persistTokens(String? accessToken, String? refreshToken) async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    if (accessToken != null) {
+      prefs.setString('access_token', accessToken);
+      // set auth header for future requests
+      _dioClient.dio.options.headers['Authorization'] = 'Bearer $refreshToken';
+    }
+    if (refreshToken != null) {
+      prefs.setString('refresh_token', refreshToken);
+    }
   }
 }

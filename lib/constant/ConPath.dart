@@ -1,4 +1,4 @@
-final String appLogo = "assets/app_logo/raising_india_logo.png";
+final String appLogo = "assets/app_logo/rising_distributor_png.png";
 final String cod_png = "assets/icons/cash_on_delivery.png";
 final String pay_now_png = "assets/icons/pay_now.png";
 

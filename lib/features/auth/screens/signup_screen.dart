@@ -1,4 +1,3 @@
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -6,17 +5,12 @@ import 'package:flutter_svg/svg.dart';
 import 'package:raising_india/comman/elevated_button_style.dart';
 import 'package:raising_india/comman/simple_text_style.dart';
 import 'package:raising_india/constant/AppColour.dart';
-import 'package:raising_india/features/admin/pagination/main_screen_a.dart';
 import 'package:raising_india/features/auth/screens/login_screen.dart';
 import 'package:raising_india/features/auth/screens/verification_screen.dart';
-import 'package:raising_india/features/auth/services/auth_service.dart';
 import '../../../comman/bold_text_style.dart';
 import '../../../constant/ConString.dart';
-import '../../admin/home/screens/home_screen_a.dart';
-import '../../user/home/screens/home_screen_u.dart';
 import '../widgets/cus_text_field.dart';
 import '../../../constant/ConPath.dart';
-import '../../../models/user_model.dart';
 import '../bloc/auth_bloc.dart';
 
 class SignupScreen extends StatefulWidget {

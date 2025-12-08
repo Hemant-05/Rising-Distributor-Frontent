@@ -11,6 +11,7 @@ part 'auth_state.dart';
 
 class UserBloc extends Bloc<UserEvent, UserState> {
   final AuthService authService;
+
   UserBloc(this.authService) : super(UserInitial()) {
     on<AppStarted>((event, emit) async {
       final user = await authService.getCurrentUser();
@@ -107,27 +108,24 @@ class UserBloc extends Bloc<UserEvent, UserState> {
     on<VerifyOtp>((event,emit) async {
       emit(UserLoading());
       final otp = event.otp;
-      final verificationId = event.verificationId;
-      final phoneNumber = event.phoneNumber;
-      var data = await authService.verifyOtpAndLink(otp, verificationId,phoneNumber);
-      bool success = data.split(' ').first == 'Success';
-      if(success){
+      String? res = await authService.verifyOTP(otp);
+      if(res != null && res.compareTo('success') == 0){
+
         emit(OtpVerified());
       }else{
-        UserError(data);
+        UserError('OTP is Invalid...');
       }
     });
 
-    on<VerifyNumber>((event,emit)async{
+    on<RegisterNumber>((event,emit)async{
       emit(UserLoading());
-      final number = event.number;
-   /*   var res = await authService.verifyPhone(number);
-      print(res);
-      if(res['type'] != null && res['type'].toString() != 'fail') {
-        emit(NumberVerified(res));
+      var number = event.number;
+      String? res = await authService.registerNumber(number);
+      if(res != null && res.compareTo('success') == 0) {
+        emit(NumberVerified({}));
       }else{
-        emit(UserError('Error verity number _________________ : ${res['data']}'));
-      }*/
+        emit(UserError('Error verify number...'));
+      }
     });
 
     on<SendVerificationCode>((event, emit) async {
@@ -144,17 +142,6 @@ class UserBloc extends Bloc<UserEvent, UserState> {
         emit(ForgotPasswordState(event.email));
       } else {
         emit(UserError(error!));
-      }
-    });
-
-    on<VerifyCode>((event, emit) async {
-      emit(UserLoading());
-      final code = event.code.trim();
-      final error = await authService.verifyCode(code); //await authService.verifyCode(event.code);
-      if (error == 'ok') {
-        emit(VerificatoinSuccess(event.email, event.code));
-      } else {
-        emit(VerificationError(error!));
       }
     });
 

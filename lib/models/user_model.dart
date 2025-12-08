@@ -5,22 +5,20 @@ class AppUser {
   final String uid;
   final String name;
   final String email;
-  final String number;
+  final String? mobileNumber;
   final String role;
-  final bool? isVerified;
+  final bool? isMobileVerified;
   final GeoPoint? currentLocation;
-  final String? address;
   final List<AddressModel> addressList;
 
   AppUser({
     required this.uid,
     required this.name,
     required this.email,
-    required this.number,
+    required this.mobileNumber,
     required this.role,
-    this.isVerified,
+    this.isMobileVerified,
     this.currentLocation,
-    this.address,
     required this.addressList,
   });
 
@@ -28,11 +26,10 @@ class AppUser {
     return {
       'name': name,
       'email': email,
-      'number': number,
+      'number': mobileNumber,
       'role': role,
-      'isVerified': isVerified,
+      'isVerified': isMobileVerified,
       'currentLocation': currentLocation,
-      'address': address,
       'addressList' : addressList,
     };
   }
@@ -42,11 +39,10 @@ class AppUser {
       uid: uid,
       name: map['name'],
       email: map['email'],
-      number: map['number'].toString(),
+      mobileNumber: map['number'].toString(),
       role: map['role'],
-      isVerified: map['isVerified'],
+      isMobileVerified: map['isVerified'],
       currentLocation: map['currentLocation'],
-      address: map['address'],
       addressList: _convertAddressList(map['addressList']),
     );
   }

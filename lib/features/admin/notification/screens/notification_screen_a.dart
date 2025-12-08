@@ -1,9 +1,7 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-import 'package:raising_india/comman/back_button.dart';
 import 'package:raising_india/comman/simple_text_style.dart';
 import 'package:raising_india/constant/AppColour.dart';
+import 'dart:async';
 
 class NotificationScreenA extends StatefulWidget {
   const NotificationScreenA({super.key});
@@ -14,10 +12,11 @@ class NotificationScreenA extends StatefulWidget {
 
 class _NotificationScreenAState extends State<NotificationScreenA> {
   final _pageSize = 20;
-  DocumentSnapshot? _last;
+  // TODO: Replace with a mechanism to store the last fetched item for pagination from your backend
+  dynamic _last;
   bool _loading = false;
   bool _done = false;
-  final List<QueryDocumentSnapshot<Map<String, dynamic>>> _docs = [];
+  final List<Map<String, dynamic>> _docs = []; // Changed to a generic list of maps
 
   @override
   void initState() {
@@ -28,22 +27,35 @@ class _NotificationScreenAState extends State<NotificationScreenA> {
   Future<void> _loadMore() async {
     if (_loading || _done) return;
     setState(() => _loading = true);
-    final userId = FirebaseAuth.instance.currentUser!.uid;
 
-    Query<Map<String, dynamic>> q = FirebaseFirestore.instance
-        .collection('notifications_queue') // or 'notifications'
-        .where('userId', isEqualTo: userId)
-        .orderBy('createdAt', descending: true)
-        .limit(_pageSize);
+    // TODO: Replace with logic to get user ID from your custom authentication system
+    final userId = "admin_user_id"; // Placeholder user ID
 
-    if (_last != null) q = q.startAfterDocument(_last!);
+    // TODO: Implement fetching notifications from your custom backend
+    // This is a placeholder for your backend API call
+    await Future.delayed(const Duration(seconds: 1)); // Simulate network delay
 
-    final snap = await q.get();
-    if (snap.docs.isNotEmpty) {
-      _last = snap.docs.last;
-      _docs.addAll(snap.docs);
+    final List<Map<String, dynamic>> fetchedNotifications = [
+      // Example dummy notification data
+      {
+        'title': 'Welcome!',
+        'body': 'Welcome to your admin panel.',
+        'createdAt': DateTime.now().subtract(Duration(hours: 1)).toIso8601String(),
+        'data': {'type': 'general'},
+      },
+      {
+        'title': 'New Order',
+        'body': 'A new order has been placed.',
+        'createdAt': DateTime.now().subtract(Duration(minutes: 30)).toIso8601String(),
+        'data': {'type': 'new_order_admin'},
+      },
+    ];
+
+    if (fetchedNotifications.isNotEmpty) {
+      // TODO: Update _last based on your backend's pagination strategy
+      _docs.addAll(fetchedNotifications);
     }
-    if (snap.docs.length < _pageSize) _done = true;
+    if (fetchedNotifications.length < _pageSize) _done = true;
 
     setState(() => _loading = false);
   }
@@ -78,9 +90,9 @@ class _NotificationScreenAState extends State<NotificationScreenA> {
     }
   }
 
-  String _formatTime(Timestamp? ts) {
-    if (ts == null) return '';
-    final dt = ts.toDate();
+  String _formatTime(String? isoString) {
+    if (isoString == null) return '';
+    final dt = DateTime.parse(isoString);
     final now = DateTime.now();
     final diff = now.difference(dt);
     if (diff.inMinutes < 1) return 'Just now';
@@ -125,10 +137,8 @@ class _NotificationScreenAState extends State<NotificationScreenA> {
                   child: Center(child: CircularProgressIndicator(color: AppColour.primary,)),
                 );
               }
-              final doc = _docs[index];
-              final data = doc.data();
-              final createdAt = data['createdAt'] as Timestamp?;
-              final isAdmin = data['isAdminNotification'] == true;
+              final data = _docs[index];
+              final createdAt = data['createdAt'] as String?;
               final title = (data['title'] ?? '').toString();
               final body = (data['body'] ?? '').toString();
 
@@ -226,4 +236,3 @@ class _EmptyState extends StatelessWidget {
     );
   }
 }
-

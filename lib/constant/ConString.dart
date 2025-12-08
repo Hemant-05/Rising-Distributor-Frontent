@@ -5,6 +5,8 @@ final String user = 'USER';
 final double deliveryFee = 12;
 final double platformFee = 3;
 
+const String baseUrl = 'http://10.161.251.8:8080';
+
 const String OrderStatusCreated = 'created';
 const String OrderStatusConfirmed = 'confirmed';
 const String OrderStatusPreparing = 'preparing';

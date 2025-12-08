@@ -7,7 +7,6 @@ import 'package:raising_india/constant/ConPath.dart';
 import 'package:raising_india/features/user/cart/screens/cart_screen.dart';
 import 'package:raising_india/features/user/home/screens/home_screen_u.dart';
 import 'package:raising_india/features/user/notification/screens/notification_screen.dart';
-import 'package:raising_india/features/user/order/screens/order_screen.dart';
 
 import 'profile/bloc/profile_bloc.dart';
 import 'profile/screens/profile_screen.dart';

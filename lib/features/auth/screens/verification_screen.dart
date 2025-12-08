@@ -1,6 +1,5 @@
 import 'dart:async';
 
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -8,7 +7,6 @@ import 'package:flutter_svg/svg.dart';
 import 'package:raising_india/constant/ConString.dart';
 import 'package:raising_india/features/admin/home/screens/home_screen_a.dart';
 import 'package:raising_india/features/auth/services/auth_service.dart';
-import 'package:raising_india/features/user/home/screens/home_screen_u.dart';
 import 'package:raising_india/features/user/main_screen_u.dart';
 import '../../../comman/bold_text_style.dart';
 import '../widgets/cus_text_field.dart';
@@ -66,35 +64,18 @@ class _VerificationCodeScreenState extends State<VerificationCodeScreen> {
   }
 
   Future<void> verifyPhone(String phoneNumber, int? resendToken) async {
-    setState(() {
-      isLoading = true;
-      _error = null;
-    });
-    await FirebaseAuth.instance.verifyPhoneNumber(
-      phoneNumber: '+91$phoneNumber',
-      forceResendingToken: resendToken,
-      timeout: const Duration(seconds: 45),
-      verificationCompleted: (PhoneAuthCredential credential) async {
-        _service.linkPhoneNumber(credential, phoneNumber);
-      },
-      verificationFailed: (FirebaseAuthException e) async {
-        setState(() {
-          _error = e.message;
-          isLoading = false;
-        });
-      },
-      codeSent: (String verificationId, int? resendToken) async {
-        setState(() {
-          isLoading = false;
-          isNumberVerified = true;
-          this.resendToken = resendToken;
-          this.verificationId = verificationId;
-          startTimer();
-          showOTPSendSnackBar();
-        });
-      },
-      codeAutoRetrievalTimeout: (String verificationId) {},
-    );
+
+    BlocProvider.of<UserBloc>(
+      context,
+    ).add(RegisterNumber('+91$phoneNumber'));
+
+    /*setState(() {
+      isLoading = false;
+      isNumberVerified = true;
+      this.verificationId = "dummy_verification_id"; // Replace with a real ID from your backend
+      startTimer();
+      showOTPSendSnackBar();
+    });*/
   }
 
   void resendOTP() {
@@ -118,7 +99,12 @@ class _VerificationCodeScreenState extends State<VerificationCodeScreen> {
   Widget build(BuildContext context) {
     return BlocListener<UserBloc, UserState>(
       listener: (context, state) {
-        if (state is OtpVerified) {
+        if (state is NumberVerified) {
+          isLoading = false;
+          isNumberVerified = true;
+          startTimer();
+          showOTPSendSnackBar();
+        } else if (state is OtpVerified) {
           Navigator.pushAndRemoveUntil(
             context,
             MaterialPageRoute(
@@ -217,13 +203,38 @@ class _VerificationCodeScreenState extends State<VerificationCodeScreen> {
                             isNumber: true,
                           ),
                           const SizedBox(height: 20),
-                          cus_text_field(
+                          if(isNumberVerified)...{
+                            cus_text_field(
                             label: 'OTP',
                             controller: _verificationCodeController,
                             hintText: '1234',
                             isNumber: true,
                           ),
-                          const SizedBox(height: 20),
+                            const SizedBox(height: 20),
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.end,
+                              children: [
+                                InkWell(
+                                  onTap: () {
+                                    isNumberVerified && t == 0
+                                        ? resendOTP()
+                                        : null;
+                                  },
+                                  child: Text(
+                                    'Resend OTP ${t == 30 || t == 0 ? '' : t
+                                        .toString()}',
+                                    style: simple_text_style(
+                                      color: isNumberVerified && t == 0
+                                          ? AppColour.primary
+                                          : AppColour.grey,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                            SizedBox(height: 20),
+                          },
                           if (_error != null) ...{
                             Text(
                               _error!,
@@ -234,28 +245,6 @@ class _VerificationCodeScreenState extends State<VerificationCodeScreen> {
                             ),
                             SizedBox(height: 20),
                           },
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.end,
-                            children: [
-                              InkWell(
-                                onTap: () {
-                                  isNumberVerified && t == 0
-                                      ? resendOTP()
-                                      : null;
-                                },
-                                child: Text(
-                                  'Resend OTP ${t == 30 || t == 0 ? '' : t.toString()}',
-                                  style: simple_text_style(
-                                    color: isNumberVerified && t == 0
-                                        ? AppColour.primary
-                                        : AppColour.grey,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                          SizedBox(height: 20),
                           BlocBuilder<UserBloc, UserState>(
                             builder: (context, state) {
                               return ElevatedButton(

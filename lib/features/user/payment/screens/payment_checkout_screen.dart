@@ -1,5 +1,4 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
@@ -52,8 +51,8 @@ class PaymentCheckoutScreen extends StatefulWidget {
 class _PaymentCheckoutScreenState extends State<PaymentCheckoutScreen>
     with TickerProviderStateMixin {
   late Razorpay _razorpay;
-  final FirebaseFirestore firestore = FirebaseFirestore.instance;
-  final FirebaseAuth auth = FirebaseAuth.instance;
+  // final FirebaseFirestore firestore = FirebaseFirestore.instance; // Removed FirebaseFirestore
+  // final FirebaseAuth auth = FirebaseAuth.instance; // Removed FirebaseAuth
 
   bool isCOD = true;
   bool _isProcessingOrder = false;
@@ -70,7 +69,7 @@ class _PaymentCheckoutScreenState extends State<PaymentCheckoutScreen>
   late AnimationController _animationController;
   late Animation<double> _fadeAnimation;
 
-  String? _userId;
+  String? _userId; // Will be set from your custom authentication
 
   double get _originalTotal => double.parse(widget.total);
   double get _finalTotal =>
@@ -83,7 +82,8 @@ class _PaymentCheckoutScreenState extends State<PaymentCheckoutScreen>
   @override
   void initState() {
     super.initState();
-    _userId = auth.currentUser?.uid;
+    // TODO: Get userId from your custom authentication system or UserBloc
+    _userId = "dummy_user_id"; // Placeholder
 
     // Razorpay initialization
     _razorpay = Razorpay();
@@ -203,7 +203,8 @@ class _PaymentCheckoutScreenState extends State<PaymentCheckoutScreen>
 
     final newOrder = OrderModel(
       orderId: Uuid().v4(),
-      userId: auth.currentUser!.uid,
+      // TODO: Get userId from your custom authentication system or UserBloc
+      userId: _userId!, // Using the placeholder userId
       name: widget.name,
       createdAt: DateTime.now(),
       items: list,
@@ -216,8 +217,8 @@ class _PaymentCheckoutScreenState extends State<PaymentCheckoutScreen>
       paymentStatus: isCod
           ? PayStatusPending
           : isPaymentSuccess
-          ? PayStatusPaid
-          : PayStatusFailed,
+              ? PayStatusPaid
+              : PayStatusFailed,
       orderStatus: (isPaymentSuccess || isCod)
           ? OrderStatusCreated
           : OrderStatusCancelled,
@@ -225,7 +226,8 @@ class _PaymentCheckoutScreenState extends State<PaymentCheckoutScreen>
       address: DeliveryAddress(
         widget.address,
         widget.contact,
-        GeoPoint(widget.addressCode.latitude, widget.addressCode.longitude),
+        // TODO: Replace GeoPoint with a suitable location object for your backend
+        GeoPoint(widget.addressCode.latitude, widget.addressCode.longitude), // Placeholder for GeoPoint
       ),
     );
 
@@ -235,7 +237,8 @@ class _PaymentCheckoutScreenState extends State<PaymentCheckoutScreen>
       context.read<ProductFunBloc>().add(ClearCartPressed());
 
       // Generate cashback coupon
-      final String userId = FirebaseAuth.instance.currentUser!.uid;
+      // TODO: Get userId from your custom authentication system or UserBloc
+      final String userId = _userId!; // Using the placeholder userId
       _couponBloc.add(
         GenerateCashbackCoupon(
           userId: userId,
@@ -1228,8 +1231,8 @@ class _PaymentCheckoutScreenState extends State<PaymentCheckoutScreen>
                 _isProcessingOrder
                     ? null
                     : isCOD
-                    ? placeOrder(true, false, null)
-                    : _openCheckOut();
+                        ? placeOrder(true, false, null)
+                        : _openCheckOut();
               }
             : userNotVerifiedSnackBar,
         style: ElevatedButton.styleFrom(
@@ -1276,8 +1279,8 @@ class _PaymentCheckoutScreenState extends State<PaymentCheckoutScreen>
                   Text(
                     widget.isVerified
                         ? isCOD
-                              ? "PLACE ORDER ₹${_finalTotal.toStringAsFixed(2)}"
-                              : "PROCEED & PAY ₹${_finalTotal.toStringAsFixed(2)}"
+                            ? "PLACE ORDER ₹${_finalTotal.toStringAsFixed(2)}"
+                            : "PROCEED & PAY ₹${_finalTotal.toStringAsFixed(2)}"
                         : 'NOT VERIFIED',
                     style: simple_text_style(
                       color: Colors.white,

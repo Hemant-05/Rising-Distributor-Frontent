@@ -39,8 +39,8 @@ class _HomeScreenUState extends State<HomeScreenU> {
     BlocProvider.of<CategoryProductBloc>(
       context,
     ).add(FetchBestSellingProducts());
-    BlocProvider.of<OrderBloc>(context).add(LoadUserOngoingOrderEvent());
     BlocProvider.of<CategoryProductBloc>(context).add(FetchAllProducts());
+    BlocProvider.of<OrderBloc>(context).add(LoadUserOngoingOrderEvent());
   }
 
   @override

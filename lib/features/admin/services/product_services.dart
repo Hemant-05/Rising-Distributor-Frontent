@@ -1,11 +1,18 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:dio/dio.dart';
+import 'package:raising_india/config/api_endpoints.dart';
+import 'package:raising_india/error/exceptions.dart';
 import 'package:raising_india/models/category_model.dart';
 import 'package:raising_india/models/product_model.dart';
-import 'package:uuid/uuid.dart';
+import 'package:raising_india/network/dio_client.dart';
+import 'package:raising_india/services/service_locator.dart';
 
 class ProductServices {
   final FirebaseFirestore _firebase = FirebaseFirestore.instance;
   final String _uid;
+
+  final DioClient _dioClient = getIt<DioClient>();
+
   ProductServices(this._uid);
 
   Future<List<ProductModel>> fetchProducts() async {
@@ -42,7 +49,7 @@ class ProductServices {
   }
 
   // Example method to fetch products by user ID
-  Future<List<ProductModel>> fetchProductsByUserId(String userId) async {
+  Future<List<ProductModel>> fetchProductsByAdminId(String userId) async {
     if (_uid.isEmpty || userId.isEmpty) {
       return [];
     }
@@ -77,30 +84,72 @@ class ProductServices {
     }
   }
 
-  // Example method to fetch a single product by ID
   Future<ProductModel?> fetchProductById(String productId) async {
-    if (_uid.isEmpty || productId.isEmpty) {
-      return null;
-    }
     try {
-      final DocumentSnapshot doc = await _firebase.collection('products').doc(productId).get();
-      if (doc.exists) {
-        return ProductModel.fromMap(doc.data() as Map<String, dynamic>, _uid);
-      } else {
-        return Future.error('400'); // Product not found
+      final response = await _dioClient.post(ApiEndpoints.getProductsById(productId));
+
+      final resp = response.data as Map<String, dynamic>;
+      final statusCode = response.statusCode;
+      if(statusCode == 200) {
+        final payload_data = resp['data'] ?? resp;
+        
       }
-    } on FirebaseException catch (e) {
-      return Future.error('Error fetching product: ${e.message}');
+      return null;
+    } on DioException catch (e) {
+      final ex = mapDioException(e);
+      if (ex is ServerException) {
+        print(ex.message);
+        return null;
+      }
+      if (ex is AuthenticationException) {
+        print(ex.message);
+        return null;
+      }
+      if (ex is ValidationException) {
+        print(ex.message);
+        return null;
+      }
+      if (ex is NetworkException) {
+        print(ex.message);
+        return null;
+      }
+      return null;
+    } catch (e) {
+      return null;
     }
   }
 
   // Example method to add a new product
   Future<String> addProduct(ProductModel product) async {
     try {
-      String pid = product.pid;
-      await _firebase.collection('products').doc(pid).set(product.toMap());
-      return 'Product added successfully';
-    } on FirebaseException catch (e) {
+      final data =
+      {
+        "name": product.name,
+        "category": product.category,
+        "price": product.price,
+        "description": product.description,
+        "quantity": product.quantity,
+        "measurement": product.measurement,
+        "mrp": product.mrp,
+        "stockQuantity": product.stockQuantity,
+        "lowStockQuantity": product.lowStockQuantity,
+        "isAvailable": product.isAvailable,
+        "photosList": product.photos_list,
+        "rating": product.rating
+      };
+      Response response = await _dioClient.post(ApiEndpoints.addProducts,data: data);
+      final resp = response.data as Map<String, dynamic>;
+      if(response.statusCode == 201){
+        final payload_data = resp['data'] ?? resp;
+        print('=========================== $data');
+        final productMap = payload_data['product'] ?? payload_data['data'] ?? payload_data;
+        if(productMap == null){
+          throw ServerException(message: 'Product Data Not Found...');
+        }
+        return 'Product added successfully';
+      }
+      return 'Error while adding product.. ${response.statusMessage}';
+    } on DioException catch (e) {
      return 'Error adding product: ${e.message}';
     }
   }

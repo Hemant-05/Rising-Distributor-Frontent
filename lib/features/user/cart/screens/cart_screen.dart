@@ -448,12 +448,12 @@ class _CartScreenState extends State<CartScreen> {
                                               total: totalPrice,
                                               mrpTotal: mrpTotal,
                                               email: user!.email,
-                                              contact: user.number,
+                                              contact: user.mobileNumber?? "No number",
                                               name: user.name,
                                               cartProductList:
                                                   state.getCartProduct,
                                               isVerified:
-                                                  user.isVerified ?? false,
+                                                  user.isMobileVerified ?? false,
                                             ),
                                             withNavBar: false,
                                             pageTransitionAnimation:

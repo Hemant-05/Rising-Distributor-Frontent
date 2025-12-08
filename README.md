@@ -1,6 +1,6 @@
 # 🛒 Rising Mart – Grocery Delivery App
 
-Rising Mart is a **full-featured grocery delivery application** built with **Flutter** and **Firebase**, inspired by popular apps like **Blinkit, Zepto, and BigBasket**.  
+Rising Mart is a **full-featured grocery delivery application** built with **Flutter** and designed to connect with **your custom backend**. It is inspired by popular apps like **Blinkit, Zepto, and BigBasket**.  
 It provides users with a **fast, smooth, and reliable shopping experience** — from browsing groceries to doorstep delivery.
 
 ---
@@ -39,9 +39,9 @@ It provides users with a **fast, smooth, and reliable shopping experience** — 
 ## 🏗 Tech Stack
 
 - **Frontend:** Flutter (Dart)
-- **Backend:** Firebase (Authentication, Firestore, Storage, Cloud Functions)
+- **Backend:** Custom Backend
 - **Payments:** UPI, Razorpay, COD
-- **Push Notifications:** Firebase Cloud Messaging (FCM)
+- **Push Notifications:** Your Custom Push Notification Service
 - **State Management:** BLoC & Cubit
 
 ---
@@ -51,7 +51,6 @@ It provides users with a **fast, smooth, and reliable shopping experience** — 
 ### ✅ Prerequisites
 - Flutter SDK
 - Android Studio / VS Code
-- Firebase Project Setup
 
 ### ⚡ Installation
 
@@ -67,18 +66,6 @@ flutter pub get
 flutter run
 
 ```
-
-## 🔧 Firebase Configuration
-
-Add google-services.json → /android/app/
-
-Add GoogleService-Info.plist → /ios/Runner/
-
-Set up Firestore collections: users, products, orders
-
-Enable Firebase Storage for product images
-
-Configure Cloud Functions for order handling (optional)
 
 ## 📌 Roadmap
 

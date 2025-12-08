@@ -1,5 +1,4 @@
 import 'dart:io';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:raising_india/comman/simple_text_style.dart';
@@ -920,7 +919,7 @@ class _AddNewItemScreenState extends State<AddNewItemScreen>
           photos_list,
         ),
       );
-      String uid = FirebaseAuth.instance.currentUser!.uid;
+      String uid = "admin_dummy_uid";
       double price = double.parse(_priceController.text.trim());
       double mrp = double.parse(_mrpController.text.trim());
       String itemDescription = _itemDescriptionController.text.trim();
