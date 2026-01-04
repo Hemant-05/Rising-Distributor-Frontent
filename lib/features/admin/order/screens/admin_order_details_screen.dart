@@ -489,8 +489,8 @@ class _AdminOrderDetailScreenState extends State<AdminOrderDetailScreen> {
                     ClipRRect(
                       borderRadius: BorderRadius.circular(8),
                       child: Image.network(
-                        product?.photos_list.isNotEmpty == true
-                            ? product!.photos_list.first
+                        product?.photosList.isNotEmpty == true
+                            ? product!.photosList.first
                             : '',
                         width: 60,
                         height: 60,

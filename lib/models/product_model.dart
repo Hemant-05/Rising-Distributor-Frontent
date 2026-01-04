@@ -10,21 +10,21 @@ class ProductModel {
   final double rating; // Default rating if not provided
   final bool isAvailable; // Default availability status
   final double quantity;
-  final String name_lower;
+  final String nameLower;
   final String measurement;
   final String category;
-  final List<String> photos_list;
+  final List<String> photosList;
   final double? stockQuantity;
   final double? lowStockQuantity;
   final DateTime? lastStockUpdate;
 
   ProductModel({
     required this.uid,
-    required this.photos_list,
+    required this.photosList,
     required this.isAvailable, // Default value for availability
     required this.pid,
     required this.name,
-    required this.name_lower,
+    required this.nameLower,
     required this.rating,
     required this.category,
     required this.description,
@@ -58,12 +58,12 @@ class ProductModel {
       category: map['category'] ?? '',
       description: map['description'] ?? '',
       isAvailable: map['isAvailable'],
-      name_lower: map['name_lower'],
+      nameLower: map['nameLower'],
       rating: (double.parse(map['rating'].toString())), // Default rating if not provided
       price: (double.parse(map['price'].toString())),
       quantity: (double.parse(map['quantity'].toString())),
       measurement: map['measurement'] ?? '',
-      photos_list: List<String>.from(map['photos_list'] ?? []),
+      photosList: List<String>.from(map['photosList'] ?? []),
       uid: uid,
       mrp: map['mrp'],
       stockQuantity: double.parse(map['stockQuantity'].toString()),
@@ -79,7 +79,7 @@ class ProductModel {
       'uid': uid,
       'pid': pid,
       'name': name,
-      'name_lower' : name_lower,
+      'nameLower' : nameLower,
       'category': category,
       'description': description,
       'isAvailable': isAvailable,
@@ -88,7 +88,7 @@ class ProductModel {
       'rating': rating,
       'quantity': quantity,
       'measurement': measurement,
-      'photos_list': photos_list,
+      'photosList': photosList,
       'stockQuantity': stockQuantity,
       'lowStockQuantity': lowStockQuantity,
     };

@@ -54,7 +54,7 @@ class _AdminProductDetailScreenState extends State<AdminProductDetailScreen>
 
     // ✅ Initialize all controllers with product data
     nameController = TextEditingController(text: widget.product.name);
-    photos_list.addAll(widget.product.photos_list);
+    photos_list.addAll(widget.product.photosList);
     descriptionController = TextEditingController(
       text: widget.product.description,
     );
@@ -336,7 +336,7 @@ class _AdminProductDetailScreenState extends State<AdminProductDetailScreen>
       context.read<ProductsCubit>().deleteProduct(
         context,
         widget.product.pid,
-        widget.product.photos_list,
+        widget.product.photosList,
       );
     }
   }

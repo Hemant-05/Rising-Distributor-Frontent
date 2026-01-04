@@ -152,7 +152,7 @@ class _CartScreenState extends State<CartScreen> {
                                               8,
                                             ),
                                             child: CachedNetworkImage(
-                                              imageUrl: product.photos_list[0],
+                                              imageUrl: product.photosList[0],
                                               width: 50,
                                               height: 50,
                                               fit: BoxFit.cover,

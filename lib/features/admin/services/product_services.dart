@@ -134,7 +134,7 @@ class ProductServices {
         "stockQuantity": product.stockQuantity,
         "lowStockQuantity": product.lowStockQuantity,
         "isAvailable": product.isAvailable,
-        "photosList": product.photos_list,
+        "photosList": product.photosList,
         "rating": product.rating
       };
       Response response = await _dioClient.post(ApiEndpoints.addProducts,data: data);

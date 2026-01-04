@@ -66,6 +66,7 @@ dependencies:
   cached_network_image: ^3.4.1
   dio: ^5.9.0
   get_it: ^7.6.0
+  fpdart: ^1.2.0
 
 dev_dependencies:
   flutter_test:

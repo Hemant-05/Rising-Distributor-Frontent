@@ -233,14 +233,14 @@ class _LoginScreenState extends State<LoginScreen> {
                             builder: (context, state) {
                               return ElevatedButton(
                                 onPressed: () {
-                                  Navigator.pushAndRemoveUntil(context, MaterialPageRoute(builder: (context) => MainScreenU(),), (route) => false,);
-                                  /*BlocProvider.of<UserBloc>(context).add(
+                                  // Navigator.pushAndRemoveUntil(context, MaterialPageRoute(builder: (context) => MainScreenU(),), (route) => false,);
+                                  BlocProvider.of<UserBloc>(context).add(
                                     UserSignIn(
                                       _emailController.text,
                                       _passwordController.text,
                                       isRememberMe,
                                     ),
-                                  );*/
+                                  );
                                 },
                                 style: elevated_button_style(),
                                 child: state is UserLoading

@@ -212,8 +212,8 @@ class _CategoryProductsScreenState extends State<CategoryProductsScreen> {
                 ClipRRect(
                   borderRadius: BorderRadius.circular(8),
                   child: Image.network(
-                    product.photos_list.isNotEmpty
-                        ? product.photos_list.first
+                    product.photosList.isNotEmpty
+                        ? product.photosList.first
                         : '',
                     width: 60,
                     height: 60,

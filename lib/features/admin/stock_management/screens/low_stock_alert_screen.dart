@@ -390,9 +390,9 @@ class _LowStockAlertScreenState extends State<LowStockAlertScreen>
       ),
       child: ClipRRect(
         borderRadius: BorderRadius.circular(12),
-        child: product.photos_list.isNotEmpty
+        child: product.photosList.isNotEmpty
             ? Image.network(
-          product.photos_list.first,
+          product.photosList.first,
           fit: BoxFit.cover,
           errorBuilder: (context, error, stackTrace) => Container(
             color: Colors.grey.shade100,

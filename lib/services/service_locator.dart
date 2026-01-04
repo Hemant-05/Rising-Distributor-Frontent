@@ -1,6 +1,7 @@
 import 'package:dio/dio.dart';
 import 'package:get_it/get_it.dart';
 import 'package:raising_india/constant/ConString.dart' as ConString;
+import 'package:raising_india/features/auth/services/auth_service.dart';
 import 'package:raising_india/network/dio_client.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -85,6 +86,9 @@ class LoggingInterceptor extends Interceptor {
 
   @override
   void onError(DioException err, ErrorInterceptorHandler handler) {
+    if(err.response?.statusCode == 401){
+      AuthService().refreshToken();
+    }
     print('╔════════════════════════════════════════════════════════════╗');
     print('║                    ❌ API ERROR                            ║');
     print('╠════════════════════════════════════════════════════════════╣');

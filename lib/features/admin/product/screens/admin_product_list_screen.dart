@@ -468,9 +468,9 @@ class _AdminProductListScreenState extends State<AdminProductListScreen>
       ),
       child: ClipRRect(
         borderRadius: BorderRadius.circular(12),
-        child: product.photos_list.isNotEmpty
+        child: product.photosList.isNotEmpty
             ? CachedNetworkImage(
-          imageUrl : product.photos_list.first,
+          imageUrl : product.photosList.first,
           fit: BoxFit.cover,
           errorWidget: (context, error, stackTrace) => Container(
             color: Colors.grey.shade100,

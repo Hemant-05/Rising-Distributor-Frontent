@@ -1,11 +1,16 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:dio/dio.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:raising_india/config/api_endpoints.dart';
 import 'package:raising_india/models/category_model.dart';
 import 'package:raising_india/models/product_model.dart';
+import 'package:raising_india/network/dio_client.dart';
+import 'package:raising_india/services/service_locator.dart';
 
 class UserProductServices {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   final FirebaseAuth _auth = FirebaseAuth.instance;
+  final DioClient _dioClient = getIt<DioClient>();
 
   Future<bool> addProductToCart(String productId, int quantity) async {
     try {
@@ -60,12 +65,15 @@ class UserProductServices {
 
   Future<ProductModel> getProductById(String productId) async {
     try {
-      final doc = await _firestore.collection('products').doc(productId).get();
-      if (doc.exists) {
-        return ProductModel.fromMap(doc.data()!, doc.id);
-      } else {
-        throw Exception('Product not found');
+      ProductModel product;
+      Response response = await _dioClient.get(ApiEndpoints.getProductsById(productId));
+      final resp = response.data as Map<String, dynamic>;
+      if(response.statusCode == 200){
+        product = ProductModel.fromMap(resp['data'], resp['data']['pid']);
+      }else{
+        throw Exception('Product Not Found...');
       }
+      return product;
     } catch (e) {
       throw Exception('Failed to fetch product by ID: $e');
     }
@@ -186,27 +194,19 @@ class UserProductServices {
     }
   }
 
-  Future<List<ProductModel>> getProducts() async {
-    try {
-      final querySnapshot = await _firestore.collection('products').get();
-      return querySnapshot.docs
-          .map((doc) => ProductModel.fromMap(doc.data(), doc.id))
-          .toList();
-    } catch (e) {
-      throw Exception('Failed to fetch products: $e');
-    }
-  }
-
   Future<List<ProductModel>> getBestSellingProducts() async {
     try {
-      final querySnapshot = await _firestore
-          .collection('products')
-          .orderBy('rating', descending: true)
-      .limit(8)
-          .get();
-      return querySnapshot.docs
-          .map((doc) => ProductModel.fromMap(doc.data(), doc.id))
-          .toList();
+      Response response = await _dioClient.get(ApiEndpoints.getProducts);
+      final resp = response.data as Map<String, dynamic>;
+      if(response.statusCode == 200) {
+        final payload_data = resp['data'];
+        List<ProductModel> product_list = [];
+        for(int i = 0; i < payload_data.length; i++){
+          product_list.add(ProductModel.fromMap(payload_data[i], payload_data[i]['pid']));
+        }
+        return product_list;
+      }
+      return [];
     } catch (e) {
       throw Exception('Failed to fetch best selling products: $e');
     }
@@ -214,10 +214,17 @@ class UserProductServices {
 
   Future<List<ProductModel>> getAllProducts() async{
     try {
-      final querySnapshot = await _firestore.collection('products').get();
-      return querySnapshot.docs
-          .map((doc) => ProductModel.fromMap(doc.data(), doc.id))
-          .toList();
+      Response response = await _dioClient.get(ApiEndpoints.getProducts);
+      final resp = response.data as Map<String, dynamic>;
+      if(response.statusCode == 200) {
+        final payload_data = resp['data'];
+        List<ProductModel> product_list = [];
+        for(int i = 0; i < payload_data.length; i++){
+          product_list.add(ProductModel.fromMap(payload_data[i], payload_data[i]['pid']));
+        }
+        return product_list;
+      }
+      return [];
     }catch(e){
       throw Exception('Failed to fetch products: $e');
     }

@@ -84,14 +84,14 @@ class ProductDetailsScreen extends StatelessWidget {
                                       children: [
                                         PageView.builder(
                                           controller: _pageController,
-                                          itemCount: product.photos_list.length,
+                                          itemCount: product.photosList.length,
                                           itemBuilder: (context, index) {
                                             return ClipRRect(
                                               borderRadius:
                                                   BorderRadius.circular(24),
                                               child: CachedNetworkImage(
                                                 imageUrl:
-                                                    product.photos_list[index],
+                                                    product.photosList[index],
                                                 fit: BoxFit.cover,
                                                 width: double.infinity,
                                                 progressIndicatorBuilder:
@@ -137,7 +137,7 @@ class ProductDetailsScreen extends StatelessWidget {
                                           child: Center(
                                             child: SmoothPageIndicator(
                                               controller: _pageController,
-                                              count: product.photos_list.length,
+                                              count: product.photosList.length,
                                               effect: ExpandingDotsEffect(
                                                 activeDotColor:
                                                     AppColour.primary,

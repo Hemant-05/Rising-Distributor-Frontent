@@ -95,7 +95,7 @@ class _ProductSearchScreenState extends State<ProductSearchScreen> {
                           leading: ClipRRect(
                             borderRadius: BorderRadius.circular(8),
                             child: Image.network(
-                              product.photos_list[0],
+                              product.photosList[0],
                               width: 50,
                               height: 50,
                               fit: BoxFit.cover,

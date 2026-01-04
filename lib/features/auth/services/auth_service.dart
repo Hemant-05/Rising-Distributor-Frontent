@@ -100,10 +100,10 @@ class AuthService extends ChangeNotifier {
 
       final resp = response.data as Map<String, dynamic>;
       final statusCode = resp['statusCode'];
-      if(statusCode == 201) {
+      if(statusCode == 200) {
         final payload_data = resp['data'] ?? resp;
 
-        final userMap = payload_data['user'] ?? payload_data['admin'];
+        /*final userMap = payload_data['user'] ?? payload_data['admin'];
 
         if (userMap == null) {
           throw ServerException(message: 'Invalid server response');
@@ -111,20 +111,15 @@ class AuthService extends ChangeNotifier {
 
         final uid = userMap['id']?.toString() ?? userMap['uid']?.toString() ??
             '';
-        _user = AppUser.fromMap(userMap as Map<String, dynamic>, uid);
+        _user = AppUser.fromMap(userMap as Map<String, dynamic>, uid);*/
 
         final accessToken = payload_data['access_token'] ??
             resp['access_token'];
         final refreshToken =
             payload_data['refresh_token'] ?? resp['refresh_token'];
-
         await _persistTokens(accessToken?.toString(), refreshToken?.toString());
-
-        notifyListeners();
-
-        await NotificationService.refreshToken();
       }else{
-        throw Exception(['Error while creating Account...']);
+        throw Exception(['Error while Log In Account...']);
       }
       return null;
     } on DioException catch (e) {
@@ -293,8 +288,6 @@ class AuthService extends ChangeNotifier {
       final storedRefreshToken = prefs.getString('refresh_token');
 
       if (storedRefreshToken == null) {
-        print("No refresh token found. User must re-authenticate.");
-        // Optionally, trigger a sign-out if no refresh token exists
         await signOut();
         return null;
       }

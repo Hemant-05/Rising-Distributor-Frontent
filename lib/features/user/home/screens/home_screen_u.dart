@@ -53,9 +53,7 @@ class _HomeScreenUState extends State<HomeScreenU> {
               : '';
           name = state.user.name.split(' ').first;
         } else if (state is UserUnauthenticated) {
-          return Scaffold(
-            body: Center(child: Text('Please log in to continue')),
-          );
+          return Scaffold(body: Center(child: Text('Please Restart the App')));
         } else if (state is UserError) {
           return Scaffold(body: Center(child: Text('Error: ${state.message}')));
         }

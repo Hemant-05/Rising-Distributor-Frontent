@@ -196,7 +196,7 @@ class _PaymentCheckoutScreenState extends State<PaymentCheckoutScreen>
       return {
         'productId': map['productId'],
         'name': (map['product'] as ProductModel).name,
-        'image': (map['product'] as ProductModel).photos_list[0],
+        'image': (map['product'] as ProductModel).photosList[0],
         'quantity': map['quantity'].toString(),
       };
     }).toList();
@@ -646,7 +646,7 @@ class _PaymentCheckoutScreenState extends State<PaymentCheckoutScreen>
           child: ClipRRect(
             borderRadius: BorderRadius.circular(12),
             child: Image.network(
-              product.photos_list[0],
+              product.photosList[0],
               fit: BoxFit.cover,
               errorBuilder: (_, __, ___) => Container(
                 color: Colors.grey.shade200,

@@ -47,7 +47,7 @@ class product_card extends StatelessWidget {
                 AspectRatio(
                   aspectRatio: 1.15, // consistent card top
                   child: CachedNetworkImage(
-                    imageUrl: product.photos_list[0],
+                    imageUrl: product.photosList[0],
                     fit: BoxFit.cover,
                     errorWidget: (_, __, ___) => const Center(
                       child: Icon(Icons.image_not_supported_rounded, size: 30),
