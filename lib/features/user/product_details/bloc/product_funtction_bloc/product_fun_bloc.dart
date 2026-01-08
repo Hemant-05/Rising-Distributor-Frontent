@@ -54,9 +54,9 @@ class ProductFunBloc extends Bloc<ProductFunEvent, ProductFunState> {
     on<CheckIsInCart>((event, emit) async {
       emit(state.copyWith(isCheckingIsInCart: true));
       try {
-        final doc = await _services.isInCart(event.productId);
-        bool isInCart = doc.exists;
-        var quantity = doc.data()?['quantity'] ?? 1;
+        final map = await _services.isInCart(event.productId);
+        bool isInCart = map['data'];
+        var quantity = map['quantity'] ?? 1;
         emit(state.copyWith(isInCart: isInCart, isCheckingIsInCart: false,quantity: quantity));
       } catch (e) {
         emit(state.copyWith(isCheckingIsInCart: false, error: e.toString()));

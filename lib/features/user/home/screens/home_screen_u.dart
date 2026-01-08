@@ -49,7 +49,7 @@ class _HomeScreenUState extends State<HomeScreenU> {
       builder: (context, state) {
         if (state is UserAuthenticated) {
           address = state.user.addressList.isNotEmpty
-              ? state.user.addressList[0].address
+              ? state.user.addressList[0].streetAddress
               : '';
           name = state.user.name.split(' ').first;
         } else if (state is UserUnauthenticated) {

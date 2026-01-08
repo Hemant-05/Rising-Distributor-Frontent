@@ -189,8 +189,8 @@ class UserBloc extends Bloc<UserEvent, UserState> {
   on<AddLocation> ((event, emit) async {
     emit(LocationListLoading());
     try{
-      String? res = await authService.addLocation(event.model);
-      if(res != null){
+      bool res = await authService.addLocation(event.model);
+      if(res){
         List<AddressModel> list = await authService.getLocationList();
         emit(LocationListSuccess(addressList: list));
       }
@@ -202,8 +202,8 @@ class UserBloc extends Bloc<UserEvent, UserState> {
   on<DeleteLocation> ((event,emit) async{
     emit(LocationListLoading());
     try{
-      String? res = await authService.deleteLocationFromList(event.index);
-      if(res != null){
+      bool res = await authService.deleteLocationFromList(event.addressId);
+      if(res){
         List<AddressModel> list = await authService.getLocationList();
         emit(LocationListSuccess(addressList: list));
       }

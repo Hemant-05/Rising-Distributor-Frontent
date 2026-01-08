@@ -42,6 +42,28 @@ class ApiEndpoints {
 
 
   // ============================================================================
+  // Cart Endpoints
+  // ============================================================================
+
+  static const String cart = '/api/cart';
+  static const String getCartItems = '$cart/items';
+  static const String addToCart = '$cart/add';
+  static const String updateCartProductQty = '$cart/update';
+  static const String getCountCartItems = '$cart/count';
+  static String removeCartItem(String productId) => '$cart/remove/$productId';
+  static String isInCart(String productId) => '$cart/status/$productId';
+
+  // ============================================================================
+  // Addresses Endpoints
+  // ============================================================================
+
+  static const String addresses = '/api/addresses';
+  static const String getAllAddresses = '$addresses/all';
+  static const String addAddresses = '$addresses/add';
+  static String setPrimaryAddress(String addressId) => '$addresses/set-primary/$addressId';
+  static String deleteAddress(int addressId) => '$addresses/delete/$addressId';
+
+  // ============================================================================
   // Notifications Endpoints
   // ============================================================================
 

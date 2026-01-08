@@ -20,13 +20,13 @@ class UserLocation extends UserEvent {
 }
 
 class AddLocation extends UserEvent{
-  final AddressModel model;
+  final Map<String,dynamic> model;
   AddLocation({required this.model});
 }
 
 class DeleteLocation extends UserEvent{
-  final int index;
-  DeleteLocation({required this.index});
+  final int addressId;
+  DeleteLocation({required this.addressId});
 }
 
 class GetLocationList extends UserEvent{}

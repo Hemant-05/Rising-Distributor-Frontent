@@ -122,10 +122,10 @@ class _SelectAddressScreenState extends State<SelectAddressScreen> {
                                         padding: EdgeInsets.all(8.0),
                                         child: SvgPicture.asset(map_svg,color: AppColour.primary,),),*/
                                       onTap: () {
-                                        address = model.address;
+                                        address = model.streetAddress;
                                         latLng = LatLng(
-                                          model.position.latitude,
-                                          model.position.longitude,
+                                          model.latitude,
+                                          model.longitude,
                                         );
                                         Navigator.pop(context, {
                                           'address': address,
@@ -135,7 +135,7 @@ class _SelectAddressScreenState extends State<SelectAddressScreen> {
                                       trailing: IconButton(
                                         onPressed: () {
                                           context.read<UserBloc>().add(
-                                            DeleteLocation(index: index),
+                                            DeleteLocation(addressId: model.id!),
                                           );
                                         },
                                         icon: Icon(
@@ -151,7 +151,7 @@ class _SelectAddressScreenState extends State<SelectAddressScreen> {
                                         ),
                                       ),
                                       subtitle: Text(
-                                        '${model.address}',
+                                        '${model.streetAddress}',
                                         style: TextStyle(fontFamily: 'Sen'),
                                       ),
                                     ),

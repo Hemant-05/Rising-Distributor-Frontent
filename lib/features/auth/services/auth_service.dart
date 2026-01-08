@@ -215,19 +215,49 @@ class AuthService extends ChangeNotifier {
     return 'Location updated';
   }
 
-  Future<String?> addLocation(AddressModel address) async {
-    // TODO: Implement your own logic to add a location
-    return 'ok';
+  Future<bool> addLocation(Map<String, dynamic> address) async {
+   try{
+
+     final response = await _dioClient.post(ApiEndpoints.addAddresses, data: address);
+     final resp = response.data as Map<String, dynamic>;
+     final statusCode = resp['statusCode'];
+     if(statusCode == 200){
+       return true;
+     }
+     return false;
+   }catch(e){
+     return false;
+   }
   }
 
-  Future<String?> deleteLocationFromList(int index) async {
-    // TODO: Implement your own logic to delete a location
-    return 'ok';
+  Future<bool> deleteLocationFromList(int addressId) async {
+    final response = await _dioClient.delete(ApiEndpoints.deleteAddress(addressId));
+    final resp = response.data as Map<String, dynamic>;
+    final statusCode = resp['statusCode'];
+    if(statusCode == 200){
+      return true;
+    }
+    return false;
   }
 
   Future<List<AddressModel>> getLocationList() async {
-    // TODO: Return a list of addresses from your custom backend
-    return [];
+    List<AddressModel> addressList = [];
+    try{
+      final response = await _dioClient.get(ApiEndpoints.getAllAddresses);
+      final resp = response.data as Map<String, dynamic>;
+      final statusCode = resp['statusCode'];
+      if(statusCode == 200){
+        final payload_data = resp['data'] ?? resp;
+        for(var item in payload_data) {
+          AddressModel model = AddressModel.fromMap(item);
+          addressList.add(model);
+        }
+        return addressList;
+      }
+      return addressList;
+    }catch(e){
+      return [];
+    }
   }
 
   Future<AppUser?> getCurrentUser() async {
