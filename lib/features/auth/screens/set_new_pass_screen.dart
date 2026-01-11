@@ -13,16 +13,15 @@ import '../bloc/auth_bloc.dart';
 
 
 class SetNewPassScreen extends StatefulWidget {
-  const SetNewPassScreen({super.key, required this.email, required this.code});
+  const SetNewPassScreen({super.key, required this.email});
   final String email;
-  final String code;
   @override
   State<SetNewPassScreen> createState() => _SetNewPassScreenState();
 }
 
 class _SetNewPassScreenState extends State<SetNewPassScreen> {
   final _passController = TextEditingController();
-
+  final _codeController = TextEditingController();
   final _conPasswordController = TextEditingController();
 
   String? _error;
@@ -47,6 +46,15 @@ class _SetNewPassScreenState extends State<SetNewPassScreen> {
     return BlocListener<UserBloc, UserState>(
       listener: (context, state) {
         if (state is ResetPasswordSuccess) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                'Password Reset Successfully',
+                style: simple_text_style(color: AppColour.white),
+              ),
+              backgroundColor: AppColour.green,
+            ),
+          );
           Navigator.pushAndRemoveUntil(
             context,
             MaterialPageRoute(builder: (_) => const LoginScreen()),
@@ -103,6 +111,13 @@ class _SetNewPassScreenState extends State<SetNewPassScreen> {
                       child: Column(
                         children: [
                           cus_text_field(
+                            label: 'OTP',
+                            controller: _codeController,
+                            hintText: '123456',
+                            obscureText: false,
+                          ),
+                          const SizedBox(height: 20),
+                          cus_text_field(
                             label: 'PASSWORD',
                             controller: _passController,
                             hintText: '********',
@@ -152,7 +167,7 @@ class _SetNewPassScreenState extends State<SetNewPassScreen> {
                               }
                               return ElevatedButton(
                                 onPressed: () {
-                                  String code = widget.code; // Retrieve the code from the previous screen or state
+                                  String code = _codeController.text.trim(); // Retrieve the code from the previous screen or state
                                   String email = widget.email; // Retrieve the email from the previous screen or state
                                   String password = _passController.text.trim();
                                   String confirmPassword = _conPasswordController.text.trim();

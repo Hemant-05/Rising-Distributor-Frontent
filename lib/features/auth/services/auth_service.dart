@@ -21,8 +21,13 @@ class AuthService extends ChangeNotifier {
   }
 
   Future<void> _onAuthStateChanged(AppUser? user) async {
+    print('AuthService: _onAuthStateChanged called');
     _user = user;
     notifyListeners();
+  }
+
+  Future<String?> getUid() async {
+    return user?.uid;
   }
 
   Future<String?> signUp({
@@ -34,16 +39,13 @@ class AuthService extends ChangeNotifier {
     try {
       final data = {'name': name, 'email': email, 'password': password};
       Response<dynamic> response;
-      if(role == ConString.admin){
+      if (role == ConString.admin) {
         response = await _dioClient.post(
           ApiEndpoints.registerAdmin,
           data: data,
         );
-      }else{
-        response = await _dioClient.post(
-          ApiEndpoints.registerUser,
-          data: data,
-        );
+      } else {
+        response = await _dioClient.post(ApiEndpoints.registerUser, data: data);
       }
 
       // Expecting response.data to be a map containing data -> user and tokens
@@ -72,8 +74,6 @@ class AuthService extends ChangeNotifier {
 
       notifyListeners();
 
-      // Refresh notification token after login
-      await NotificationService.refreshToken();
 
       return null;
     } on DioException catch (e) {
@@ -100,7 +100,7 @@ class AuthService extends ChangeNotifier {
 
       final resp = response.data as Map<String, dynamic>;
       final statusCode = resp['statusCode'];
-      if(statusCode == 200) {
+      if (statusCode == 200) {
         final payload_data = resp['data'] ?? resp;
 
         /*final userMap = payload_data['user'] ?? payload_data['admin'];
@@ -113,12 +113,12 @@ class AuthService extends ChangeNotifier {
             '';
         _user = AppUser.fromMap(userMap as Map<String, dynamic>, uid);*/
 
-        final accessToken = payload_data['access_token'] ??
-            resp['access_token'];
+        final accessToken =
+            payload_data['access_token'] ?? resp['access_token'];
         final refreshToken =
             payload_data['refresh_token'] ?? resp['refresh_token'];
         await _persistTokens(accessToken?.toString(), refreshToken?.toString());
-      }else{
+      } else {
         throw Exception(['Error while Log In Account...']);
       }
       return null;
@@ -134,8 +134,27 @@ class AuthService extends ChangeNotifier {
     }
   }
 
-  Future<String?> sendVerificationCode(String email) async {
-    return 'ok';
+  Future<String> sendVerificationCode(String email) async {
+    try {
+      final response = await _dioClient.post(
+        ApiEndpoints.forgotPassword(email),
+      );
+      final resp = response.data as Map<String, dynamic>;
+      final statusCode = resp['statusCode'];
+      if (statusCode == 200) {
+        return 'ok';
+      }
+      return 'fail';
+    } on DioException catch (e) {
+      final ex = mapDioException(e);
+      if (ex is ServerException) return ex.message;
+      if (ex is AuthenticationException) return ex.message;
+      if (ex is ValidationException) return ex.message;
+      if (ex is NetworkException) return ex.message;
+      return 'An unexpected error occurred';
+    } catch (e) {
+      return 'An unknown error occurred ${e.toString()}';
+    }
   }
 
   Future<String?> registerNumber(String number) async {
@@ -150,7 +169,8 @@ class AuthService extends ChangeNotifier {
       if (statusCode == 200 || statusCode == 201) {
         return resp['message']?.toString() ?? 'success';
       } else {
-        return resp['message']?.toString() ?? 'Failed to register number with status: $statusCode';
+        return resp['message']?.toString() ??
+            'Failed to register number with status: $statusCode';
       }
     } on DioException catch (e) {
       final ex = mapDioException(e);
@@ -175,9 +195,9 @@ class AuthService extends ChangeNotifier {
       );
       final resp = response.data as Map<String, dynamic>;
       final statusCode = resp['statusCode'];
-      if(statusCode == 200) {
+      if (statusCode == 200) {
         return 'success';
-      }else if(statusCode == 500){
+      } else if (statusCode == 500) {
         throw Exception(['Number is already in use with different account...']);
       }
     } on DioException catch (e) {
@@ -193,13 +213,59 @@ class AuthService extends ChangeNotifier {
     return 'fail';
   }
 
-  Future<String?> resetPassword(String code, String newPass) async {
-    // TODO: Implement your own password reset logic
-    return 'ok';
+  Future<String> resetPassword(
+    String email,
+    String code,
+    String newPass,
+  ) async {
+    final data = {"email": email, "otp": code, "newPassword": newPass};
+    try {
+      final response = await _dioClient.post(
+        ApiEndpoints.resetPassword,
+        data: data,
+      );
+      final resp = response.data as Map<String, dynamic>;
+      final statusCode = resp['statusCode'];
+      if (statusCode == 200) {
+        return 'success';
+      }
+      return 'fail';
+    } on DioException catch (e) {
+      final ex = mapDioException(e);
+      if (ex is ServerException) return ex.message;
+      if (ex is AuthenticationException) return ex.message;
+      if (ex is ValidationException) return ex.message;
+      if (ex is NetworkException) return ex.message;
+      return 'An unexpected error occurred';
+    } catch (e) {
+      return 'An unknown error occurred ${e.toString()}';
+    }
+  }
+
+  Future<String> updateFCMToken(String token) async {
+    try {
+      final response = await _dioClient.post(
+        ApiEndpoints.updateFCMToken(token),
+      );
+      final resp = response.data as Map<String, dynamic>;
+      final statusCode = resp['statusCode'];
+      if (statusCode == 200) {
+        return 'success';
+      }
+      return 'fail';
+    } on DioException catch (e) {
+      final ex = mapDioException(e);
+      if (ex is ServerException) return ex.message;
+      if (ex is AuthenticationException) return ex.message;
+      if (ex is ValidationException) return ex.message;
+      if (ex is NetworkException) return ex.message;
+      return 'An unexpected error occurred';
+    } catch (e) {
+      return 'An unknown error occurred ${e.toString()}';
+    }
   }
 
   Future<void> signOut() async {
-    await NotificationService.clearToken();
     SharedPreferences prefs = await SharedPreferences.getInstance();
     prefs.setBool('rememberMe', false);
     prefs.remove('isAdmin');
@@ -216,25 +282,29 @@ class AuthService extends ChangeNotifier {
   }
 
   Future<bool> addLocation(Map<String, dynamic> address) async {
-   try{
-
-     final response = await _dioClient.post(ApiEndpoints.addAddresses, data: address);
-     final resp = response.data as Map<String, dynamic>;
-     final statusCode = resp['statusCode'];
-     if(statusCode == 200){
-       return true;
-     }
-     return false;
-   }catch(e){
-     return false;
-   }
+    try {
+      final response = await _dioClient.post(
+        ApiEndpoints.addAddresses,
+        data: address,
+      );
+      final resp = response.data as Map<String, dynamic>;
+      final statusCode = resp['statusCode'];
+      if (statusCode == 200) {
+        return true;
+      }
+      return false;
+    } catch (e) {
+      return false;
+    }
   }
 
   Future<bool> deleteLocationFromList(int addressId) async {
-    final response = await _dioClient.delete(ApiEndpoints.deleteAddress(addressId));
+    final response = await _dioClient.delete(
+      ApiEndpoints.deleteAddress(addressId),
+    );
     final resp = response.data as Map<String, dynamic>;
     final statusCode = resp['statusCode'];
-    if(statusCode == 200){
+    if (statusCode == 200) {
       return true;
     }
     return false;
@@ -242,20 +312,20 @@ class AuthService extends ChangeNotifier {
 
   Future<List<AddressModel>> getLocationList() async {
     List<AddressModel> addressList = [];
-    try{
+    try {
       final response = await _dioClient.get(ApiEndpoints.getAllAddresses);
       final resp = response.data as Map<String, dynamic>;
       final statusCode = resp['statusCode'];
-      if(statusCode == 200){
+      if (statusCode == 200) {
         final payload_data = resp['data'] ?? resp;
-        for(var item in payload_data) {
+        for (var item in payload_data) {
           AddressModel model = AddressModel.fromMap(item);
           addressList.add(model);
         }
         return addressList;
       }
       return addressList;
-    }catch(e){
+    } catch (e) {
       return [];
     }
   }
@@ -265,23 +335,25 @@ class AuthService extends ChangeNotifier {
       final response = await _dioClient.get(ApiEndpoints.me);
       final resp = response.data as Map<String, dynamic>;
       final statusCode = resp['statusCode'];
-      if(statusCode == 200) {
+      if (statusCode == 200) {
         final payload_data = resp['data'] ?? resp;
 
-        final userMap = payload_data['user'] ?? payload_data['admin'] ?? payload_data['profile'];
+        final userMap =
+            payload_data['user'] ??
+            payload_data['admin'] ??
+            payload_data['profile'];
 
         if (userMap == null) {
           throw ServerException(message: 'Invalid server response');
         }
 
-        final uid = userMap['id']?.toString() ?? userMap['uid']?.toString() ??
-            '';
+        final uid =
+            userMap['id']?.toString() ?? userMap['uid']?.toString() ?? '';
         _user = AppUser.fromMap(userMap as Map<String, dynamic>, uid);
 
         notifyListeners();
 
-        await NotificationService.refreshToken();
-      }else{
+      } else {
         throw Exception(['Error while Fetching User Data...']);
       }
       return _user;
@@ -326,7 +398,7 @@ class AuthService extends ChangeNotifier {
         ApiEndpoints.refreshToken,
         data: {'refresh_token': storedRefreshToken},
       );
-      if(response.statusCode == 200){
+      if (response.statusCode == 200) {
         final resp = response.data as Map<String, dynamic>;
         final newAccessToken = resp['data']['access_token']?.toString();
         final newRefreshToken = resp['data']['refresh_token']?.toString();
@@ -338,7 +410,7 @@ class AuthService extends ChangeNotifier {
           await signOut();
           return null;
         }
-      }else if(response.statusCode == 401){
+      } else if (response.statusCode == 401) {
         throw Exception(response.statusMessage);
       }
       throw ServerException(message: 'Error While Refreshing Token...');
@@ -359,8 +431,8 @@ class AuthService extends ChangeNotifier {
     SharedPreferences prefs = await SharedPreferences.getInstance();
     if (accessToken != null) {
       prefs.setString('access_token', accessToken);
-      // set auth header for future requests
-      _dioClient.dio.options.headers['Authorization'] = 'Bearer $refreshToken';
+      // ✅ FIXED: Use accessToken instead of refreshToken for Authorization header
+      _dioClient.dio.options.headers['Authorization'] = 'Bearer $accessToken';
     }
     if (refreshToken != null) {
       prefs.setString('refresh_token', refreshToken);

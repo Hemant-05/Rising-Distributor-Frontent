@@ -141,7 +141,7 @@ class UserBloc extends Bloc<UserEvent, UserState> {
       if (error == 'ok') {
         emit(ForgotPasswordState(event.email));
       } else {
-        emit(UserError(error!));
+        emit(UserError(error));
       }
     });
 
@@ -165,12 +165,12 @@ class UserBloc extends Bloc<UserEvent, UserState> {
         return;
       }
       final res = await authService.resetPassword(
-        code,password
+        email, code, password
       );
-      if (res == 'ok') {
+      if (res == 'success') {
         emit(ResetPasswordSuccess(email));
       } else {
-        emit(ResetPasswordError(res!));
+        emit(ResetPasswordError(res));
       }
     });
 

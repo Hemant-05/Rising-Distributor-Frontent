@@ -55,37 +55,6 @@ class OrderServices {
     return list;
   }
 
-  Future<List<OrderModel>> getTodayAllOrders() async {
-    List<OrderModel> list = [];
-    final now = DateTime.now();
-    final today = DateTime(now.year, now.month, now.day); // strip time part
-    var res = await _firestore.collection('orders').get();
-    for (var element in res.docs) {
-      final model = OrderModel.fromMap(element.data());
-      if (today ==
-          DateTime(
-            model.createdAt.year,
-            model.createdAt.month,
-            model.createdAt.day,
-          )) {
-        list.add(model);
-      }
-    }
-    list.sort((a, b) => b.createdAt.compareTo(a.createdAt));
-    return list;
-  }
-
-  Future<List<OrderModel>> getAllOrders() async {
-    List<OrderModel> list = [];
-    var res = await _firestore.collection('orders').get();
-    for (var element in res.docs) {
-      final model = OrderModel.fromMap(element.data());
-      list.add(model);
-    }
-    list.sort((a, b) => b.createdAt.compareTo(a.createdAt));
-    return list;
-  }
-
   Future<List<OrderModel>> fetchUserHistoryOrders() async {
     try {
       final uid = FirebaseAuth.instance.currentUser!.uid;
@@ -136,13 +105,7 @@ class OrderServices {
   }
 
   Future<void> placeOrder(OrderModel model) async {
-    await _firestore.collection('orders').doc(model.orderId).set(model.toMap());
-    await _service.confirmOrder(model);
-    await _firestore
-        .collection('users')
-        .doc(_auth.currentUser!.uid)
-        .collection('orders')
-        .add({'order_id': model.orderId});
+
   }
 
   Future<OrderModel> getOrderById(String orderId) async {
@@ -152,7 +115,7 @@ class OrderServices {
     return model;
   }
 
-  Future<void> cancelOrder(String orderId, String cancellationReason,String payStatus) async {
+  Future<void>  cancelOrder(String orderId, String cancellationReason,String payStatus) async {
     final order = await getOrderById(orderId);
     await _service.cancelOrder(order);
     String paymentStatus = '';

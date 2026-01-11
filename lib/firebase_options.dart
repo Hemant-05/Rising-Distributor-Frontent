@@ -41,48 +41,49 @@ class DefaultFirebaseOptions {
   }
 
   static const FirebaseOptions web = FirebaseOptions(
-    apiKey: 'AIzaSyD1z_u4WeTW3n_KglPSkPuBD_Iz5oLQHpU',
-    appId: '1:657027117935:web:6bc41a5fde59f393042e9a',
-    messagingSenderId: '657027117935',
-    projectId: 'rising-mart',
-    authDomain: 'rising-mart.firebaseapp.com',
-    storageBucket: 'rising-mart.firebasestorage.app',
-    measurementId: 'G-YHPF153V1R',
+    apiKey: 'AIzaSyBSMbXXoONc8Y1vygJ3BWtVczH7_RdNNHU',
+    appId: '1:462845774640:web:d4e9330f4573ddd026d6f5',
+    messagingSenderId: '462845774640',
+    projectId: 'rising-distributor-44cb3',
+    authDomain: 'rising-distributor-44cb3.firebaseapp.com',
+    storageBucket: 'rising-distributor-44cb3.firebasestorage.app',
+    measurementId: 'G-E32QLCHXS0',
   );
 
   static const FirebaseOptions android = FirebaseOptions(
-    apiKey: 'AIzaSyB0A-99S3VEg8bRrnQNmuo_YEUBMuUZT_0',
-    appId: '1:657027117935:android:eefee4dea2613e0e042e9a',
-    messagingSenderId: '657027117935',
-    projectId: 'rising-mart',
-    storageBucket: 'rising-mart.firebasestorage.app',
+    apiKey: 'AIzaSyBytVjMcfNK5s-S54nT15AKrzbyAI6be-U',
+    appId: '1:462845774640:android:4ed9b8884b0ed06526d6f5',
+    messagingSenderId: '462845774640',
+    projectId: 'rising-distributor-44cb3',
+    storageBucket: 'rising-distributor-44cb3.firebasestorage.app',
   );
 
   static const FirebaseOptions ios = FirebaseOptions(
-    apiKey: 'AIzaSyD79XTtS7NgRIQ1gEqSRYprnLl6-PV6gQA',
-    appId: '1:657027117935:ios:f2a1f9cb4755f70c042e9a',
-    messagingSenderId: '657027117935',
-    projectId: 'rising-mart',
-    storageBucket: 'rising-mart.firebasestorage.app',
+    apiKey: 'AIzaSyAz1hqR4hzGwvOsIrPlbxJmNW71STjTGo8',
+    appId: '1:462845774640:ios:6c3bf4720dec22c026d6f5',
+    messagingSenderId: '462845774640',
+    projectId: 'rising-distributor-44cb3',
+    storageBucket: 'rising-distributor-44cb3.firebasestorage.app',
     iosBundleId: 'com.rising.raisingIndia',
   );
 
   static const FirebaseOptions macos = FirebaseOptions(
-    apiKey: 'AIzaSyD79XTtS7NgRIQ1gEqSRYprnLl6-PV6gQA',
-    appId: '1:657027117935:ios:8979539acd332a81042e9a',
-    messagingSenderId: '657027117935',
-    projectId: 'rising-mart',
-    storageBucket: 'rising-mart.firebasestorage.app',
+    apiKey: 'AIzaSyAz1hqR4hzGwvOsIrPlbxJmNW71STjTGo8',
+    appId: '1:462845774640:ios:63f0487a3601491d26d6f5',
+    messagingSenderId: '462845774640',
+    projectId: 'rising-distributor-44cb3',
+    storageBucket: 'rising-distributor-44cb3.firebasestorage.app',
     iosBundleId: 'com.example.raisingIndia',
   );
 
   static const FirebaseOptions windows = FirebaseOptions(
-    apiKey: 'AIzaSyD1z_u4WeTW3n_KglPSkPuBD_Iz5oLQHpU',
-    appId: '1:657027117935:web:b1297829317db18c042e9a',
-    messagingSenderId: '657027117935',
-    projectId: 'rising-mart',
-    authDomain: 'rising-mart.firebaseapp.com',
-    storageBucket: 'rising-mart.firebasestorage.app',
-    measurementId: 'G-8TC6252VT2',
+    apiKey: 'AIzaSyBSMbXXoONc8Y1vygJ3BWtVczH7_RdNNHU',
+    appId: '1:462845774640:web:1c8f0b93c5cfc44a26d6f5',
+    messagingSenderId: '462845774640',
+    projectId: 'rising-distributor-44cb3',
+    authDomain: 'rising-distributor-44cb3.firebaseapp.com',
+    storageBucket: 'rising-distributor-44cb3.firebasestorage.app',
+    measurementId: 'G-NTYFW2C0VZ',
   );
+
 }

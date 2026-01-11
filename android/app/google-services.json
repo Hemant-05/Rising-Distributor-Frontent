@@ -1,13 +1,13 @@
 {
   "project_info": {
-    "project_number": "949010873539",
-    "project_id": "rising-distributor",
-    "storage_bucket": "rising-distributor.firebasestorage.app"
+    "project_number": "462845774640",
+    "project_id": "rising-distributor-44cb3",
+    "storage_bucket": "rising-distributor-44cb3.firebasestorage.app"
   },
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:949010873539:android:47fd0c1c7d6c938b2a7676",
+        "mobilesdk_app_id": "1:462845774640:android:4ed9b8884b0ed06526d6f5",
         "android_client_info": {
           "package_name": "com.rising.raising_india"
         }
@@ -15,7 +15,7 @@
       "oauth_client": [],
       "api_key": [
         {
-          "current_key": "AIzaSyBgQAZoFUhrJGjuvcfL_PLphZSQxzczCJI"
+          "current_key": "AIzaSyBytVjMcfNK5s-S54nT15AKrzbyAI6be-U"
         }
       ],
       "services": {

@@ -1,5 +1,7 @@
 // core/config/api_endpoints.dart
 
+import 'package:raising_india/constant/ConString.dart';
+
 class ApiEndpoints {
   ApiEndpoints._();
 
@@ -21,11 +23,12 @@ class ApiEndpoints {
   static const String registerMobile = '$users/mobile';
   static const String verifyOtp = '$registerMobile/verify';
 
-  static const String forgotPasswordReq = '$users/password/request-reset';
-  static const String resetPassword = '$users/password/reset';
+  static String forgotPassword(String email) => '$auth/forgot-password?email=${email}';
+  static const String resetPassword = '$auth/reset-password';
 
   // Auth - Profile
   static const String me = '$users/me';
+  static String updateFCMToken(String token) => '$users/update-fcm-token?token=${token}';
 
   // ============================================================================
   // Products Endpoints

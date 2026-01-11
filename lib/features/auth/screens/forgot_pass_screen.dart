@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_svg/svg.dart';
+import 'package:raising_india/features/auth/screens/set_new_pass_screen.dart';
 import '../../../comman/bold_text_style.dart';
 import '../widgets/cus_text_field.dart';
 import '../../../comman/elevated_button_style.dart';
@@ -28,6 +29,16 @@ class _ForgotPassScreenState extends State<ForgotPassScreen> {
     setStatusBarColor();
   }
 
+  void navigateToResetScreen(BuildContext context,String email)async{
+    await Future.delayed(Duration(seconds: 2));
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => SetNewPassScreen(email: email),
+      ),
+    );
+  }
+
   void setStatusBarColor() {
     SystemChrome.setSystemUIOverlayStyle(
       SystemUiOverlayStyle(
@@ -48,12 +59,13 @@ class _ForgotPassScreenState extends State<ForgotPassScreen> {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text(
-                'Link sent to ${_emailController.text}',
+                'OTP sent on : ${_emailController.text}',
                 style: simple_text_style(color: AppColour.white),
               ),
               backgroundColor: AppColour.green,
             ),
           );
+          navigateToResetScreen(context, _emailController.text);
         } else if (state is UserError) {
           setState(() => _error = state.message);
         }
@@ -152,7 +164,7 @@ class _ForgotPassScreenState extends State<ForgotPassScreen> {
                                 borderRadius: BorderRadius.circular(10),
                               ),
                               child: Text(
-                                'Reset Link Sent Successfully.. \nPlease Check Your Email : ${_emailController.text}\nSpam Section.',
+                                'OTP Sent Successfully.. \nPlease Check Your Email : ${_emailController.text}\nInbox or Spam Section.',
                                 style: TextStyle(
                                   fontFamily: 'Sen',
                                   fontSize: 14,

@@ -40,10 +40,8 @@ void main() async {
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
   await dotenv.load(fileName: '.env');
 
-  // ✅ Initialize service locator (Dio client setup)
   setupServiceLocator();
 
-  // Initialize notifications
   await NotificationService.initialize();
   runApp(MyApp(navigatorKey: navigatorKey));
 }
