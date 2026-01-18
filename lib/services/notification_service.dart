@@ -65,10 +65,8 @@ class NotificationService {
     log("FCM Token: $token");
 
     // Trigger token sync in background (fire and forget)
-    if (token != null) {
-      syncTokenInBackground(token);
+    syncTokenInBackground(token);
     }
-  }
 
   // 2. Request Permission
   static Future<void> _requestPermission() async {
