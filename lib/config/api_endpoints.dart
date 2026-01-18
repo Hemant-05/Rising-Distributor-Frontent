@@ -53,8 +53,24 @@ class ApiEndpoints {
   static const String addToCart = '$cart/add';
   static const String updateCartProductQty = '$cart/update';
   static const String getCountCartItems = '$cart/count';
+  static const String clearCart = '$cart/clear';
   static String removeCartItem(String productId) => '$cart/remove/$productId';
   static String isInCart(String productId) => '$cart/status/$productId';
+
+  // ============================================================================
+  // Order Endpoints
+  // ============================================================================
+
+  static const String order = '/api/order';
+  static const String getMyOrders = '$order/my-orders';
+  static String confirmPayment = '$order/confirm-payment';
+  static String placeOrder(String addressId, String paymentMethod) => '$order/place?addressId=$addressId&paymentMethod=$paymentMethod';
+  static String updateOrderStatus(String orderId, String status) => '$order/$orderId?status=$status';
+  static String getOrderById(String orderId) => '$order/$orderId';
+  static String cancelOrder(String orderId) => '$order/cancel/$orderId';
+  static String getOrderInvoice(String orderId) => '$order/$orderId/invoice';
+  static String getOrdersByStatus(String status) => '$order/status/$status';
+
 
   // ============================================================================
   // Addresses Endpoints

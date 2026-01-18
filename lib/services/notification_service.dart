@@ -5,7 +5,6 @@ import 'dart:developer';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:raising_india/features/auth/services/auth_service.dart';
 import 'package:raising_india/services/service_locator.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 
 // Top-level function for background handling
 @pragma('vm:entry-point')

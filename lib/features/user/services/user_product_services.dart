@@ -98,15 +98,11 @@ class UserProductServices {
 
   Future<bool> clearCart() async {
     try {
-      /*String uid = _auth.currentUser!.uid;
-      final cartCollection = _firestore
-          .collection('users')
-          .doc(uid)
-          .collection('cart');
-      final querySnapshot = await cartCollection.get();
-      for (var doc in querySnapshot.docs) {
-        await doc.reference.delete();
-      }*/
+      final response = await _dioClient.delete(ApiEndpoints.clearCart);
+      print(response);
+      if(response.statusCode == 200){
+        return true;
+      }
       return true;
     } catch (e) {
       throw Exception('Failed to clear cart: $e');

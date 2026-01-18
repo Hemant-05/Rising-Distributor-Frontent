@@ -9,7 +9,6 @@ import 'package:raising_india/constant/AppColour.dart';
 import 'package:raising_india/features/admin/category/bloc/category_bloc.dart';
 import 'package:raising_india/features/admin/product/bloc/products_cubit.dart';
 import 'package:raising_india/features/admin/services/image_services.dart';
-import 'package:raising_india/features/services/stock_management_repository.dart';
 import 'package:raising_india/models/product_model.dart';
 
 class AdminProductDetailScreen extends StatefulWidget {
@@ -197,12 +196,6 @@ class _AdminProductDetailScreenState extends State<AdminProductDetailScreen>
           .collection('products')
           .doc(widget.product.pid)
           .update(updatedData);
-
-      StockManagementRepository().refillStock(
-        widget.product.pid,
-        double.tryParse(stockQuantityController.text.trim()) ?? 100.0,
-        double.tryParse(lowStockController.text.trim()) ?? 10.0,
-      );
 
       setState(() {
         loading = false;

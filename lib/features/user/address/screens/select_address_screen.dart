@@ -122,14 +122,8 @@ class _SelectAddressScreenState extends State<SelectAddressScreen> {
                                         padding: EdgeInsets.all(8.0),
                                         child: SvgPicture.asset(map_svg,color: AppColour.primary,),),*/
                                       onTap: () {
-                                        address = model.streetAddress;
-                                        latLng = LatLng(
-                                          model.latitude,
-                                          model.longitude,
-                                        );
                                         Navigator.pop(context, {
-                                          'address': address,
-                                          'latLng': latLng,
+                                          'address': model,
                                         });
                                       },
                                       trailing: IconButton(
@@ -181,7 +175,7 @@ class _SelectAddressScreenState extends State<SelectAddressScreen> {
                 ),
                 SizedBox(height: 10),
                 Visibility(
-                  visible: !widget.isFromProfile,
+                  visible: false,
                   child: ElevatedButton(
                     style: elevated_button_style(),
                     onPressed: () async {

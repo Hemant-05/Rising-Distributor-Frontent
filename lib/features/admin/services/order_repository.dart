@@ -158,54 +158,6 @@ class OrderRepository {
     return products;
   }
 
-  /// Get paginated orders for "All Orders" screen
-  Future<List<OrderWithProducts>> getPaginatedOrders({
-    DocumentSnapshot? lastDocument,
-    int limit = 20,
-  }) async {
-    try {
-      Query query = firestore
-          .collection('orders')
-          .orderBy('createdAt', descending: true)
-          .limit(limit);
-
-      if (lastDocument != null) {
-        query = query.startAfterDocument(lastDocument);
-      }
-
-      final snapshot = await query.get();
-
-      if (snapshot.docs.isEmpty) {
-        return <OrderWithProducts>[];
-      }
-
-      final orders = snapshot.docs
-          .map((doc) => OrderModel.fromMap(doc.data() as Map<String, dynamic>))
-          .toList();
-
-      // Get product details
-      final productIds = orders
-          .expand((order) => order.items.map((item) => item['productId'] as String))
-          .toSet()
-          .toList();
-
-      final products = await _fetchProductsInBatches(productIds);
-      final productMap = {for (var product in products) product.pid: product};
-
-      return orders.map((order) {
-        final orderProducts = order.items.map((item) {
-          final product = productMap[item['productId']];
-          final qty = (item['quantity'] ?? 1) as int;
-          return OrderedProduct(product: product, qty: qty);
-        }).toList();
-
-        return OrderWithProducts(order: order, products: orderProducts);
-      }).toList();
-    } catch (e) {
-      print('Error getting paginated orders: $e');
-      return <OrderWithProducts>[];
-    }
-  }
 
   /// Update order status
   Future<bool> updateOrderStatus(String orderId, String status) async {

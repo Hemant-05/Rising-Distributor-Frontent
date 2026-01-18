@@ -1,80 +1,39 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_auth/firebase_auth.dart';
-import 'package:raising_india/constant/ConString.dart';
-import 'package:raising_india/features/services/order_processing_service.dart';
+import 'package:raising_india/config/api_endpoints.dart';
 import 'package:raising_india/models/order_model.dart';
+import 'package:raising_india/network/dio_client.dart';
+
+import '../../services/service_locator.dart';
 
 class OrderServices {
-  final FirebaseAuth _auth = FirebaseAuth.instance;
-  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
-  final OrderProcessingService _service = OrderProcessingService();
+  final DioClient _dioClient = getIt<DioClient>();
 
   Future<List<OrderModel>> getAllDeliveredOrders() async {
     List<OrderModel> list = [];
-    var res = await _firestore
-        .collection('orders')
-        .where('orderStatus', isEqualTo: OrderStatusDeliverd)
-        .orderBy('createdAt', descending: false)
-        .get();
-    for (var element in res.docs) {
-      final model = OrderModel.fromMap(element.data());
-      list.add(model);
-    }
-    list.sort((a, b) => b.createdAt.compareTo(a.createdAt));
+    final response = await _dioClient.get("");
+
     return list;
   }
 
   Future<List<OrderModel>> getAllCancelledOrders() async {
     List<OrderModel> list = [];
-    var res = await _firestore
-        .collection('orders')
-        .where('orderStatus', isEqualTo: OrderStatusCancelled)
-        .orderBy('createdAt', descending: false)
-        .get();
-    for (var element in res.docs) {
-      final model = OrderModel.fromMap(element.data());
-      list.add(model);
-    }
 
-    return list;
-  }
-
-  Future<List<OrderModel>> getAllOnGoingOrders() async {
-    List<OrderModel> list = [];
-    var res = await _firestore
-        .collection('orders')
-        .where('orderStatus', isNotEqualTo: OrderStatusCancelled)
-        .where('orderStatus', isNotEqualTo: OrderStatusDeliverd)
-        .orderBy('createdAt', descending: false)
-        .get();
-    for (var element in res.docs) {
-      final model = OrderModel.fromMap(element.data());
-      list.add(model);
-    }
-    list.sort((a, b) => b.createdAt.compareTo(a.createdAt));
     return list;
   }
 
   Future<List<OrderModel>> fetchUserHistoryOrders() async {
     try {
-      final uid = FirebaseAuth.instance.currentUser!.uid;
-
-      final querySnapshot = await FirebaseFirestore.instance
-          .collection('orders')
-          .where('userId', isEqualTo: uid)
-          .where(
-            'orderStatus',
-            whereIn: [OrderStatusDeliverd, OrderStatusCancelled],
-          ) // ✅ Efficient whereIn query
-          .orderBy(
-            'createdAt',
-            descending: true,
-          ) // ✅ Direct ordering by timestamp
-          .get();
-
-      return querySnapshot.docs
-          .map((doc) => OrderModel.fromMap(doc.data()..['orderId'] = doc.id))
-          .toList();
+      List<OrderModel> list = [];
+      final response = await _dioClient.get(ApiEndpoints.getMyOrders);
+      final resp = response.data as Map<String, dynamic>;
+      final statusCode = resp['statusCode'];
+      if (statusCode == 200) {
+        final payload_data = resp['data'] ?? resp;
+        for (var item in payload_data) {
+          OrderModel model = OrderModel.fromMap(item);
+          list.add(model);
+        }
+      }
+      return list;
     } catch (e) {
       print('Error fetching history orders: $e');
       return [];
@@ -83,21 +42,9 @@ class OrderServices {
 
   Future<List<OrderModel>> fetchUserOngoingOrders() async {
     try {
-      final uid = FirebaseAuth.instance.currentUser!.uid;
+      List<OrderModel> list = [];
 
-      final querySnapshot = await FirebaseFirestore.instance
-          .collection('orders')
-          .where('userId', isEqualTo: uid)
-          .where(
-            'orderStatus',
-            whereIn: [OrderStatusCreated, OrderStatusConfirmed, OrderStatusPreparing, OrderStatusDispatch],
-          ) //
-          .orderBy('createdAt', descending: true) //
-          .get();
-
-      return querySnapshot.docs
-          .map((doc) => OrderModel.fromMap(doc.data()..['orderId'] = doc.id))
-          .toList();
+      return list;
     } catch (e) {
       print('Error fetching ongoing orders: $e');
       return [];
@@ -105,27 +52,38 @@ class OrderServices {
   }
 
   Future<void> placeOrder(OrderModel model) async {
-
+    /*try {
+      final response = await _dioClient.post(
+        ApiEndpoints.placeOrder(model.addressId, model.paymentMethod),
+        data: model.toMap(),
+      );
+    }*/
   }
 
-  Future<OrderModel> getOrderById(String orderId) async {
+  Future<OrderModel?> getOrderById(String orderId) async {
     OrderModel model;
-    var res = await _firestore.collection('orders').doc(orderId).get();
-    model = OrderModel.fromMap(res.data()!);
-    return model;
+    final response = await _dioClient.get(ApiEndpoints.getOrderById(orderId));
+    final resp = response.data as Map<String, dynamic>;
+    final statusCode = resp['statusCode'];
+    if (statusCode == 200) {
+      final payload_data = resp['data'] ?? resp;
+      model = OrderModel.fromMap(payload_data);
+      return model;
+    } else {
+      return null;
+    }
   }
 
   Future<void>  cancelOrder(String orderId, String cancellationReason,String payStatus) async {
     final order = await getOrderById(orderId);
-    await _service.cancelOrder(order);
-    String paymentStatus = '';
-    if(payStatus == PayStatusPending){
-      paymentStatus = PayStatusNotPaid;
+    final response = await _dioClient.post(ApiEndpoints.cancelOrder(orderId));
+    final resp = response.data as Map<String, dynamic>;
+    final statusCode = resp['statusCode'];
+    if (statusCode == 200) {
+      final payload_data = resp['data'] ?? resp;
+      // model = OrderModel.fromMap(payload_data);
+    } else {
+      // return null;
     }
-    await _firestore.collection('orders').doc(orderId).update({
-      'orderStatus': OrderStatusCancelled,
-      'cancellationReason': cancellationReason,
-      'paymentStatus': paymentStatus.isEmpty? payStatus : paymentStatus,
-    });
   }
 }

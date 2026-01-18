@@ -13,6 +13,7 @@ import 'package:raising_india/features/user/coupon/screens/coupons_screen.dart';
 import 'package:raising_india/features/user/order/bloc/order_bloc.dart';
 import 'package:raising_india/features/user/payment/screens/place_order_screen.dart';
 import 'package:raising_india/features/user/product_details/bloc/product_funtction_bloc/product_fun_bloc.dart';
+import 'package:raising_india/models/address_model.dart';
 import 'package:raising_india/models/coupon_model.dart';
 import 'package:raising_india/models/order_model.dart';
 import 'package:raising_india/models/product_model.dart';
@@ -223,12 +224,7 @@ class _PaymentCheckoutScreenState extends State<PaymentCheckoutScreen>
           ? OrderStatusCreated
           : OrderStatusCancelled,
       cancellationReason: (isPaymentSuccess || isCod) ? null : 'Payment Failed',
-      address: DeliveryAddress(
-        widget.address,
-        widget.contact,
-        // TODO: Replace GeoPoint with a suitable location object for your backend
-        GeoPoint(widget.addressCode.latitude, widget.addressCode.longitude), // Placeholder for GeoPoint
-      ),
+      address: AddressModel.fromMap({}), // add full address model
     );
 
     context.read<OrderBloc>().add(PlaceOrderEvent(model: newOrder));

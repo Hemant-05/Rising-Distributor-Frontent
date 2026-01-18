@@ -45,7 +45,8 @@ class ProductFunBloc extends Bloc<ProductFunEvent, ProductFunState> {
       emit(state.copyWith(isRemovingToCart: true));
       try{
         await _services.removeProductFromCart(event.productId);
-        emit(state.copyWith(isRemovingToCart: false, isRemovedToCart: true));
+        final cart = await _services.getCartProducts();
+        emit(state.copyWith(isRemovingToCart: false, isRemovedToCart: true,getCartProduct: cart));
       }catch(e){
         emit(state.copyWith(isRemovingToCart: false, error: e.toString()));
       }
@@ -55,9 +56,14 @@ class ProductFunBloc extends Bloc<ProductFunEvent, ProductFunState> {
       emit(state.copyWith(isCheckingIsInCart: true));
       try {
         final map = await _services.isInCart(event.productId);
-        bool isInCart = map['data'];
-        var quantity = map['quantity'] ?? 1;
-        emit(state.copyWith(isInCart: isInCart, isCheckingIsInCart: false,quantity: quantity));
+        final data = map['data'];
+        var quantity = data['quantity'] ?? 1;
+        final isInCart = data['isInCart'] ?? false;
+        if(map['statusCode'] == 200){
+          emit(state.copyWith(isInCart: isInCart, isCheckingIsInCart: false,quantity: quantity));
+        }else{
+          throw(Exception('Something went wrong...'));
+        }
       } catch (e) {
         emit(state.copyWith(isCheckingIsInCart: false, error: e.toString()));
       }

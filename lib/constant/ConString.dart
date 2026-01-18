@@ -5,8 +5,8 @@ final String user = 'USER';
 final double deliveryFee = 12;
 final double platformFee = 3;
 
-// const String baseUrl = 'https://rising-distributor.onrender.com';
-const String baseUrl = 'http://10.172.112.99:8080';
+const String baseUrl = 'https://rising-distributor.onrender.com';
+// const String baseUrl = 'http://10.172.112.106:8080';
 
 const String OrderStatusCreated = 'created';
 const String OrderStatusConfirmed = 'confirmed';

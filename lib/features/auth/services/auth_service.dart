@@ -390,6 +390,7 @@ class AuthService extends ChangeNotifier {
       final storedRefreshToken = prefs.getString('refresh_token');
 
       if (storedRefreshToken == null) {
+        print("step 1 : refresh token is null");
         await signOut();
         return null;
       }
@@ -407,6 +408,7 @@ class AuthService extends ChangeNotifier {
           await _persistTokens(newAccessToken, newRefreshToken);
           return newAccessToken;
         } else {
+          print("step 2 : after calling api both access and refresh token are null");
           await signOut();
           return null;
         }
@@ -417,10 +419,12 @@ class AuthService extends ChangeNotifier {
     } on DioException catch (e) {
       final ex = mapDioException(e);
       if (ex is AuthenticationException) {
+        print("step 3 : Get Authentication exception ${ex.message}");
         await signOut();
       }
       return null;
     } catch (e) {
+      print("step 4 : Get Exception ${e.toString()}");
       await signOut();
       return null;
     }

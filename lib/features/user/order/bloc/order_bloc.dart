@@ -34,7 +34,7 @@ class OrderBloc extends Bloc<OrderEvent, OrderState> {
     on<GetOrderByIdEvent>((event, emit) async {
       emit(OrderGettingByIdState());
       var model = await _services.getOrderById(event.orderId);
-      emit(OrderGetByIdState(model: model));
+      emit(OrderGetByIdState(model: model!));
     });
   }
 }

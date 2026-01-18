@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:raising_india/models/address_model.dart';
 import 'package:raising_india/models/product_model.dart';
 
 import '../constant/ConString.dart';
@@ -15,7 +16,7 @@ class OrderModel {
   final String paymentMethod; // 'prepaid' or 'cod'
   final String paymentStatus; // 'pending', 'paid', 'failed', 'refunded'
   final String orderStatus; // 'created', 'confirmed', 'preparing', 'dispatched', 'delivered', 'cancelled'
-  final DeliveryAddress address;
+  final AddressModel address;
   final String? transactionId; // For prepaid orders
   final String? cancellationReason;
   final DateTime? deliveredAt;
@@ -56,7 +57,7 @@ class OrderModel {
       'paymentMethod': paymentMethod,
       'paymentStatus': paymentStatus,
       'orderStatus': orderStatus,
-      'address': address.toMap(), // Convert DeliveryAddress to Map
+      'address': address.toJson(), // Convert DeliveryAddress to Map
       'transactionId': transactionId,
       'cancellationReason': cancellationReason,
       'deliveredAt': deliveredAt != null
@@ -83,7 +84,7 @@ class OrderModel {
       paymentMethod: map['paymentMethod'],
       paymentStatus: map['paymentStatus'] ?? PayStatusPending,
       orderStatus: map['orderStatus'] ?? OrderStatusCreated,
-      address: DeliveryAddress.fromMap(
+      address: AddressModel.fromMap(
         Map<String, dynamic>.from(map['address'] ?? {}),
       ),
       transactionId: map['transactionId'],
@@ -94,32 +95,6 @@ class OrderModel {
       paidAt: map['paidAt'] != null
           ? (map['paidAt'] as Timestamp).toDate()
           : null,
-    );
-  }
-}
-
-class DeliveryAddress {
-  final String fullAddress;
-  final String contactNumber;
-  final GeoPoint location;
-
-  DeliveryAddress(this.fullAddress,
-      this.contactNumber,
-      this.location,); // For map integration
-  Map<String, dynamic> toMap() {
-    return {
-      'fullAddress': fullAddress,
-      'contactNumber': contactNumber,
-      'location': location, // GeoPoint is Firestore-compatible
-    };
-  }
-
-  // Create DeliveryAddress from Map
-  factory DeliveryAddress.fromMap(Map<String, dynamic> map) {
-    return DeliveryAddress(
-      map['fullAddress'] ?? '',
-      map['contactNumber'] ?? '',
-      map['location'] as GeoPoint,
     );
   }
 }

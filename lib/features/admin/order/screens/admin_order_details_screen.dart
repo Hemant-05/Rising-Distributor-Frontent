@@ -153,8 +153,8 @@ class _AdminOrderDetailScreenState extends State<AdminOrderDetailScreen> {
               onTap: () {
                 Navigator.pop(context);
                 _openGoogleMaps(
-                  order.address.location.latitude,
-                  order.address.location.longitude,
+                  order.address.latitude,
+                  order.address.longitude,
                 );
               },
             ),
@@ -169,7 +169,7 @@ class _AdminOrderDetailScreenState extends State<AdminOrderDetailScreen> {
               onTap: () {
                 Navigator.pop(context);
                 Clipboard.setData(
-                  ClipboardData(text: order.address.fullAddress),
+                  ClipboardData(text: order.address.streetAddress),
                 );
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(
@@ -182,17 +182,17 @@ class _AdminOrderDetailScreenState extends State<AdminOrderDetailScreen> {
               },
             ),
 
-            if (order.address.contactNumber.isNotEmpty)
+            if (order.address.phoneNumber.isNotEmpty)
               ListTile(
                 leading: const Icon(Icons.phone_outlined, color: Colors.orange),
                 title: Text('Call Customer', style: simple_text_style()),
                 subtitle: Text(
-                  order.address.contactNumber,
+                  order.address.phoneNumber,
                   style: simple_text_style(),
                 ),
                 onTap: () {
                   Navigator.pop(context);
-                  _launchPhone(order.address.contactNumber);
+                  _launchPhone(order.address.phoneNumber);
                 },
               ),
           ],
@@ -274,9 +274,9 @@ class _AdminOrderDetailScreenState extends State<AdminOrderDetailScreen> {
     String shareContent = '';
     shareContent += '📦 Order ID: #${order.orderId.substring(0, 8)}\n\n';
     shareContent += '🧑🏻 Name : ${order.name ?? 'Unknown User'}\n\n';
-    shareContent += '📱 Contact: ${order.address.contactNumber}\n\n';
+    shareContent += '📱 Contact: ${order.address.phoneNumber}\n\n';
     shareContent +=
-        '🏡 Address:https://www.google.com/maps/search/?api=1&query=${order.address.location.latitude},${order.address.location.longitude}\n\n';
+        '🏡 Address:https://www.google.com/maps/search/?api=1&query=${order.address.latitude},${order.address.longitude}\n\n';
     shareContent +=
         '💰 Payment Status: ${_getStatusLabel(order.paymentStatus)}\n\n';
     shareContent += '💵 Total Amount: ₹${order.total.toStringAsFixed(2)}\n\n';
@@ -571,9 +571,9 @@ class _AdminOrderDetailScreenState extends State<AdminOrderDetailScreen> {
   }
 
   Widget _buildCustomerDetailsSection(OrderModel order) {
-    final hasCoordinates =
-        order.address.location.latitude != null &&
-        order.address.location.longitude != null;
+    final hasCoordinates = order.address.latitude != null &&
+        order.address.longitude != null;
+
 
     return Card(
       color: AppColour.white,
@@ -628,12 +628,12 @@ class _AdminOrderDetailScreenState extends State<AdminOrderDetailScreen> {
                 const SizedBox(width: 8),
                 Expanded(
                   child: Text(
-                    order.address.contactNumber,
+                    order.address.phoneNumber,
                     style: simple_text_style(),
                   ),
                 ),
                 IconButton(
-                  onPressed: () => _launchPhone(order.address.contactNumber),
+                  onPressed: () => _launchPhone(order.address.phoneNumber),
                   icon: Icon(Icons.call, color: Colors.green.shade600),
                 ),
               ],
@@ -664,8 +664,8 @@ class _AdminOrderDetailScreenState extends State<AdminOrderDetailScreen> {
                       InkWell(
                         onTap: hasCoordinates
                             ? () => _openGoogleMaps(
-                                order.address.location.latitude,
-                                order.address.location.longitude,
+                                order.address.latitude,
+                                order.address.longitude,
                               )
                             : null,
                         borderRadius: BorderRadius.circular(8),
@@ -687,7 +687,7 @@ class _AdminOrderDetailScreenState extends State<AdminOrderDetailScreen> {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Text(
-                                order.address.fullAddress,
+                                order.address.streetAddress,
                                 style: TextStyle(
                                   fontFamily: 'Sen',
                                   color: hasCoordinates
@@ -733,8 +733,8 @@ class _AdminOrderDetailScreenState extends State<AdminOrderDetailScreen> {
                             Expanded(
                               child: OutlinedButton.icon(
                                 onPressed: () => _openGoogleMaps(
-                                  order.address.location.latitude,
-                                  order.address.location.longitude,
+                                  order.address.latitude,
+                                  order.address.longitude,
                                 ),
                                 icon: const Icon(Icons.map_outlined, size: 18),
                                 label: const Text('Open Map'),
@@ -746,11 +746,11 @@ class _AdminOrderDetailScreenState extends State<AdminOrderDetailScreen> {
                             ),
 
                           if (hasCoordinates &&
-                              order.address.contactNumber != null)
+                              order.address.phoneNumber != null)
                             const SizedBox(width: 8),
 
                           // More Options Button
-                          if (order.address.contactNumber != null)
+                          if (order.address.phoneNumber != null)
                             Expanded(
                               child: OutlinedButton.icon(
                                 onPressed: () => _showLocationOptions(order),

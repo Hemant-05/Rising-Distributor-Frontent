@@ -154,7 +154,7 @@ class OrderDetailsScreen extends StatelessWidget {
             decoration: BoxDecoration(
                 color: Colors.grey[100], borderRadius: BorderRadius.circular(7)),
             child: Text(
-              order.address.fullAddress,  // make sure your DeliveryAddress has a `fullAddress` getter
+              order.address.streetAddress,  // make sure your DeliveryAddress has a `fullAddress` getter
               style: simple_text_style(),
             ),
           ),

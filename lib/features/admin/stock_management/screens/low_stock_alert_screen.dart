@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:raising_india/comman/back_button.dart';
 import 'package:raising_india/comman/simple_text_style.dart';
 import 'package:raising_india/constant/AppColour.dart';
-import 'package:raising_india/features/services/stock_management_repository.dart';
 import 'package:raising_india/models/product_model.dart';
 
 class LowStockAlertScreen extends StatefulWidget {
@@ -15,7 +14,6 @@ class LowStockAlertScreen extends StatefulWidget {
 class _LowStockAlertScreenState extends State<LowStockAlertScreen>
     with TickerProviderStateMixin {
 
-  final StockManagementRepository _stockRepository = StockManagementRepository();
   List<ProductModel> _lowStockProducts = [];
   bool _isLoading = true;
 
@@ -48,7 +46,7 @@ class _LowStockAlertScreenState extends State<LowStockAlertScreen>
   Future<void> _loadLowStockProducts() async {
     setState(() => _isLoading = true);
 
-    final products = await _stockRepository.getLowStockProducts();
+    List<ProductModel> products = [];
 
     setState(() {
       _lowStockProducts = products;
