@@ -13,6 +13,8 @@ import 'package:raising_india/features/user/search/bloc/product_search_bloc/prod
 import '../../../../constant/ConPath.dart';
 
 class ProductSearchScreen extends StatefulWidget {
+  const ProductSearchScreen({super.key});
+
   @override
   State<ProductSearchScreen> createState() => _ProductSearchScreenState();
 }

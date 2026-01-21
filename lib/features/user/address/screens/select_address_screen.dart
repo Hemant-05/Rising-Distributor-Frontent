@@ -138,14 +138,14 @@ class _SelectAddressScreenState extends State<SelectAddressScreen> {
                                         ),
                                       ),
                                       title: Text(
-                                        '${model.title}',
+                                        model.title,
                                         style: simple_text_style(
                                           fontSize: 20,
                                           fontWeight: FontWeight.bold,
                                         ),
                                       ),
                                       subtitle: Text(
-                                        '${model.streetAddress}',
+                                        model.streetAddress,
                                         style: TextStyle(fontFamily: 'Sen'),
                                       ),
                                     ),

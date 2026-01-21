@@ -37,9 +37,9 @@ class UserProductServices {
       final response = await _dioClient.get(ApiEndpoints.getCartItems);
       final resp = response.data as Map<String, dynamic>;
       if(response.statusCode == 200){
-        final payload_data = resp['data'];
+        final payloadData = resp['data'];
         List<Map<String, dynamic>> cartProducts = [];
-        for(var data in payload_data){
+        for(var data in payloadData){
           final productId = data['productId'];
           final model = await getProductById(productId);
           cartProducts.add({
@@ -165,12 +165,12 @@ class UserProductServices {
       Response response = await _dioClient.get(ApiEndpoints.getProducts);
       final resp = response.data as Map<String, dynamic>;
       if(response.statusCode == 200) {
-        final payload_data = resp['data'];
-        List<ProductModel> product_list = [];
-        for(int i = 0; i < payload_data.length; i++){
-          product_list.add(ProductModel.fromMap(payload_data[i], payload_data[i]['pid']));
+        final payloadData = resp['data'];
+        List<ProductModel> productList = [];
+        for(int i = 0; i < payloadData.length; i++){
+          productList.add(ProductModel.fromMap(payloadData[i], payloadData[i]['pid']));
         }
-        return product_list;
+        return productList;
       }
       return [];
     } catch (e) {
@@ -183,12 +183,12 @@ class UserProductServices {
       Response response = await _dioClient.get(ApiEndpoints.getProducts);
       final resp = response.data as Map<String, dynamic>;
       if(response.statusCode == 200) {
-        final payload_data = resp['data'];
-        List<ProductModel> product_list = [];
-        for(int i = 0; i < payload_data.length; i++){
-          product_list.add(ProductModel.fromMap(payload_data[i], payload_data[i]['pid']));
+        final payloadData = resp['data'];
+        List<ProductModel> productList = [];
+        for(int i = 0; i < payloadData.length; i++){
+          productList.add(ProductModel.fromMap(payloadData[i], payloadData[i]['pid']));
         }
-        return product_list;
+        return productList;
       }
       return [];
     }catch(e){

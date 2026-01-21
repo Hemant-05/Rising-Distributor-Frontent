@@ -158,8 +158,8 @@ class _AdminProductDetailScreenState extends State<AdminProductDetailScreen>
     setState(() => loading = true);
 
     try {
-      List<String> new_photos_list = await _imageServices.uploadImages(photos_files_list, widget.product.name);
-      photos_list.addAll(new_photos_list);
+      List<String> newPhotosList = await _imageServices.uploadImages(photos_files_list, widget.product.name);
+      photos_list.addAll(newPhotosList);
       if(deleted_photos_list.isNotEmpty){
         for(String url in deleted_photos_list){
           await _imageServices.deleteImage(url);
@@ -989,7 +989,7 @@ class _AdminProductDetailScreenState extends State<AdminProductDetailScreen>
               ),
             ),
             Switch(
-              activeColor: AppColour.primary,
+              activeThumbColor: AppColour.primary,
               value: isAvailable,
               onChanged: (value) {
                 setState(() {
@@ -1165,10 +1165,10 @@ class _AdminProductDetailScreenState extends State<AdminProductDetailScreen>
                         contentPadding: EdgeInsets.zero,
                       ),
                       menuStyle: MenuStyle(
-                        backgroundColor: MaterialStateProperty.all(
+                        backgroundColor: WidgetStateProperty.all(
                           AppColour.white,
                         ),
-                        elevation: MaterialStateProperty.all(8),
+                        elevation: WidgetStateProperty.all(8),
                       ),
                       dropdownMenuEntries: state is CategoryLoaded
                           ? state.categories
@@ -1268,7 +1268,7 @@ class _AdminProductDetailScreenState extends State<AdminProductDetailScreen>
           ),
           child: DropdownButtonFormField<String>(
             // ✅ Use normalized value that matches dropdown items
-            value: normalizedCurrentValue,
+            initialValue: normalizedCurrentValue,
             dropdownColor: AppColour.white,
             borderRadius: BorderRadius.circular(12),
             decoration: InputDecoration(

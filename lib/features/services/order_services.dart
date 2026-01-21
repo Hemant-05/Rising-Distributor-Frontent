@@ -27,8 +27,8 @@ class OrderServices {
       final resp = response.data as Map<String, dynamic>;
       final statusCode = resp['statusCode'];
       if (statusCode == 200) {
-        final payload_data = resp['data'] ?? resp;
-        for (var item in payload_data) {
+        final payloadData = resp['data'] ?? resp;
+        for (var item in payloadData) {
           OrderModel model = OrderModel.fromMap(item);
           list.add(model);
         }
@@ -66,8 +66,8 @@ class OrderServices {
     final resp = response.data as Map<String, dynamic>;
     final statusCode = resp['statusCode'];
     if (statusCode == 200) {
-      final payload_data = resp['data'] ?? resp;
-      model = OrderModel.fromMap(payload_data);
+      final payloadData = resp['data'] ?? resp;
+      model = OrderModel.fromMap(payloadData);
       return model;
     } else {
       return null;
@@ -80,7 +80,7 @@ class OrderServices {
     final resp = response.data as Map<String, dynamic>;
     final statusCode = resp['statusCode'];
     if (statusCode == 200) {
-      final payload_data = resp['data'] ?? resp;
+      final payloadData = resp['data'] ?? resp;
       // model = OrderModel.fromMap(payload_data);
     } else {
       // return null;

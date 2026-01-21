@@ -1,11 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:raising_india/comman/simple_text_style.dart';
 import 'package:raising_india/constant/AppColour.dart';
 import 'package:raising_india/constant/ConPath.dart';
 import 'package:raising_india/features/admin/banner/bloc/banner_bloc.dart';
 import 'package:raising_india/features/admin/banner/screen/all_banner_screen.dart';
-import 'package:raising_india/features/admin/category/bloc/category_bloc.dart';
 import 'package:raising_india/features/admin/category/screens/admin_categories_screen.dart';
 import 'package:raising_india/features/admin/profile/screens/admin_profile_screen.dart';
 import 'package:raising_india/features/admin/profile/widgets/option_list_tile_widget.dart';
@@ -14,7 +12,6 @@ import 'package:raising_india/features/admin/review/screens/admin_reviews_screen
 import 'package:raising_india/features/admin/sales_analytics/screens/sales_analytics_screen.dart';
 import 'package:raising_india/features/admin/stock_management/screens/low_stock_alert_screen.dart';
 import 'package:raising_india/features/auth/bloc/auth_bloc.dart';
-import 'package:raising_india/features/auth/screens/login_screen.dart';
 import 'package:raising_india/features/auth/screens/signup_screen.dart';
 
 class ProfileManageScreen extends StatefulWidget {

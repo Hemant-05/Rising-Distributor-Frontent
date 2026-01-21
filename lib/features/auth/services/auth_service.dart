@@ -49,9 +49,9 @@ class AuthService extends ChangeNotifier {
       // Expecting response.data to be a map containing data -> user and tokens
       final resp = response.data as Map<String, dynamic>;
       // adapt to common shapes: data.user or user
-      final payload_data = resp['data'] ?? resp;
+      final payloadData = resp['data'] ?? resp;
 
-      final userMap = payload_data['user'] ?? payload_data['admin'];
+      final userMap = payloadData['user'] ?? payloadData['admin'];
 
       if (userMap == null) {
         throw ServerException(message: 'User Data Not Found...');
@@ -62,7 +62,7 @@ class AuthService extends ChangeNotifier {
       _user = AppUser.fromMap(userMap as Map<String, dynamic>, uid);
 
       // store tokens if present
-      final tokens = payload_data['tokens'];
+      final tokens = payloadData['tokens'];
 
       final accessToken = tokens['access_token'];
       final refreshToken = tokens['refresh_token'];
@@ -98,7 +98,7 @@ class AuthService extends ChangeNotifier {
       final resp = response.data as Map<String, dynamic>;
       final statusCode = resp['statusCode'];
       if (statusCode == 200) {
-        final payload_data = resp['data'] ?? resp;
+        final payloadData = resp['data'] ?? resp;
 
         /*final userMap = payload_data['user'] ?? payload_data['admin'];
 
@@ -111,9 +111,9 @@ class AuthService extends ChangeNotifier {
         _user = AppUser.fromMap(userMap as Map<String, dynamic>, uid);*/
 
         final accessToken =
-            payload_data['access_token'] ?? resp['access_token'];
+            payloadData['access_token'] ?? resp['access_token'];
         final refreshToken =
-            payload_data['refresh_token'] ?? resp['refresh_token'];
+            payloadData['refresh_token'] ?? resp['refresh_token'];
         await _persistTokens(accessToken?.toString(), refreshToken?.toString());
       } else {
         throw Exception(['Error while Log In Account...']);
@@ -314,8 +314,8 @@ class AuthService extends ChangeNotifier {
       final resp = response.data as Map<String, dynamic>;
       final statusCode = resp['statusCode'];
       if (statusCode == 200) {
-        final payload_data = resp['data'] ?? resp;
-        for (var item in payload_data) {
+        final payloadData = resp['data'] ?? resp;
+        for (var item in payloadData) {
           AddressModel model = AddressModel.fromMap(item);
           addressList.add(model);
         }
@@ -333,12 +333,12 @@ class AuthService extends ChangeNotifier {
       final resp = response.data as Map<String, dynamic>;
       final statusCode = resp['statusCode'];
       if (statusCode == 200) {
-        final payload_data = resp['data'] ?? resp;
+        final payloadData = resp['data'] ?? resp;
 
         final userMap =
-            payload_data['user'] ??
-            payload_data['admin'] ??
-            payload_data['profile'];
+            payloadData['user'] ??
+            payloadData['admin'] ??
+            payloadData['profile'];
 
         if (userMap == null) {
           throw ServerException(message: 'Invalid server response');

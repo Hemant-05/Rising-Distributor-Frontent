@@ -11,7 +11,7 @@ class AddBannerWidget extends StatefulWidget {
 }
 
 class _AddBannerWidgetState extends State<AddBannerWidget> {
-  CarouselSliderController? _controller = CarouselSliderController();
+  final CarouselSliderController? _controller = CarouselSliderController();
   int _index = 0;
 
   Query<Map<String, dynamic>> _query() {

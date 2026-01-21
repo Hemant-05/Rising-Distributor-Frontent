@@ -14,9 +14,9 @@ class FillAddressDetailsScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final TextEditingController _titleController = TextEditingController();
-    final TextEditingController _recipientNameController = TextEditingController();
-    final TextEditingController _recipientPhoneController = TextEditingController();
+    final TextEditingController titleController = TextEditingController();
+    final TextEditingController recipientNameController = TextEditingController();
+    final TextEditingController recipientPhoneController = TextEditingController();
     return Scaffold(
       backgroundColor: AppColour.white,
       appBar: AppBar(
@@ -51,7 +51,7 @@ class FillAddressDetailsScreen extends StatelessWidget {
                 ),
                 padding: EdgeInsets.symmetric(horizontal: 12),
                 child: TextField(
-                  controller: _titleController,
+                  controller: titleController,
                   decoration: InputDecoration(
                     border: InputBorder.none,
                     hint: Text(
@@ -80,7 +80,7 @@ class FillAddressDetailsScreen extends StatelessWidget {
                 ),
                 padding: EdgeInsets.symmetric(horizontal: 12),
                 child: TextField(
-                  controller: _recipientNameController,
+                  controller: recipientNameController,
                   decoration: InputDecoration(
                     border: InputBorder.none,
                     hint: Text(
@@ -109,7 +109,7 @@ class FillAddressDetailsScreen extends StatelessWidget {
                 ),
                 padding: EdgeInsets.symmetric(horizontal: 12),
                 child: TextField(
-                  controller: _recipientPhoneController,
+                  controller: recipientPhoneController,
                   decoration: InputDecoration(
                     border: InputBorder.none,
                     hint: Text(
@@ -144,9 +144,9 @@ class FillAddressDetailsScreen extends StatelessWidget {
                     ),
                   ),
                   onPressed: () {
-                    String title = _titleController.text.trim();
-                    String recipientName = _recipientNameController.text.trim();
-                    String recipientPhone = _recipientPhoneController.text.trim();
+                    String title = titleController.text.trim();
+                    String recipientName = recipientNameController.text.trim();
+                    String recipientPhone = recipientPhoneController.text.trim();
                     if(title.isNotEmpty) {
                       Map<String,dynamic> model = {
                         'title': title,
