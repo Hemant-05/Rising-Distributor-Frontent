@@ -1,12 +1,10 @@
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:raising_india/config/api_endpoints.dart';
-import 'package:raising_india/constant/AppData.dart';
 import 'package:raising_india/error/exceptions.dart';
 import 'package:raising_india/models/address_model.dart';
 import 'package:raising_india/models/user_model.dart';
 import 'package:raising_india/network/dio_client.dart';
-import 'package:raising_india/services/notification_service.dart';
 import 'package:raising_india/services/service_locator.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../../constant/ConString.dart' as ConString;
@@ -50,7 +48,6 @@ class AuthService extends ChangeNotifier {
 
       // Expecting response.data to be a map containing data -> user and tokens
       final resp = response.data as Map<String, dynamic>;
-
       // adapt to common shapes: data.user or user
       final payload_data = resp['data'] ?? resp;
 

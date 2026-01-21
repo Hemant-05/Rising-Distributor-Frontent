@@ -1,0 +1,14 @@
+generatorName: dart-dio
+# This points directly to your live backend
+inputSpec: https://rising-distributor.onrender.com/v3/api-docs
+outputDir: lib/api_client
+# This makes class names cleaner
+additionalProperties:
+  pubName: rising_distributor_api
+  pubAuthor: Hemant
+  wrapper: flutter
+  nullSafe: true
+  # Maps Java Date to Dart DateTime
+typeMappings:
+  OffsetDateTime: DateTime
+  Date: DateTime
