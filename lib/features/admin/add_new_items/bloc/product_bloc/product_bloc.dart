@@ -1,7 +1,6 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter/material.dart';
 import 'package:raising_india/features/admin/services/product_services.dart';
-import 'package:raising_india/models/category_model.dart';
 import 'package:raising_india/models/product_model.dart';
 part 'product_event.dart';
 part 'product_state.dart';

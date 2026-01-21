@@ -567,7 +567,7 @@ class _AdminProductListScreenState extends State<AdminProductListScreen>
         const SizedBox(height: 8),
 
         // Category
-        if (product.category != null && product.category.isNotEmpty)
+        if (product.category.isNotEmpty)
           Row(
             children: [
               Icon(Icons.category, size: 14, color: Colors.grey.shade500),

@@ -9,11 +9,8 @@ import 'package:raising_india/features/auth/screens/signup_screen.dart';
 import 'package:raising_india/features/user/coupon/bloc/coupon_bloc.dart';
 import 'package:raising_india/features/user/coupon/screens/coupons_screen.dart';
 import 'package:raising_india/features/user/profile/bloc/profile_bloc.dart';
-import 'package:raising_india/features/user/profile/screens/personal_info_screen.dart';
 import 'package:raising_india/features/auth/bloc/auth_bloc.dart';
-import 'package:raising_india/features/auth/screens/login_screen.dart';
 import 'package:raising_india/features/user/address/screens/select_address_screen.dart';
-import 'package:raising_india/features/user/notification/screens/notification_screen.dart';
 import 'package:raising_india/features/user/order/screens/order_screen.dart';
 import 'package:raising_india/screens/policy_screen.dart';
 

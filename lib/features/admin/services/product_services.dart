@@ -91,7 +91,7 @@ class ProductServices {
       final resp = response.data as Map<String, dynamic>;
       final statusCode = response.statusCode;
       if(statusCode == 200) {
-        final payload_data = resp['data'] ?? resp;
+        final payloadData = resp['data'] ?? resp;
         
       }
       return null;
@@ -140,9 +140,9 @@ class ProductServices {
       Response response = await _dioClient.post(ApiEndpoints.addProducts,data: data);
       final resp = response.data as Map<String, dynamic>;
       if(response.statusCode == 201){
-        final payload_data = resp['data'] ?? resp;
+        final payloadData = resp['data'] ?? resp;
         print('=========================== $data');
-        final productMap = payload_data['product'] ?? payload_data['data'] ?? payload_data;
+        final productMap = payloadData['product'] ?? payloadData['data'] ?? payloadData;
         if(productMap == null){
           throw ServerException(message: 'Product Data Not Found...');
         }

@@ -784,7 +784,7 @@ class _PaymentCheckoutScreenState extends State<PaymentCheckoutScreen>
                   BlocBuilder<CouponBloc, CouponState>(
                     builder: (context, state) {
                       final isLoading = state is CouponLoading;
-                      return Container(
+                      return SizedBox(
                         height: 56,
                         child: ElevatedButton(
                           onPressed: isLoading ? null : _applyCoupon,
@@ -995,9 +995,9 @@ class _PaymentCheckoutScreenState extends State<PaymentCheckoutScreen>
             _buildPriceRow('Discounted Price', '₹${widget.total}'),
             _buildPriceRow(
               'Delivery Fee',
-              double.parse(widget.total) < 99 ? '₹${deliveryFee}' : 'Free',
+              double.parse(widget.total) < 99 ? '₹$deliveryFee' : 'Free',
             ),
-            _buildPriceRow('Platform Fee', '₹${platformFee}'),
+            _buildPriceRow('Platform Fee', '₹$platformFee'),
 
             if (_isCouponApplied)
               _buildPriceRow(

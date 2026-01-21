@@ -528,7 +528,7 @@ class ProductDetailsScreen extends StatelessWidget {
                                         child: CircularProgressIndicator(
                                           strokeWidth: 2,
                                           valueColor:
-                                              const AlwaysStoppedAnimation<
+                                              AlwaysStoppedAnimation<
                                                 Color
                                               >(Colors.white),
                                         ),

@@ -23,12 +23,12 @@ class ApiEndpoints {
   static const String registerMobile = '$users/mobile';
   static const String verifyOtp = '$registerMobile/verify';
 
-  static String forgotPassword(String email) => '$auth/forgot-password?email=${email}';
+  static String forgotPassword(String email) => '$auth/forgot-password?email=$email';
   static const String resetPassword = '$auth/reset-password';
 
   // Auth - Profile
   static const String me = '$users/me';
-  static String updateFCMToken(String token) => '$users/update-fcm-token?token=${token}';
+  static String updateFCMToken(String token) => '$users/update-fcm-token?token=$token';
 
   // ============================================================================
   // Products Endpoints

@@ -3,7 +3,7 @@ import '../constant/AppColour.dart';
 
 ButtonStyle elevated_button_style({double width = double.infinity}) {
   var wid = width == double.infinity
-      ? MediaQueryData.fromWindow(WidgetsBinding.instance.window).size.width * 0.9
+      ? MediaQueryData.fromView(WidgetsBinding.instance.window).size.width * 0.9
       : width;
   return ElevatedButton.styleFrom(
     minimumSize: Size(wid, 50),

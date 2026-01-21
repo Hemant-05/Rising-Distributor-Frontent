@@ -28,10 +28,10 @@ class ProductsCubit extends Cubit<ProductsState> {
     print('Updating product $pid availability to $value');
   }
 
-  Future<void> deleteProduct(BuildContext context, String pid, List<String> url_list) async {
+  Future<void> deleteProduct(BuildContext context, String pid, List<String> urlList) async {
     try {
       // TODO: Implement image deletion from your custom backend
-      for (String url in url_list) {
+      for (String url in urlList) {
         await deleteImage(url);
       }
       // TODO: Implement product deletion from your custom backend

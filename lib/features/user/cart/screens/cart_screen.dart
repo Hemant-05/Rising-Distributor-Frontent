@@ -400,7 +400,7 @@ class _CartScreenState extends State<CartScreen> {
                                       ),
                                       if (save != 0)
                                         Text(
-                                          'You Save: ₹${save}',
+                                          'You Save: ₹$save',
                                           style: simple_text_style(
                                             fontSize: 14,
                                             fontWeight: FontWeight.w500,

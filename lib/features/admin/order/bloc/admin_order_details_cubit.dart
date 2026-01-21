@@ -10,7 +10,7 @@ part 'admin_order_details_state.dart';
 class AdminOrderDetailsCubit extends Cubit<AdminOrderDetailsState> {
   StreamSubscription? _subscription;
 
-  AdminOrderDetailsCubit() : super(AdminOrderDetailsState()) {}
+  AdminOrderDetailsCubit() : super(AdminOrderDetailsState());
 
   void loadOrderDetails(String orderId) {
     emit(state.copyWith(loading: true));

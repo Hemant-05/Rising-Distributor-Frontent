@@ -165,11 +165,11 @@ class _LoginScreenState extends State<LoginScreen> {
                                       });
                                     },
                                     activeColor: AppColour.primary,
-                                    side: MaterialStateBorderSide.resolveWith((
+                                    side: WidgetStateBorderSide.resolveWith((
                                       states,
                                     ) {
                                       if (states.contains(
-                                        MaterialState.selected,
+                                        WidgetState.selected,
                                       )) {
                                         return BorderSide(
                                           color: AppColour.primary,

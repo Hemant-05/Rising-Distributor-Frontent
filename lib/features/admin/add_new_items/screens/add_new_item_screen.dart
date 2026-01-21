@@ -662,8 +662,8 @@ class _AddNewItemScreenState extends State<AddNewItemScreen>
                     contentPadding: EdgeInsets.zero,
                   ),
                   menuStyle: MenuStyle(
-                    backgroundColor: MaterialStateProperty.all(AppColour.white),
-                    elevation: MaterialStateProperty.all(8),
+                    backgroundColor: WidgetStateProperty.all(AppColour.white),
+                    elevation: WidgetStateProperty.all(8),
                   ),
                   dropdownMenuEntries: state is CategoryLoaded
                       ? state.categories
@@ -713,8 +713,8 @@ class _AddNewItemScreenState extends State<AddNewItemScreen>
                 hintStyle: simple_text_style(color: AppColour.lightGrey),
               ),
               menuStyle: MenuStyle(
-                backgroundColor: MaterialStateProperty.all(Colors.white),
-                elevation: MaterialStateProperty.all(8),
+                backgroundColor: WidgetStateProperty.all(Colors.white),
+                elevation: WidgetStateProperty.all(8),
               ),
               dropdownMenuEntries: const [
                 DropdownMenuEntry(value: 'KG', label: 'Kilogram (kg)'),
@@ -760,7 +760,7 @@ class _AddNewItemScreenState extends State<AddNewItemScreen>
             ),
           ),
           Switch(
-            activeColor: AppColour.primary,
+            activeThumbColor: AppColour.primary,
             value: isAvailable,
             onChanged: (value) {
               setState(() {

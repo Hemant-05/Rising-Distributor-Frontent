@@ -571,8 +571,7 @@ class _AdminOrderDetailScreenState extends State<AdminOrderDetailScreen> {
   }
 
   Widget _buildCustomerDetailsSection(OrderModel order) {
-    final hasCoordinates = order.address.latitude != null &&
-        order.address.longitude != null;
+    final hasCoordinates = order.address.longitude != null;
 
 
     return Card(
@@ -745,25 +744,23 @@ class _AdminOrderDetailScreenState extends State<AdminOrderDetailScreen> {
                               ),
                             ),
 
-                          if (hasCoordinates &&
-                              order.address.phoneNumber != null)
+                          if (hasCoordinates)
                             const SizedBox(width: 8),
 
                           // More Options Button
-                          if (order.address.phoneNumber != null)
-                            Expanded(
-                              child: OutlinedButton.icon(
-                                onPressed: () => _showLocationOptions(order),
-                                icon: const Icon(Icons.more_horiz, size: 18),
-                                label: const Text('Options'),
-                                style: OutlinedButton.styleFrom(
-                                  foregroundColor: Colors.orange.shade600,
-                                  side: BorderSide(
-                                    color: Colors.orange.shade300,
-                                  ),
+                          Expanded(
+                            child: OutlinedButton.icon(
+                              onPressed: () => _showLocationOptions(order),
+                              icon: const Icon(Icons.more_horiz, size: 18),
+                              label: const Text('Options'),
+                              style: OutlinedButton.styleFrom(
+                                foregroundColor: Colors.orange.shade600,
+                                side: BorderSide(
+                                  color: Colors.orange.shade300,
                                 ),
                               ),
                             ),
+                          ),
                         ],
                       ),
                     ],

@@ -20,10 +20,11 @@ class OrderTrackingScreen extends StatelessWidget {
           .doc(orderId)
           .snapshots(),
       builder: (context, snapshot) {
-        if (!snapshot.hasData)
+        if (!snapshot.hasData) {
           return const Scaffold(
             body: Center(child: CircularProgressIndicator()),
           );
+        }
 
         final order = OrderModel.fromMap(
           snapshot.data!.data() as Map<String, dynamic>,
@@ -164,7 +165,7 @@ class OrderTrackingScreen extends StatelessWidget {
                         ],
                       ),
                     );
-                  }).toList(),
+                  }),
                 ],
               ),
       ),
