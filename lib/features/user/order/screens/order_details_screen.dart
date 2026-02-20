@@ -5,16 +5,16 @@ import 'package:raising_india/comman/back_button.dart';
 import 'package:raising_india/comman/simple_text_style.dart';
 import 'package:raising_india/constant/AppColour.dart';
 import 'package:raising_india/constant/ConString.dart';
-import 'package:raising_india/models/order_model.dart';
+import 'package:raising_india/models/model/order.dart';
 
 class OrderDetailsScreen extends StatelessWidget {
-  final OrderModel order;
+  final Order order;
 
   const OrderDetailsScreen({super.key, required this.order});
 
   @override
   Widget build(BuildContext context) {
-    final statusColor = _statusColor(order.orderStatus);
+    final statusColor = _statusColor(order.status!);
     return Scaffold(
       backgroundColor: AppColour.white,
       appBar: AppBar(
@@ -37,14 +37,14 @@ class OrderDetailsScreen extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(
-                _statusText(order.orderStatus),
+                _statusText(order.status!),
                 style: simple_text_style()
               ),
-              Text(DateFormat('MMM d, h:mm a').format(order.createdAt),
+              Text(DateFormat('MMM d, h:mm a').format(order.createdAt!),
                   style: simple_text_style(color: AppColour.grey)),
             ],
           ),
-          if (order.orderStatus == 'cancelled' && order.cancellationReason != null)
+          if (order.status == 'cancelled')
             Padding(
               padding: const EdgeInsets.only(top: 6.0, bottom: 12),
               child: Container(
@@ -57,7 +57,7 @@ class OrderDetailsScreen extends StatelessWidget {
                     const SizedBox(width: 8),
                     Expanded(
                       child: Text(
-                        'Cancelled: ${order.cancellationReason}',
+                        'Cancelled: ${order.status}',
                         style: simple_text_style(color: AppColour.red),
                       ),
                     ),
@@ -69,26 +69,26 @@ class OrderDetailsScreen extends StatelessWidget {
           // Payment Status
           Row(
             children: [
-              Icon(order.paymentMethod == "prepaid"
+              Icon(order.payment?.paymentMethod == "prepaid"
                   ? Icons.credit_card
                   : Icons.money,
                   color: Colors.teal, size: 20),
               const SizedBox(width: 8),
               Text(
-                order.paymentMethod == "prepaid" ? "Prepaid" : "COD",
+                order.payment?.paymentMethod == "prepaid" ? "Prepaid" : "COD",
                 style: simple_text_style(fontWeight: FontWeight.w600),
               ),
               const SizedBox(width: 14),
               Icon(
-                _paymentStatusIcon(order.paymentStatus),
+                _paymentStatusIcon(order.payment!.paymentStatus!),
                 size: 18,
-                color: _paymentStatusColor(order.paymentStatus),
+                color: _paymentStatusColor(order.payment!.paymentStatus!),
               ),
               const SizedBox(width: 5),
               Text(
-                _paymentStatusText(order.paymentStatus),
+                _paymentStatusText(order.payment!.paymentStatus!),
                 style: simple_text_style(
-                    color: _paymentStatusColor(order.paymentStatus),
+                    color: _paymentStatusColor(order.payment!.paymentStatus!),
                     fontSize: 13),
               ),
             ],
@@ -99,17 +99,17 @@ class OrderDetailsScreen extends StatelessWidget {
           ListView.separated(
             shrinkWrap: true,
             physics: const NeverScrollableScrollPhysics(),
-            itemCount: order.items.length,
+            itemCount: order.orderItems!.length,
             separatorBuilder: (_, __) => const Divider(height: 12),
             itemBuilder: (context, i) {
-              final product = order.items[i];
+              final product = order.orderItems![i].product;
               return Row(
                 crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
                   ClipRRect(
                     borderRadius: BorderRadius.circular(8),
                     child: CachedNetworkImage(
-                      imageUrl : product["image"] ?? "",
+                      imageUrl : product!.photosList![0] ?? "",
                       width: 48, height: 48, fit: BoxFit.cover,
                       errorWidget: (_, __, ___) => const Icon(Icons.image),
                     ),
@@ -117,11 +117,11 @@ class OrderDetailsScreen extends StatelessWidget {
                   const SizedBox(width: 14),
                   Expanded(
                     child: Text(
-                      product["name"] ?? "Unknown",
+                      product.name ?? "Unknown",
                       style: simple_text_style(),
                     ),
                   ),
-                  Text("x${product["quantity"]}", style: simple_text_style(color: AppColour.grey)),
+                  Text("x${product.quantity}", style: simple_text_style(color: AppColour.grey)),
                 ],
               );
             },
@@ -133,15 +133,15 @@ class OrderDetailsScreen extends StatelessWidget {
             child: Text('Order Summary', style: simple_text_style(fontWeight: FontWeight.bold,fontSize: 18),
             ),
           ),
-          _orderSummaryRow("Subtotal", order.subtotal.toStringAsFixed(1)),
-          _orderSummaryRow("Delivery Fee", '0' == order.deliveryFee.toStringAsFixed(0)? 'Free' : order.deliveryFee.toStringAsFixed(0)),
+          _orderSummaryRow("Subtotal", order.totalPrice!.toStringAsFixed(1)),
+          // _orderSummaryRow("Delivery Fee", '0' == order.deliveryFee.toStringAsFixed(0)? 'Free' : order.deliveryFee.toStringAsFixed(0)),
           _orderSummaryRow("Platform Fee", platformFee.toStringAsFixed(0)),
           const SizedBox(height: 8),
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text('Total', style: simple_text_style(fontWeight: FontWeight.bold,fontSize: 18)),
-              Text("₹${order.total.toStringAsFixed(2)}",
+              Text("₹${order.totalPrice!.toStringAsFixed(2)}",
                   style: simple_text_style(fontWeight: FontWeight.bold)),
             ],
           ),
@@ -154,17 +154,17 @@ class OrderDetailsScreen extends StatelessWidget {
             decoration: BoxDecoration(
                 color: Colors.grey[100], borderRadius: BorderRadius.circular(7)),
             child: Text(
-              order.address.streetAddress,  // make sure your DeliveryAddress has a `fullAddress` getter
+              order.address!.streetAddress!,  // make sure your DeliveryAddress has a `fullAddress` getter
               style: simple_text_style(),
             ),
           ),
           // Transaction & timestamps (optional)
-          if (order.transactionId != null)
-            _keyValueRow("Transaction ID", order.transactionId!),
-          if (order.paidAt != null)
-            _keyValueRow("Paid At", DateFormat('MMM d, h:mm a').format(order.paidAt!)),
-          if (order.deliveredAt != null)
-            _keyValueRow("Delivered At", DateFormat('MMM d, h:mm a').format(order.deliveredAt!)),
+          if (order.razorpayOrderId != null)
+            _keyValueRow("Transaction ID", order.razorpayOrderId!),
+          if (order != null)
+            _keyValueRow("Paid At", DateFormat('MMM d, h:mm a').format(order.createdAt!)), // paid at time
+          if (order.address != null)
+            _keyValueRow("Delivered At", DateFormat('MMM d, h:mm a').format(order.createdAt!)), // delivered at time
           const SizedBox(height: 24),
         ],
       ),

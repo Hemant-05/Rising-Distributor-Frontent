@@ -1,20 +1,20 @@
 // lib/widgets/admin/sales_chart_widget.dart
 import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
-import 'package:intl/intl.dart';
 import 'package:raising_india/comman/simple_text_style.dart';
 import 'package:raising_india/constant/AppColour.dart';
-import 'package:raising_india/models/sales_data_model.dart';
+import 'package:raising_india/data/services/analytics_service.dart';
+import 'package:raising_india/models/model/chart_data_point.dart'; // Ensure this matches your path
 
 class SalesChartWidget extends StatelessWidget {
-  final List<SalesDataModel> salesData;
-  final SalesTimePeriod period;
+  final List<ChartDataPoint> chartData; // CHANGED: Now expects the timeline array
+  final AnalyticsFilter filter;
   final bool isBarChart;
 
   const SalesChartWidget({
     super.key,
-    required this.salesData,
-    required this.period,
+    required this.chartData,
+    required this.filter,
     this.isBarChart = false,
   });
 
@@ -39,7 +39,7 @@ class SalesChartWidget extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             _buildHeader(),
-            const SizedBox(height: 20),
+            const SizedBox(height: 10),
             Expanded(
               child: isBarChart ? _buildBarChart() : _buildLineChart(),
             ),
@@ -51,16 +51,18 @@ class SalesChartWidget extends StatelessWidget {
 
   Widget _buildHeader() {
     String title;
-    switch (period) {
-      case SalesTimePeriod.day:
+    switch (filter) {
+      case AnalyticsFilter.DAILY:
         title = 'Daily Sales (Last 7 Days)';
         break;
-      case SalesTimePeriod.week:
-        title = 'Weekly Sales (This Month)';
+      case AnalyticsFilter.WEEKLY:
+        title = 'Weekly Sales (Last 4 Weeks)';
         break;
-      case SalesTimePeriod.month:
-        title = 'Monthly Sales (This Year)';
+      case AnalyticsFilter.MONTHLY:
+        title = 'Monthly Sales (Last 12 Months)';
         break;
+      default:
+        title = 'All Time Sales';
     }
 
     return Row(
@@ -89,23 +91,36 @@ class SalesChartWidget extends StatelessWidget {
     );
   }
 
-  Widget _buildLineChart() {
-    if (salesData.isEmpty) return _buildEmptyChart();
+  // Helper to safely calculate Max Y axis
+  double _getMaxY() {
+    if (chartData.isEmpty) return 0.0;
+    return chartData.map((e) => e.revenue ?? 0.0).reduce((a, b) => a > b ? a : b);
+  }
 
-    final spots = salesData.asMap().entries.map((entry) {
+  // Helper to safely calculate grid intervals
+  double _getSafeInterval(double maxY) {
+    double interval = maxY / 5;
+    return interval <= 0 ? 1.0 : interval;
+  }
+
+  Widget _buildLineChart() {
+    if (chartData.isEmpty) return _buildEmptyChart();
+
+    final spots = chartData.asMap().entries.map((entry) {
       final index = entry.key;
       final data = entry.value;
-      return FlSpot(index.toDouble(), data.amount);
+      return FlSpot(index.toDouble(), data.revenue ?? 0.0);
     }).toList();
 
-    final maxY = salesData.map((e) => e.amount).reduce((a, b) => a > b ? a : b);
+    final maxY = _getMaxY();
+    final safeMaxY = maxY == 0 ? 100.0 : maxY; // Fallback if no revenue
 
     return LineChart(
       LineChartData(
         gridData: FlGridData(
           show: true,
           drawVerticalLine: false,
-          horizontalInterval: maxY == 0? 1: maxY / 5,
+          horizontalInterval: _getSafeInterval(safeMaxY),
           getDrawingHorizontalLine: (value) {
             return FlLine(
               color: Colors.grey.shade300,
@@ -113,49 +128,12 @@ class SalesChartWidget extends StatelessWidget {
             );
           },
         ),
-        titlesData: FlTitlesData(
-          leftTitles: AxisTitles(
-            sideTitles: SideTitles(
-              showTitles: true,
-              reservedSize: 50,
-              getTitlesWidget: (value, meta) {
-                return Text(
-                  '₹${_formatNumber(value)}',
-                  style: simple_text_style(
-                    fontSize: 10,
-                    color: Colors.grey.shade600,
-                  ),
-                );
-              },
-            ),
-          ),
-          rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
-          topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
-          bottomTitles: AxisTitles(
-            sideTitles: SideTitles(
-              showTitles: true,
-              reservedSize: 30,
-              getTitlesWidget: (value, meta) {
-                final index = value.toInt();
-                if (index >= 0 && index < salesData.length) {
-                  return Text(
-                    _formatDateLabel(salesData[index].date),
-                    style: simple_text_style(
-                      fontSize: 10,
-                      color: Colors.grey.shade600,
-                    ),
-                  );
-                }
-                return const SizedBox.shrink();
-              },
-            ),
-          ),
-        ),
+        titlesData: _buildTitlesData(),
         borderData: FlBorderData(show: false),
         minX: 0,
-        maxX: (salesData.length - 1).toDouble(),
+        maxX: (chartData.length - 1).toDouble(),
         minY: 0,
-        maxY: maxY * 1.1,
+        maxY: safeMaxY * 1.1, // Add 10% padding to top
         lineBarsData: [
           LineChartBarData(
             spots: spots,
@@ -168,7 +146,7 @@ class SalesChartWidget extends StatelessWidget {
             ),
             barWidth: 3,
             isStrokeCapRound: true,
-            dotData: const FlDotData(show: false),
+            dotData: const FlDotData(show: true), // Show dots to highlight exact days
             belowBarData: BarAreaData(
               show: true,
               gradient: LinearGradient(
@@ -187,10 +165,10 @@ class SalesChartWidget extends StatelessWidget {
             getTooltipItems: (List<LineBarSpot> touchedBarSpots) {
               return touchedBarSpots.map((barSpot) {
                 final index = barSpot.x.toInt();
-                if (index >= 0 && index < salesData.length) {
-                  final data = salesData[index];
+                if (index >= 0 && index < chartData.length) {
+                  final data = chartData[index];
                   return LineTooltipItem(
-                    '${_formatDateLabel(data.date)}\n₹${_formatNumber(data.amount)}\n${data.ordersCount} orders',
+                    '${data.label}\n₹${_formatNumber(data.revenue ?? 0)}\n${data.orders ?? 0} orders',
                     simple_text_style(
                       color: Colors.white,
                       fontSize: 12,
@@ -208,16 +186,16 @@ class SalesChartWidget extends StatelessWidget {
   }
 
   Widget _buildBarChart() {
-    if (salesData.isEmpty) return _buildEmptyChart();
+    if (chartData.isEmpty) return _buildEmptyChart();
 
-    final barGroups = salesData.asMap().entries.map((entry) {
+    final barGroups = chartData.asMap().entries.map((entry) {
       final index = entry.key;
       final data = entry.value;
       return BarChartGroupData(
         x: index,
         barRods: [
           BarChartRodData(
-            toY: data.amount,
+            toY: data.revenue ?? 0.0,
             gradient: LinearGradient(
               colors: [
                 AppColour.primary,
@@ -236,19 +214,20 @@ class SalesChartWidget extends StatelessWidget {
       );
     }).toList();
 
-    final maxY = salesData.map((e) => e.amount).reduce((a, b) => a > b ? a : b);
+    final maxY = _getMaxY();
+    final safeMaxY = maxY == 0 ? 100.0 : maxY;
 
     return BarChart(
       BarChartData(
         alignment: BarChartAlignment.spaceAround,
-        maxY: maxY * 1.1,
+        maxY: safeMaxY * 1.1,
         barTouchData: BarTouchData(
           touchTooltipData: BarTouchTooltipData(
             getTooltipItem: (group, groupIndex, rod, rodIndex) {
-              if (groupIndex >= 0 && groupIndex < salesData.length) {
-                final data = salesData[groupIndex];
+              if (groupIndex >= 0 && groupIndex < chartData.length) {
+                final data = chartData[groupIndex];
                 return BarTooltipItem(
-                  '${_formatDateLabel(data.date)}\n₹${_formatNumber(data.amount)}\n${data.ordersCount} orders',
+                  '${data.label}\n₹${_formatNumber(data.revenue ?? 0)}\n${data.orders ?? 0} orders',
                   simple_text_style(
                     color: Colors.white,
                     fontSize: 12,
@@ -260,55 +239,60 @@ class SalesChartWidget extends StatelessWidget {
             },
           ),
         ),
-        titlesData: FlTitlesData(
-          leftTitles: AxisTitles(
-            sideTitles: SideTitles(
-              showTitles: true,
-              reservedSize: 50,
-              getTitlesWidget: (value, meta) {
-                return Text(
-                  '₹${_formatNumber(value)}',
-                  style: simple_text_style(
-                    fontSize: 10,
-                    color: Colors.grey.shade600,
-                  ),
-                );
-              },
-            ),
-          ),
-          rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
-          topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
-          bottomTitles: AxisTitles(
-            sideTitles: SideTitles(
-              showTitles: true,
-              reservedSize: 30,
-              getTitlesWidget: (value, meta) {
-                final index = value.toInt();
-                if (index >= 0 && index < salesData.length) {
-                  return Text(
-                    _formatDateLabel(salesData[index].date),
-                    style: simple_text_style(
-                      fontSize: 10,
-                      color: Colors.grey.shade600,
-                    ),
-                  );
-                }
-                return const SizedBox.shrink();
-              },
-            ),
-          ),
-        ),
+        titlesData: _buildTitlesData(),
         borderData: FlBorderData(show: false),
         barGroups: barGroups,
         gridData: FlGridData(
           show: true,
           drawVerticalLine: false,
-          horizontalInterval: maxY == 0? 1: maxY / 5,
+          horizontalInterval: _getSafeInterval(safeMaxY),
           getDrawingHorizontalLine: (value) {
             return FlLine(
               color: Colors.grey.shade300,
               strokeWidth: 1,
             );
+          },
+        ),
+      ),
+    );
+  }
+
+  // Extracted titles logic to avoid duplicate code between Line and Bar charts
+  FlTitlesData _buildTitlesData() {
+    return FlTitlesData(
+      leftTitles: AxisTitles(
+        sideTitles: SideTitles(
+          showTitles: true,
+          reservedSize: 50,
+          getTitlesWidget: (value, meta) {
+            return Text(
+              '₹${_formatNumber(value)}',
+              style: simple_text_style(
+                fontSize: 10,
+                color: Colors.grey.shade600,
+              ),
+            );
+          },
+        ),
+      ),
+      rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+      topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+      bottomTitles: AxisTitles(
+        sideTitles: SideTitles(
+          showTitles: true,
+          reservedSize: 30,
+          getTitlesWidget: (value, meta) {
+            final index = value.toInt();
+            if (index >= 0 && index < chartData.length) {
+              return Text(
+                chartData[index].label ?? '', // Backend now provides "Mon", "Jan", etc.
+                style: simple_text_style(
+                  fontSize: 10,
+                  color: Colors.grey.shade600,
+                ),
+              );
+            }
+            return const SizedBox.shrink();
           },
         ),
       ),
@@ -345,16 +329,5 @@ class SalesChartWidget extends StatelessWidget {
       return '${(value / 1000).toStringAsFixed(1)}K';
     }
     return value.toStringAsFixed(0);
-  }
-
-  String _formatDateLabel(DateTime date) {
-    switch (period) {
-      case SalesTimePeriod.day:
-        return DateFormat('E').format(date); // Mon, Tue, etc.
-      case SalesTimePeriod.week:
-        return 'W${((date.day - 1) ~/ 7) + 1}'; // W1, W2, etc.
-      case SalesTimePeriod.month:
-        return DateFormat('MMM').format(date); // Jan, Feb, etc.
-    }
   }
 }

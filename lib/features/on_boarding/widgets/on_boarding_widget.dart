@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
-import '../../../models/OnboardingItem.dart';
+import 'package:raising_india/models/on_boarding_item.dart';
 
 
 class OnboardingPage extends StatelessWidget {

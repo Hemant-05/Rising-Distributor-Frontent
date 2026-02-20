@@ -1,16 +1,17 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:provider/provider.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:raising_india/comman/back_button.dart';
 import 'package:raising_india/comman/elevated_button_style.dart';
 import 'package:raising_india/comman/simple_text_style.dart';
 import 'package:raising_india/constant/AppColour.dart';
-import 'package:raising_india/features/admin/category/bloc/category_bloc.dart';
-import 'package:raising_india/models/category_model.dart';
+import 'package:raising_india/data/services/category_service.dart';
+import 'package:raising_india/data/services/image_service.dart';
+import 'package:raising_india/models/model/category.dart';
 
 class AddEditCategoryScreen extends StatefulWidget {
-  final CategoryModel? category;
+  final Category? category;
 
   const AddEditCategoryScreen({super.key, this.category});
 
@@ -23,7 +24,7 @@ class AddEditCategoryScreen extends StatefulWidget {
 class _AddEditCategoryScreenState extends State<AddEditCategoryScreen> {
   final _formKey = GlobalKey<FormState>();
   final _nameController = TextEditingController();
-  final _valueController = TextEditingController();
+  // Removed _valueController as it wasn't in your Category model
   final ImagePicker _picker = ImagePicker();
 
   File? _imageFile;
@@ -33,8 +34,78 @@ class _AddEditCategoryScreenState extends State<AddEditCategoryScreen> {
   void initState() {
     super.initState();
     if (widget.isEdit) {
-      _nameController.text = widget.category!.name;
-      _valueController.text = widget.category!.value;
+      _nameController.text = widget.category!.name ?? "";
+    }
+  }
+
+  Future<void> _pickImage() async {
+    try {
+      final XFile? pickedFile = await _picker.pickImage(
+        source: ImageSource.gallery,
+        maxWidth: 1024,
+        maxHeight: 1024,
+        imageQuality: 80,
+      );
+
+      if (pickedFile != null) {
+        setState(() {
+          _imageFile = File(pickedFile.path);
+        });
+      }
+    } catch (e) {
+      debugPrint("Error picking image: $e");
+    }
+  }
+
+  Future<void> _submitForm() async {
+    if (!_formKey.currentState!.validate()) return;
+
+    setState(() => _isLoading = true);
+
+    final name = _nameController.text.trim();
+    final categoryService = context.read<CategoryService>();
+    final imageService = context.read<ImageService>();
+
+    String? error;
+
+    if (widget.isEdit) {
+      // Update logic
+      // Assuming parentCategory and subCategories remain same if not edited here
+      final updatedCategory = Category(
+          id: widget.category!.id,
+          name: name,
+          imageUrl: widget.category!.imageUrl,
+          parentCategory: widget.category!.parentCategory,
+          subCategories: widget.category!.subCategories
+      );
+
+      error = await categoryService.updateCategory(
+        category: updatedCategory,
+        newImageFile: _imageFile,
+        imageService: imageService,
+      );
+    } else {
+      // Add logic
+      error = await categoryService.addCategory(
+        name: name,
+        imageFile: _imageFile,
+        imageService: imageService,
+      );
+    }
+
+    if (mounted) {
+      setState(() => _isLoading = false);
+
+      if (error == null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text("Category Saved!"), backgroundColor: Colors.green),
+        );
+        Navigator.pop(context, true);
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(error), backgroundColor: Colors.red),
+        );
+      }
     }
   }
 
@@ -49,45 +120,24 @@ class _AddEditCategoryScreenState extends State<AddEditCategoryScreen> {
           children: [
             back_button(),
             const SizedBox(width: 8),
-        Text(
-          widget.isEdit ? 'Edit Category' : 'Add Category',style: simple_text_style(),),
+            Text(widget.isEdit ? 'Edit Category' : 'Add Category', style: simple_text_style()),
             const Spacer(),
           ],
         ),
       ),
-      body: BlocListener<CategoryBloc, CategoryState>(
-        listener: (context, state) {
-          setState(() => _isLoading = false);
-          if (state is CategoryActionSuccess) {
-            Navigator.pop(context, true);
-          } else if (state is CategoryError) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text(state.message,style: simple_text_style(color: AppColour.white)),
-                backgroundColor: Colors.red,
-              ),
-            );
-          }
-        },
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.all(16),
-          child: Form(
-            key: _formKey,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // Image Section
-                _buildImageSection(),
-                const SizedBox(height: 24),
-
-                // Form Section
-                _buildFormSection(),
-                const SizedBox(height: 32),
-
-                // Submit Button
-                _buildSubmitButton(),
-              ],
-            ),
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.all(16),
+        child: Form(
+          key: _formKey,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _buildImageSection(),
+              const SizedBox(height: 24),
+              _buildFormSection(),
+              const SizedBox(height: 32),
+              _buildSubmitButton(),
+            ],
           ),
         ),
       ),
@@ -108,14 +158,10 @@ class _AddEditCategoryScreenState extends State<AddEditCategoryScreen> {
               children: [
                 Icon(Icons.image_outlined, color: AppColour.primary),
                 const SizedBox(width: 8),
-                Text(
-                  'Category Image',
-                  style: simple_text_style(fontSize: 18, fontWeight: FontWeight.w600),
-                ),
+                Text('Category Image', style: simple_text_style(fontSize: 18, fontWeight: FontWeight.w600)),
               ],
             ),
             const SizedBox(height: 16),
-
             Center(
               child: GestureDetector(
                 onTap: _pickImage,
@@ -123,10 +169,7 @@ class _AddEditCategoryScreenState extends State<AddEditCategoryScreen> {
                   width: 200,
                   height: 150,
                   decoration: BoxDecoration(
-                    border: Border.all(
-                      color: Colors.grey.shade300,
-                      style: BorderStyle.solid,
-                    ),
+                    border: Border.all(color: Colors.grey.shade300),
                     borderRadius: BorderRadius.circular(12),
                     color: Colors.grey.shade50,
                   ),
@@ -134,22 +177,18 @@ class _AddEditCategoryScreenState extends State<AddEditCategoryScreen> {
                 ),
               ),
             ),
-
             const SizedBox(height: 12),
             Center(
               child: TextButton.icon(
                 onPressed: _pickImage,
                 icon: const Icon(Icons.camera_alt_outlined),
                 label: Text(
-                  _imageFile != null ||
-                          (widget.isEdit && widget.category!.image.isNotEmpty)
+                  _imageFile != null || (widget.isEdit && widget.category!.imageUrl != null && widget.category!.imageUrl!.isNotEmpty)
                       ? 'Change Image'
                       : 'Select Image',
                   style: simple_text_style(),
                 ),
-                style: TextButton.styleFrom(
-                  foregroundColor: Colors.orange.shade600,
-                ),
+                style: TextButton.styleFrom(foregroundColor: Colors.orange.shade600),
               ),
             ),
           ],
@@ -162,18 +201,13 @@ class _AddEditCategoryScreenState extends State<AddEditCategoryScreen> {
     if (_imageFile != null) {
       return ClipRRect(
         borderRadius: BorderRadius.circular(12),
-        child: Image.file(
-          _imageFile!,
-          fit: BoxFit.cover,
-          width: double.infinity,
-          height: double.infinity,
-        ),
+        child: Image.file(_imageFile!, fit: BoxFit.cover, width: double.infinity, height: double.infinity),
       );
-    } else if (widget.isEdit && widget.category!.image.isNotEmpty) {
+    } else if (widget.isEdit && widget.category!.imageUrl != null && widget.category!.imageUrl!.isNotEmpty) {
       return ClipRRect(
         borderRadius: BorderRadius.circular(12),
         child: Image.network(
-          widget.category!.image,
+          widget.category!.imageUrl!,
           fit: BoxFit.cover,
           width: double.infinity,
           height: double.infinity,
@@ -189,16 +223,9 @@ class _AddEditCategoryScreenState extends State<AddEditCategoryScreen> {
     return Column(
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
-        Icon(
-          Icons.add_photo_alternate_outlined,
-          size: 48,
-          color: Colors.grey.shade400,
-        ),
+        Icon(Icons.add_photo_alternate_outlined, size: 48, color: Colors.grey.shade400),
         const SizedBox(height: 8),
-        Text(
-          'Select Image',
-          style: simple_text_style(color: AppColour.lightGrey, fontSize: 14),
-        ),
+        Text('Select Image', style: simple_text_style(color: AppColour.lightGrey, fontSize: 14)),
       ],
     );
   }
@@ -211,99 +238,15 @@ class _AddEditCategoryScreenState extends State<AddEditCategoryScreen> {
       child: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Row(
-              children: [
-                Icon(Icons.edit_outlined, color: AppColour.primary),
-                const SizedBox(width: 8),
-                Text(
-                  'Category Details',
-                  style: simple_text_style(fontSize: 18, fontWeight: FontWeight.w600),
-                ),
-              ],
-            ),
-            const SizedBox(height: 20),
-
-            // Category Name Field
             TextFormField(
               controller: _nameController,
-              style: simple_text_style(),
               decoration: InputDecoration(
                 hintText: 'e.g., Dairy Products',
-                hintStyle: simple_text_style(),
                 prefixIcon: const Icon(Icons.category_outlined),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                focusedBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(8),
-                  borderSide: BorderSide(color: Colors.orange.shade600),
-                ),
+                border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
               ),
-              validator: (value) {
-                if (value == null || value.trim().isEmpty) {
-                  return 'Please enter category name';
-                }
-                return null;
-              },
-              textCapitalization: TextCapitalization.words,
-            ),
-
-            const SizedBox(height: 16),
-
-            // Category Value Field
-            TextFormField(
-              controller: _valueController,
-              style: simple_text_style(),
-              decoration: InputDecoration(
-                hintText: 'e.g., Dairy',
-                hintStyle: simple_text_style(),
-                prefixIcon: const Icon(Icons.tag_outlined),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                focusedBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(8),
-                  borderSide: BorderSide(color: Colors.orange.shade600),
-                ),
-              ),
-              validator: (value) {
-                if (value == null || value.trim().isEmpty) {
-                  return 'Please enter category value';
-                }
-                return null;
-              },
-            ),
-
-            const SizedBox(height: 12),
-            Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: Colors.blue.shade50,
-                borderRadius: BorderRadius.circular(8),
-                border: Border.all(color: Colors.blue.shade200),
-              ),
-              child: Row(
-                children: [
-                  Icon(
-                    Icons.info_outline,
-                    color: Colors.blue.shade600,
-                    size: 20,
-                  ),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: Text(
-                      'Category value is used for filtering products and should be unique.',
-                      style: TextStyle(
-                        fontFamily: 'Sen',
-                        color: Colors.blue.shade700,
-                        fontSize: 13,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
+              validator: (val) => val == null || val.trim().isEmpty ? 'Please enter name' : null,
             ),
           ],
         ),
@@ -315,72 +258,21 @@ class _AddEditCategoryScreenState extends State<AddEditCategoryScreen> {
     return SizedBox(
       width: double.infinity,
       child: ElevatedButton(
-        onPressed: _isLoading && _nameController.text.isNotEmpty && _valueController.text.isNotEmpty ? (){} : (){
-          setState(() => _isLoading = true);
-          _submitForm();
-        },
+        onPressed: _isLoading ? null : _submitForm,
         style: elevated_button_style(),
         child: _isLoading
-            ? SizedBox(
-                height: 20,
-                width: 20,
-                child: CircularProgressIndicator(
-                  color: AppColour.primary,
-                  strokeWidth: 2,
-                  valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                ),
-              )
+            ? const SizedBox(height: 20, width: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
             : Text(
-                widget.isEdit ? 'Update Category' : 'Add Category',
-                style: simple_text_style(
-                  fontSize: 16,
-                  color: AppColour.white,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
+          widget.isEdit ? 'Update Category' : 'Add Category',
+          style: simple_text_style(fontSize: 16, color: AppColour.white, fontWeight: FontWeight.w600),
+        ),
       ),
     );
-  }
-
-  Future<void> _pickImage() async {
-    final XFile? pickedFile = await _picker.pickImage(
-      source: ImageSource.gallery,
-      maxWidth: 1024,
-      maxHeight: 1024,
-      imageQuality: 80,
-    );
-
-    if (pickedFile != null) {
-      setState(() {
-        _imageFile = File(pickedFile.path);
-      });
-    }
-  }
-
-  void _submitForm() {
-    if (_formKey.currentState!.validate()) {
-      final name = _nameController.text.trim();
-      final value = _valueController.text.trim();
-
-      if (widget.isEdit) {
-        context.read<CategoryBloc>().add(
-          UpdateCategory(
-            category: widget.category!.copyWith(name: name, value: value),
-            newImageFile: _imageFile,
-          ),
-        );
-      } else {
-        context.read<CategoryBloc>().add(
-          AddCategory(name: name, value: value, imageFile: _imageFile),
-        );
-      }
-    }
   }
 
   @override
   void dispose() {
     _nameController.dispose();
-    _valueController.dispose();
     super.dispose();
   }
 }

@@ -2,27 +2,27 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:raising_india/comman/simple_text_style.dart';
 import 'package:raising_india/constant/AppColour.dart';
-import 'package:raising_india/models/order_with_product_model.dart';
-import 'package:raising_india/models/ordered_product.dart';
+import 'package:raising_india/models/model/order.dart';
+import 'package:raising_india/models/model/order_item.dart';
 
 import 'screens/admin_order_details_screen.dart';
 
 class AdminOrderCard extends StatelessWidget {
-  final OrderWithProducts orderWithProducts;
+  final Order order;
   final bool showTime;
   final bool isRunning;
 
   const AdminOrderCard({
     super.key,
-    required this.orderWithProducts,
+    required this.order,
     this.showTime = false,
     this.isRunning = false,
   });
 
   @override
   Widget build(BuildContext context) {
-    final order = orderWithProducts.order;
-    final items = orderWithProducts.products;
+    final order = this.order;
+    final items = this.order.orderItems;
 
     return Card(
       margin: EdgeInsets.zero,
@@ -36,7 +36,7 @@ class AdminOrderCard extends StatelessWidget {
             context,
             MaterialPageRoute(
               builder: (_) => AdminOrderDetailScreen(
-                orderWithProducts: orderWithProducts,
+                order: this.order,
               ),
             ),
           );
@@ -51,7 +51,7 @@ class AdminOrderCard extends StatelessWidget {
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   Text(
-                    'Order #${order.orderId.substring(0, 6)}',
+                    'Order #${order.id!.toString()}',
                     style: simple_text_style(
                       fontWeight: FontWeight.bold,
                       fontSize: 18,
@@ -64,15 +64,15 @@ class AdminOrderCard extends StatelessWidget {
                     ),
                     decoration: BoxDecoration(
                       color: _getStatusColor(
-                        order.orderStatus,
+                        order.status!,
                       ).withOpacity(0.1),
                       borderRadius: BorderRadius.circular(12),
                       border: Border.all(
-                        color: _getStatusColor(order.orderStatus),
+                        color: _getStatusColor(order.status!),
                       ),
                     ),
                     child: Text(
-                      _getStatusText(order.orderStatus),
+                      _getStatusText(order.status!),
                       style: simple_text_style(fontSize: 14),
                     ),
                   ),
@@ -83,7 +83,7 @@ class AdminOrderCard extends StatelessWidget {
               // Items Row
               Row(
                 children: [
-                  _buildItemImages(items),
+                  _buildItemImages(items!),
                   const SizedBox(width: 12),
                   Expanded(
                     child: Column(
@@ -97,7 +97,7 @@ class AdminOrderCard extends StatelessWidget {
                         ),
                         const SizedBox(height: 4),
                         Text(
-                          '${items.length} items • ₹${order.total.toStringAsFixed(0)}',
+                          '${items.length} items • ₹${order.totalPrice!.toStringAsFixed(0)}',
                           style: simple_text_style(
                             color: AppColour.lightGrey,
                             fontSize: 14,
@@ -118,18 +118,18 @@ class AdminOrderCard extends StatelessWidget {
                 children: [
                   // Payment Status
                   _buildStatusChip(
-                    icon: _getPaymentIcon(order.paymentStatus),
-                    label: _getPaymentText(order.paymentStatus),
-                    color: _getPaymentColor(order.paymentStatus),
+                    icon: _getPaymentIcon(order.payment!.paymentStatus!),
+                    label: _getPaymentText(order.payment!.paymentStatus!),
+                    color: _getPaymentColor(order.payment!.paymentStatus!),
                   ),
                   const SizedBox(width: 8),
 
                   // Payment Method
                   _buildStatusChip(
-                    icon: order.paymentMethod == 'prepaid'
+                    icon: order.payment?.paymentMethod == 'prepaid'
                         ? Icons.credit_card
                         : Icons.money,
-                    label: order.paymentMethod == 'prepaid' ? 'Prepaid' : 'COD',
+                    label: order.payment?.paymentMethod == 'prepaid' ? 'Prepaid' : 'COD',
                     color: Colors.blue,
                   ),
 
@@ -141,7 +141,7 @@ class AdminOrderCard extends StatelessWidget {
                     children: [
                       if (showTime) ...[
                         Text(
-                          DateFormat('h:mm a').format(order.createdAt),
+                          DateFormat('h:mm a').format(order.createdAt!),
                           style: simple_text_style(
                             fontSize: 14,
                             color: AppColour.black,
@@ -149,7 +149,7 @@ class AdminOrderCard extends StatelessWidget {
                           ),
                         ),
                         Text(
-                          DateFormat('MMM d').format(order.createdAt),
+                          DateFormat('MMM d').format(order.createdAt!),
                           style: simple_text_style(
                             fontSize: 12,
                             color: AppColour.grey,
@@ -157,7 +157,7 @@ class AdminOrderCard extends StatelessWidget {
                         ),
                       ] else ...[
                         Text(
-                          DateFormat('MMM d, h:mm a').format(order.createdAt),
+                          DateFormat('MMM d, h:mm a').format(order.createdAt!),
                           style: simple_text_style(
                             fontSize: 12,
                             color: AppColour.grey,
@@ -175,7 +175,7 @@ class AdminOrderCard extends StatelessWidget {
     );
   }
 
-  Widget _buildItemImages(List<OrderedProduct> items) {
+  Widget _buildItemImages(List<OrderItem> items) {
     final imagesToShow = items.take(4).toList();
 
     return SizedBox(
@@ -185,7 +185,7 @@ class AdminOrderCard extends StatelessWidget {
           ? ClipRRect(
               borderRadius: BorderRadius.circular(8),
               child: Image.network(
-                imagesToShow.first.product?.photosList.first ?? '',
+                imagesToShow.first.product?.photosList!.first ?? '',
                 width: 60,
                 height: 60,
                 fit: BoxFit.cover,
@@ -212,7 +212,7 @@ class AdminOrderCard extends StatelessWidget {
               itemBuilder: (_, i) => ClipRRect(
                 borderRadius: BorderRadius.circular(4),
                 child: Image.network(
-                  imagesToShow[i].product?.photosList.first ?? '',
+                  imagesToShow[i].product?.photosList!.first ?? '',
                   fit: BoxFit.cover,
                   errorBuilder: (_, __, ___) => Container(
                     color: Colors.grey.shade200,
@@ -250,7 +250,7 @@ class AdminOrderCard extends StatelessWidget {
     );
   }
 
-  String _buildItemsText(List<OrderedProduct> items) {
+  String _buildItemsText(List<OrderItem> items) {
     if (items.isEmpty) return 'No items';
     if (items.length == 1) return items.first.product?.name ?? 'Unknown item';
     if (items.length == 2) {

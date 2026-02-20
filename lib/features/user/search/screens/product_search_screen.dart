@@ -1,16 +1,21 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:provider/provider.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:persistent_bottom_nav_bar/persistent_bottom_nav_bar.dart';
 import 'package:raising_india/comman/back_button.dart';
 import 'package:raising_india/comman/cart_button.dart';
 import 'package:raising_india/comman/simple_text_style.dart';
 import 'package:raising_india/constant/AppColour.dart';
-import 'package:raising_india/features/user/cart/screens/cart_screen.dart';
-import 'package:raising_india/features/user/product_details/bloc/product_funtction_bloc/product_fun_bloc.dart';
+import 'package:raising_india/constant/ConPath.dart';
+
+// Services
+import 'package:raising_india/data/services/product_service.dart';
+
+// Screens
 import 'package:raising_india/features/user/product_details/screens/product_details_screen.dart';
-import 'package:raising_india/features/user/search/bloc/product_search_bloc/product_search_bloc.dart';
-import '../../../../constant/ConPath.dart';
+
+// Model
+import 'package:raising_india/models/model/product.dart';
 
 class ProductSearchScreen extends StatefulWidget {
   const ProductSearchScreen({super.key});
@@ -21,6 +26,27 @@ class ProductSearchScreen extends StatefulWidget {
 
 class _ProductSearchScreenState extends State<ProductSearchScreen> {
   final TextEditingController _controller = TextEditingController();
+  List<Product> _searchResults = [];
+  bool _hasSearched = false;
+
+  void _onSearch(String query) async {
+    if (query.isEmpty) return;
+
+    // Clear previous results
+    setState(() {
+      _searchResults = [];
+      _hasSearched = true;
+    });
+
+    // Call Service
+    final results = await context.read<ProductService>().search(query);
+
+    if (mounted) {
+      setState(() {
+        _searchResults = results;
+      });
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -49,15 +75,17 @@ class _ProductSearchScreenState extends State<ProductSearchScreen> {
               decoration: InputDecoration(
                 filled: true,
                 fillColor: AppColour.lightGrey.withOpacity(0.25),
-                focusColor: AppColour.lightGrey.withOpacity(0.5),
                 hintText: "Search for products",
-                hintStyle: simple_text_style(
-                  color: AppColour.lightGrey,
-                  fontSize: 14,
-                ),
+                hintStyle: simple_text_style(color: AppColour.lightGrey, fontSize: 14),
                 prefixIcon: Icon(Icons.search, color: AppColour.lightGrey),
                 suffixIcon: InkWell(
-                  onTap: () => _controller.clear(),
+                  onTap: () {
+                    _controller.clear();
+                    setState(() {
+                      _searchResults = [];
+                      _hasSearched = false;
+                    });
+                  },
                   child: Icon(Icons.cancel, color: AppColour.lightGrey),
                 ),
                 border: OutlineInputBorder(
@@ -65,78 +93,73 @@ class _ProductSearchScreenState extends State<ProductSearchScreen> {
                   borderSide: BorderSide.none,
                 ),
               ),
-              onSubmitted: (query) {
-                if (query.isNotEmpty) {
-                  context.read<ProductSearchBloc>().add(SearchProducts(query));
-                }
-              },
+              onSubmitted: _onSearch,
             ),
+            const SizedBox(height: 16),
             Expanded(
-              child: BlocBuilder<ProductSearchBloc, ProductSearchState>(
-                builder: (context, state) {
-                  if (state is ProductSearchLoading) {
-                    return Center(child: CircularProgressIndicator(color: AppColour.primary,));
-                  } else if (state is ProductSearchLoaded) {
-                    if (state.results.isEmpty) {
-                      return Center(child: Text("No products found.",style: simple_text_style(),));
-                    }
-                    return ListView.builder(
-                      itemCount: state.results.length,
-                      itemBuilder: (context, index) {
-                        final product = state.results[index];
-                        return ListTile(
-                          onTap: (){
-                            context.read<ProductFunBloc>().add(GetProductByID(productId: product.pid));
-                            PersistentNavBarNavigator.pushNewScreen(
-                              context,
-                              screen: ProductDetailsScreen(product: product,),
-                              withNavBar: false,
-                              pageTransitionAnimation: PageTransitionAnimation.cupertino,
-                            );
-                          },
-                          leading: ClipRRect(
-                            borderRadius: BorderRadius.circular(8),
-                            child: Image.network(
-                              product.photosList[0],
-                              width: 50,
-                              height: 50,
-                              fit: BoxFit.cover,
-                            ),
-                          ),
-                          title: Text(
-                            product.name,
-                            style: simple_text_style(
-                              fontSize: 16,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                          subtitle: Text("₹ ${product.price.toString()}"),
-                          trailing: Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              SvgPicture.asset(star_svg),
-                              Text(
-                                " ${product.rating.toString()}",
-                                style: simple_text_style(
-                                  fontSize: 14,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                            ],
-                          ),
-                        );
-                      },
-                    );
-                  } else if (state is ProductSearchError) {
-                    return Center(child: Text(state.message));
-                  }
-                  return Center(child: Text("Search for a product."));
-                },
-              ),
+              child: _buildResults(),
             ),
           ],
         ),
       ),
+    );
+  }
+
+  Widget _buildResults() {
+    // Check loading state from service if needed, or rely on local async logic
+    // For simplicity, we just check lists
+    if (!_hasSearched) {
+      return Center(child: Text("Search for a product.", style: simple_text_style()));
+    }
+
+    if (_searchResults.isEmpty) {
+      return Center(child: Text("No products found.", style: simple_text_style()));
+    }
+
+    return ListView.builder(
+      itemCount: _searchResults.length,
+      itemBuilder: (context, index) {
+        final product = _searchResults[index];
+        final String imageUrl = (product.photosList != null && product.photosList!.isNotEmpty)
+            ? product.photosList![0]
+            : "";
+
+        return ListTile(
+          onTap: () {
+            PersistentNavBarNavigator.pushNewScreen(
+              context,
+              screen: ProductDetailsScreen(product: product),
+              withNavBar: false,
+              pageTransitionAnimation: PageTransitionAnimation.cupertino,
+            );
+          },
+          leading: ClipRRect(
+            borderRadius: BorderRadius.circular(8),
+            child: Image.network(
+              imageUrl,
+              width: 50,
+              height: 50,
+              fit: BoxFit.cover,
+              errorBuilder: (_,__,___) => const Icon(Icons.error),
+            ),
+          ),
+          title: Text(
+            product.name ?? "Product",
+            style: simple_text_style(fontSize: 16, fontWeight: FontWeight.bold),
+          ),
+          subtitle: Text("₹ ${product.price}"),
+          trailing: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              SvgPicture.asset(star_svg, height: 16, width: 16), // Ensure asset exists
+              Text(
+                " ${product.rating ?? 0.0}",
+                style: simple_text_style(fontSize: 14, fontWeight: FontWeight.bold),
+              ),
+            ],
+          ),
+        );
+      },
     );
   }
 }

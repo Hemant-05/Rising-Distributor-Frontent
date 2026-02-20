@@ -4,15 +4,19 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:provider/provider.dart';
 import 'package:raising_india/comman/simple_text_style.dart';
 import 'package:raising_india/constant/AppColour.dart';
-import 'package:raising_india/features/admin/category/bloc/category_bloc.dart';
-import 'package:raising_india/features/admin/product/bloc/products_cubit.dart';
-import 'package:raising_india/features/admin/services/image_services.dart';
-import 'package:raising_india/models/product_model.dart';
+import 'package:raising_india/data/services/category_service.dart';
+import 'package:raising_india/data/services/image_service.dart';
+import 'package:raising_india/data/services/product_service.dart';
+import 'package:raising_india/features/admin/services/admin_image_service.dart';
+import 'package:raising_india/models/model/product.dart';
+import '../../../../models/model/brand.dart';
+import '../../../../models/model/category.dart';
 
 class AdminProductDetailScreen extends StatefulWidget {
-  final ProductModel product;
+  final Product product;
   const AdminProductDetailScreen({super.key, required this.product});
   @override
   State<AdminProductDetailScreen> createState() =>
@@ -31,11 +35,13 @@ class _AdminProductDetailScreenState extends State<AdminProductDetailScreen>
   late TextEditingController stockQuantityController;
   late TextEditingController lowStockController;
   late TextEditingController ratingController;
-  late TextEditingController categoryController;
+  late Category selectedCategory;
+  late Brand? selectedBrand;
   List<String> photos_list = [];
   List<File> photos_files_list = [];
   List<String> deleted_photos_list = [];
-  final ImageServices _imageServices = ImageServices();
+  late ImageService imageService;
+  late AdminImageService adminImageService;
 
   bool isAvailable = false;
   bool loading = false;
@@ -51,9 +57,12 @@ class _AdminProductDetailScreenState extends State<AdminProductDetailScreen>
   void initState() {
     super.initState();
 
+    imageService = context.read<ImageService>();
+    adminImageService = context.read<AdminImageService>();
+
     // ✅ Initialize all controllers with product data
     nameController = TextEditingController(text: widget.product.name);
-    photos_list.addAll(widget.product.photosList);
+    photos_list.addAll(widget.product.photosList!);
     descriptionController = TextEditingController(
       text: widget.product.description,
     );
@@ -61,7 +70,7 @@ class _AdminProductDetailScreenState extends State<AdminProductDetailScreen>
       text: widget.product.price.toString(),
     );
     mrpController = widget.product.mrp == null
-        ? TextEditingController(text: (widget.product.price + 5).toString())
+        ? TextEditingController(text: (widget.product.price! + 5).toString())
         : TextEditingController(text: widget.product.mrp.toString());
     quantityController = TextEditingController(
       text: widget.product.quantity.toString(),
@@ -78,8 +87,9 @@ class _AdminProductDetailScreenState extends State<AdminProductDetailScreen>
     ratingController = TextEditingController(
       text: widget.product.rating.toString(),
     );
-    categoryController = TextEditingController(text: widget.product.category);
-    isAvailable = widget.product.isAvailable;
+    selectedCategory = widget.product.category!;
+    selectedBrand = widget.product.brand;
+    isAvailable = widget.product.isAvailable!;
 
     // ✅ Initialize animations
     _fadeAnimationController = AnimationController(
@@ -124,7 +134,6 @@ class _AdminProductDetailScreenState extends State<AdminProductDetailScreen>
     stockQuantityController.addListener(_onFieldChanged);
     lowStockController.addListener(_onFieldChanged);
     ratingController.addListener(_onFieldChanged);
-    categoryController.addListener(_onFieldChanged);
   }
 
   void _onFieldChanged() {
@@ -148,7 +157,6 @@ class _AdminProductDetailScreenState extends State<AdminProductDetailScreen>
     stockQuantityController.dispose();
     lowStockController.dispose();
     ratingController.dispose();
-    categoryController.dispose();
     super.dispose();
   }
 
@@ -158,44 +166,49 @@ class _AdminProductDetailScreenState extends State<AdminProductDetailScreen>
     setState(() => loading = true);
 
     try {
-      List<String> newPhotosList = await _imageServices.uploadImages(photos_files_list, widget.product.name);
+      List<String> newPhotosList = [];
+      for(File file in photos_files_list) {
+        String? url = await imageService.uploadImage(file);
+        newPhotosList.add(url!);
+      }
       photos_list.addAll(newPhotosList);
-      if(deleted_photos_list.isNotEmpty){
-        for(String url in deleted_photos_list){
-          await _imageServices.deleteImage(url);
+      if (deleted_photos_list.isNotEmpty) {
+        for (String url in deleted_photos_list) {
+          await imageService.deleteImage(url);
         }
       }
-      // ✅ Prepare updated data with validation
-      final updatedData = {
-        'photos_list': photos_list,
-        'name': nameController.text.trim(),
-        'description': descriptionController.text.trim(),
-        'price':
-            double.tryParse(priceController.text.trim()) ??
+
+      Product product = Product(
+        pid: widget.product.pid,
+        uid: widget.product.uid,
+        name: nameController.text.trim(),
+        description: descriptionController.text.trim(),
+        price: double.tryParse(priceController.text.trim()) ??
             widget.product.price,
-        'mrp': mrpController.text.trim().isEmpty
-            ? (widget.product.price + 5)
+        mrp: mrpController.text.trim().isEmpty
+            ? (widget.product.price! + 5)
             : double.parse(mrpController.text.trim()),
-        'quantity':
-            double.tryParse(quantityController.text.trim()) ??
+        quantity: int.tryParse(quantityController.text.trim()) ??
             widget.product.quantity,
-        'measurement': measurementController.text.trim().isNotEmpty
+        measurement: measurementController.text.trim().isNotEmpty
             ? measurementController.text.trim()
             : widget.product.measurement,
-        'lowStockQuantity':
-            double.tryParse(lowStockController.text.trim()) ?? 10.0,
-        'rating':
-            double.tryParse(ratingController.text.trim()) ??
+        stockQuantity: int.tryParse(stockQuantityController.text.trim()) ??
+            widget.product.stockQuantity,
+        lowStockQuantity: int.tryParse(lowStockController.text.trim()) ??
+            widget.product.lowStockQuantity,
+        rating: double.tryParse(ratingController.text.trim()) ??
             widget.product.rating,
-        'category': categoryController.text.trim(),
-        'isAvailable': isAvailable,
-        'name_lower': nameController.text.trim().toLowerCase(),
-      };
+        category: selectedCategory,
+        isAvailable: isAvailable,
+        photosList: photos_list,
+        brand: selectedBrand,
+        nameLower: nameController.text.trim().toLowerCase(),
+        lastStockUpdate: DateTime.now(),
+        isDiscountable: widget.product.isDiscountable,
+      );
 
-      await FirebaseFirestore.instance
-          .collection('products')
-          .doc(widget.product.pid)
-          .update(updatedData);
+      context.read<ProductService>().updateProduct(product);
 
       setState(() {
         loading = false;
@@ -326,11 +339,7 @@ class _AdminProductDetailScreenState extends State<AdminProductDetailScreen>
     );
 
     if (confirmed == true) {
-      context.read<ProductsCubit>().deleteProduct(
-        context,
-        widget.product.pid,
-        widget.product.photosList,
-      );
+      context.read<ProductService>().deleteProduct(widget.product.pid!);
     }
   }
 
@@ -344,16 +353,13 @@ class _AdminProductDetailScreenState extends State<AdminProductDetailScreen>
             leading: Icon(Icons.photo),
             title: Text('Pick from gallery', style: simple_text_style()),
             onTap: () async {
-              final image = await _imageServices.pickFromGallery();
+              final image = await adminImageService.pickFromGallery();
               if (image != null) {
                 setState(() {
                   _hasUnsavedChanges = true;
                   photos_files_list.add(image);
                 });
               }
-              /*if (image != null) {
-                context.read<ImageSelectionCubit>().setImageAtIndex(imageSlot, image);
-              }*/
               Navigator.pop(ctx);
             },
           ),
@@ -361,16 +367,13 @@ class _AdminProductDetailScreenState extends State<AdminProductDetailScreen>
             leading: Icon(Icons.camera_alt),
             title: Text('Take a photo', style: simple_text_style()),
             onTap: () async {
-              final image = await _imageServices.pickFromCamera();
+              final image = await adminImageService.pickFromCamera();
               if (image != null) {
                 setState(() {
                   _hasUnsavedChanges = true;
                   photos_files_list.add(image);
                 });
               }
-              /*if (image != null) {
-                context.read<ImageSelectionCubit>().setImageAtIndex(imageSlot, image);
-              }*/
               Navigator.pop(ctx);
             },
           ),
@@ -674,8 +677,11 @@ class _AdminProductDetailScreenState extends State<AdminProductDetailScreen>
           ),
           // Images Content
           const SizedBox(height: 10),
-          if(photos_list.isNotEmpty && photos_files_list.isNotEmpty)
-          Text('Old Images', style: simple_text_style(color: AppColour.black)),
+          if (photos_list.isNotEmpty && photos_files_list.isNotEmpty)
+            Text(
+              'Old Images',
+              style: simple_text_style(color: AppColour.black),
+            ),
           Padding(
             padding: const EdgeInsets.fromLTRB(20, 4, 20, 4),
             child: photos_list.isNotEmpty
@@ -693,7 +699,10 @@ class _AdminProductDetailScreenState extends State<AdminProductDetailScreen>
                               height: 80,
                               decoration: BoxDecoration(
                                 borderRadius: BorderRadius.circular(12),
-                                border: Border.all(color: AppColour.black,width: 1),
+                                border: Border.all(
+                                  color: AppColour.black,
+                                  width: 1,
+                                ),
                                 boxShadow: [
                                   BoxShadow(
                                     color: Colors.grey.shade300,
@@ -766,8 +775,11 @@ class _AdminProductDetailScreenState extends State<AdminProductDetailScreen>
                   ),
           ),
           const SizedBox(height: 10),
-          if (photos_files_list.isNotEmpty)...{
-            Text('New Images', style: simple_text_style(color: AppColour.black)),
+          if (photos_files_list.isNotEmpty) ...{
+            Text(
+              'New Images',
+              style: simple_text_style(color: AppColour.black),
+            ),
             Padding(
               padding: const EdgeInsets.fromLTRB(20, 4, 20, 20),
               child: SizedBox(
@@ -785,7 +797,9 @@ class _AdminProductDetailScreenState extends State<AdminProductDetailScreen>
                           decoration: BoxDecoration(
                             borderRadius: BorderRadius.circular(12),
                             border: Border.all(
-                                color: AppColour.black, width: 1),
+                              color: AppColour.black,
+                              width: 1,
+                            ),
                             boxShadow: [
                               BoxShadow(
                                 color: Colors.grey.shade300,
@@ -821,7 +835,7 @@ class _AdminProductDetailScreenState extends State<AdminProductDetailScreen>
                 ),
               ),
             ),
-          }
+          },
         ],
       ),
     );
@@ -858,7 +872,6 @@ class _AdminProductDetailScreenState extends State<AdminProductDetailScreen>
           const SizedBox(height: 16),
           _buildStyledDropdown(
             label: 'Category',
-            controller: categoryController,
             hintText: 'Select Category',
             icon: Icons.category_outlined,
           ),
@@ -1116,14 +1129,12 @@ class _AdminProductDetailScreenState extends State<AdminProductDetailScreen>
   }
 
   Widget _buildStyledDropdown({
-    required TextEditingController controller,
     required String hintText,
     required IconData icon,
     required String label,
   }) {
-    return BlocConsumer<CategoryBloc, CategoryState>(
-      listener: (context, state) {},
-      builder: (context, state) {
+    return Consumer<CategoryService>(
+      builder: (context, categoryService, _) {
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -1150,7 +1161,6 @@ class _AdminProductDetailScreenState extends State<AdminProductDetailScreen>
                   ),
                   Expanded(
                     child: DropdownMenu(
-                      controller: categoryController,
                       width: double.infinity,
                       textStyle: simple_text_style(
                         fontWeight: FontWeight.w500,
@@ -1170,12 +1180,12 @@ class _AdminProductDetailScreenState extends State<AdminProductDetailScreen>
                         ),
                         elevation: WidgetStateProperty.all(8),
                       ),
-                      dropdownMenuEntries: state is CategoryLoaded
-                          ? state.categories
+                      dropdownMenuEntries: categoryService.isLoading
+                          ? categoryService.categories
                                 .map(
                                   (category) => DropdownMenuEntry(
-                                    value: category.value,
-                                    label: category.name,
+                                    value: category.id,
+                                    label: category.name!,
                                   ),
                                 )
                                 .toList()

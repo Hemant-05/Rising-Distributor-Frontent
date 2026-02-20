@@ -112,21 +112,21 @@ class DioClient {
       case DioExceptionType.connectionTimeout:
       case DioExceptionType.sendTimeout:
       case DioExceptionType.receiveTimeout:
-        return NetworkException(message: 'Connection timeout');
+        return NetworkException('Connection timeout');
 
       case DioExceptionType.badResponse:
         return ServerException(
-          message: error.response?.data['message'] ?? 'Server error',
+          error.response?.data['message'] ?? 'Server error',
         );
 
       case DioExceptionType.cancel:
-        return NetworkException(message: 'Request cancelled');
+        return NetworkException('Request cancelled');
 
       case DioExceptionType.connectionError:
-        return NetworkException(message: 'No internet connection');
+        return NetworkException('No internet connection');
 
       default:
-        return ServerException(message: 'An unexpected error occurred');
+        return ServerException('An unexpected error occurred');
     }
   }
 }

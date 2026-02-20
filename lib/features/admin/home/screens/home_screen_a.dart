@@ -1,19 +1,20 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_svg/svg.dart';
+import 'package:provider/provider.dart';
 import 'package:raising_india/constant/AppColour.dart';
 import 'package:raising_india/constant/ConPath.dart';
-import 'package:raising_india/features/admin/home/bloc/order_cubit/order_stats_cubit.dart';
+import 'package:raising_india/data/services/admin_service.dart';
+import 'package:raising_india/data/services/analytics_service.dart';
+import 'package:raising_india/data/services/auth_service.dart';
+import 'package:raising_india/data/services/review_service.dart';
 import 'package:raising_india/features/admin/home/widgets/review_analytics_widget.dart';
 import 'package:raising_india/features/admin/home/widgets/sales_dashboard_widget.dart';
 import 'package:raising_india/features/admin/order/OrderFilterType.dart';
 import 'package:raising_india/features/admin/order/screens/order_list_screen.dart';
-import 'package:raising_india/features/admin/review/bloc/admin_review_bloc.dart';
-import 'package:raising_india/features/admin/sales_analytics/bloc/sales_analytics_bloc.dart';
 import 'package:raising_india/features/admin/stock_management/screens/low_stock_alert_screen.dart';
+import 'package:raising_india/models/dto/dashboard_response.dart';
 import '../../../../comman/simple_text_style.dart';
-import '../../../auth/bloc/auth_bloc.dart';
 
 class HomeScreenA extends StatefulWidget {
   const HomeScreenA({super.key});
@@ -62,9 +63,10 @@ class _HomeScreenAState extends State<HomeScreenA>
     _fadeAnimationController.forward();
     _slideAnimationController.forward();
 
-    // Load data
-    context.read<AdminReviewBloc>().add(LoadAllReviews());
-    context.read<SalesAnalyticsBloc>().add(LoadSalesAnalytics());
+    // @ fetch all review for admin
+    context.read<ReviewService>().loadAdminReviews();
+    context.read<AnalyticsService>().fetchAnalytics();
+    context.read<AdminService>().fetchDashboard();
   }
 
   @override
@@ -75,6 +77,8 @@ class _HomeScreenAState extends State<HomeScreenA>
   }
 
   void navigateToOrderListScreen(String title, OrderFilterType orderType) {
+
+    context.read<AdminService>().fetchOrdersByStatus(orderType.name);
     Navigator.push(
       context,
       MaterialPageRoute(
@@ -96,10 +100,10 @@ class _HomeScreenAState extends State<HomeScreenA>
             physics: const BouncingScrollPhysics(),
             child: Column(
               children: [
+                _buildLowStockAlertSection(),
+
                 // ✅ Order Statistics Section
                 _buildOrderStatsSection(),
-
-                _buildLowStockAlertSection(),
 
                 // ✅ Sales Analytics Section
                 _buildSalesAnalyticsSection(),
@@ -208,13 +212,9 @@ class _HomeScreenAState extends State<HomeScreenA>
         child: SafeArea(
           child: Padding(
             padding: const EdgeInsets.all(16),
-            child: BlocBuilder<UserBloc, UserState>(
-              builder: (context, state) {
-                String name = '';
-                if (state is UserAuthenticated) {
-                  name = state.user.name;
-                }
-
+            child: Consumer<AuthService>(
+              builder: (context, authService, _) {
+                String name = authService.admin!.name!;
                 return Column(
                   children: [
                     Row(
@@ -351,8 +351,15 @@ class _HomeScreenAState extends State<HomeScreenA>
           const SizedBox(height: 16),
 
           // Stats Cards
-          BlocBuilder<OrderStatsCubit, OrderStatsState>(
-            builder: (context, state) {
+          Consumer<AdminService>(
+            builder: (context, adminService, _) {
+              if (adminService.isLoading) {
+                return Center(child: CircularProgressIndicator(color: AppColour.primary,));
+              }
+              if (adminService.dashboardStats == null) {
+                return Center(child: Text('Some Error.....'));
+              }
+              DashboardResponse data = adminService.dashboardStats!;
               return Column(
                 children: [
                   // First Row - Running & Today's Orders
@@ -361,7 +368,7 @@ class _HomeScreenAState extends State<HomeScreenA>
                       Expanded(
                         child: _buildEnhancedStatsCard(
                           title: 'RUNNING',
-                          value: state.runningOrders.toString(),
+                          value: data.orderStatusCounts!['RUNNING'].toString() ?? '0' ,
                           icon: Icons.local_shipping,
                           color: AppColour.primary,
                           onTap: () => navigateToOrderListScreen('Running', OrderFilterType.running),
@@ -370,8 +377,8 @@ class _HomeScreenAState extends State<HomeScreenA>
                       const SizedBox(width: 12),
                       Expanded(
                         child: _buildEnhancedStatsCard(
-                          title: 'TODAY\'S',
-                          value: state.todayOrders.toString(),
+                          title: 'TODAY\'S REVENUE',
+                          value: data.todayRevenue.toString(),
                           icon: Icons.today,
                           color: Colors.blue,
                           onTap: () => navigateToOrderListScreen('Today', OrderFilterType.today),
@@ -380,14 +387,12 @@ class _HomeScreenAState extends State<HomeScreenA>
                     ],
                   ),
                   const SizedBox(height: 12),
-
-                  // Second Row - Delivered & Cancelled Orders
                   Row(
                     children: [
                       Expanded(
                         child: _buildEnhancedStatsCard(
-                          title: 'DELIVERED',
-                          value: state.deliveredOrders.toString(),
+                          title: 'RECENT ORDERS',
+                          value: data.recentOrders!.length.toString(),
                           icon: Icons.check_circle,
                           color: Colors.green,
                           onTap: () => navigateToOrderListScreen('Delivered', OrderFilterType.delivered),
@@ -397,7 +402,7 @@ class _HomeScreenAState extends State<HomeScreenA>
                       Expanded(
                         child: _buildEnhancedStatsCard(
                           title: 'CANCELLED',
-                          value: state.cancelledOrders.toString(),
+                          value: data.orderStatusCounts!['CANCELLED'].toString(),
                           icon: Icons.cancel,
                           color: Colors.red,
                           onTap: () => navigateToOrderListScreen('Cancelled', OrderFilterType.cancelled),
@@ -410,7 +415,7 @@ class _HomeScreenAState extends State<HomeScreenA>
                   // Third Row - Total Orders (Full Width)
                   _buildEnhancedStatsCard(
                     title: 'ALL ORDERS',
-                    value: state.totalOrders.toString(),
+                    value: data.totalOrders.toString(),
                     icon: Icons.inventory_2,
                     color: Colors.purple,
                     onTap: () => navigateToOrderListScreen('All', OrderFilterType.all),
@@ -542,19 +547,14 @@ class _HomeScreenAState extends State<HomeScreenA>
     );
   }
   Widget _buildLowStockAlertSection() {
-    return StreamBuilder<QuerySnapshot>(
-      stream: FirebaseFirestore.instance
-          .collection('low_stock_alerts')
-          .where('isResolved', isEqualTo: false)
-          .snapshots(),
-      builder: (context, snapshot) {
-        if (!snapshot.hasData) return const SizedBox.shrink();
-
-        final alertCount = snapshot.data!.docs.length;
-        if (alertCount == 0) return const SizedBox.shrink();
-
-        return Container(
-          margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+    return Consumer<AdminService>(
+      builder: (context, adminService, _) {
+        if (adminService.isLoading) {
+          return Center(child: CircularProgressIndicator(color: AppColour.primary,));
+        }
+        return adminService.dashboardStats!.lowStockCount! > 0
+            ? Container(
+          margin: const EdgeInsets.all(16),
           decoration: BoxDecoration(
             gradient: LinearGradient(
               colors: [Colors.red.shade100, Colors.red.shade50],
@@ -572,7 +572,7 @@ class _HomeScreenAState extends State<HomeScreenA>
               child: Icon(Icons.warning, color: Colors.red.shade700),
             ),
             title: Text(
-              '$alertCount Low Stock Alert${alertCount > 1 ? 's' : ''}',
+              '${adminService.dashboardStats!.lowStockCount} Low Stock Alert${adminService.dashboardStats!.lowStockCount! > 1 ? 's' : ''}',
               style: simple_text_style(
                 fontWeight: FontWeight.bold,
                 color: Colors.red.shade700,
@@ -588,8 +588,8 @@ class _HomeScreenAState extends State<HomeScreenA>
               MaterialPageRoute(builder: (_) => const LowStockAlertScreen()),
             ),
           ),
-        );
-      },
+        ) : const SizedBox();
+      }
     );
   }
 

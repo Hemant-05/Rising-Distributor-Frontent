@@ -2,11 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:raising_india/constant/AppColour.dart';
 import 'package:raising_india/constant/ConPath.dart';
 import 'package:raising_india/constant/ConString.dart';
-import 'package:raising_india/features/auth/screens/login_screen.dart';
 import 'package:raising_india/features/auth/screens/signup_screen.dart';
+import 'package:raising_india/models/on_boarding_item.dart';
 
 import '../../../comman/elevated_button_style.dart';
-import '../../../models/OnboardingItem.dart';
 import '../widgets/on_boarding_widget.dart';
 
 class OnBoardingScreen extends StatefulWidget {

@@ -1,15 +1,28 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:provider/provider.dart';
 import 'package:raising_india/comman/back_button.dart';
 import 'package:raising_india/comman/simple_text_style.dart';
 import 'package:raising_india/constant/AppColour.dart';
-import 'package:raising_india/features/admin/category/bloc/category_bloc.dart';
+import 'package:raising_india/data/services/category_service.dart';
 import 'package:raising_india/features/admin/category/screens/add_edit_category_screen.dart';
 import 'package:raising_india/features/admin/category/screens/category_products_screen.dart';
-import 'package:raising_india/models/category_model.dart';
+import 'package:raising_india/models/model/category.dart';
 
-class AdminCategoriesScreen extends StatelessWidget {
+class AdminCategoriesScreen extends StatefulWidget {
   const AdminCategoriesScreen({super.key});
+
+  @override
+  State<AdminCategoriesScreen> createState() => _AdminCategoriesScreenState();
+}
+
+class _AdminCategoriesScreenState extends State<AdminCategoriesScreen> {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      context.read<CategoryService>().loadCategories();
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -28,99 +41,66 @@ class AdminCategoriesScreen extends StatelessWidget {
         actions: [
           InkWell(
             onTap: () => _navigateToAddCategory(context),
-            child: Text(
-              'Add Category',
-              style: simple_text_style(
-                fontWeight: FontWeight.bold,
-                color: AppColour.primary,
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16.0),
+              child: Center(
+                child: Text(
+                  'Add Category',
+                  style: simple_text_style(
+                    fontWeight: FontWeight.bold,
+                    color: AppColour.primary,
+                  ),
+                ),
               ),
             ),
           ),
-          SizedBox(width: 10),
         ],
       ),
-      body: BlocConsumer<CategoryBloc, CategoryState>(
-        listener: (context, state) {
-          if (state is CategoryActionSuccess) {
-            context.read<CategoryBloc>().add(LoadCategories());
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text(
-                  state.message,
-                  style: simple_text_style(color: AppColour.white),
-                ),
-                backgroundColor: Colors.green,
-              ),
-            );
-          } else if (state is CategoryError) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text(
-                  state.message,
-                  style: simple_text_style(color: AppColour.white),
-                ),
-                backgroundColor: Colors.red,
-              ),
+      body: Consumer<CategoryService>(
+        builder: (context, categoryService, child) {
+          if (categoryService.isLoading && categoryService.categories.isEmpty) {
+            return Center(
+              child: CircularProgressIndicator(color: AppColour.primary),
             );
           }
-        },
-        builder: (context, state) {
-          return Padding(
-            padding: const EdgeInsets.all(12),
-            child: _buildCategoriesGrid(context, state),
+
+          final categories = categoryService.categories;
+
+          if (categories.isEmpty) {
+            return _buildEmptyState(context);
+          }
+
+          return Stack(
+            children: [
+              Padding(
+                padding: const EdgeInsets.all(12),
+                child: GridView.builder(
+                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                    crossAxisCount: 2,
+                    childAspectRatio: 0.88,
+                    crossAxisSpacing: 8,
+                    mainAxisSpacing: 8,
+                  ),
+                  itemCount: categories.length,
+                  itemBuilder: (context, index) {
+                    final category = categories[index];
+                    return _buildCategoryCard(context, category);
+                  },
+                ),
+              ),
+              if (categoryService.isLoading && categories.isNotEmpty)
+                Container(
+                  color: Colors.black.withOpacity(0.1),
+                  child: const Center(child: CircularProgressIndicator()),
+                ),
+            ],
           );
         },
       ),
     );
   }
 
-  Widget _buildCategoriesGrid(BuildContext context, CategoryState state) {
-    if (state is CategoryLoading) {
-      return Center(child: CircularProgressIndicator(color: AppColour.primary));
-    }
-
-    List<CategoryModel> categories = [];
-    if (state is CategoryLoaded) {
-      categories = state.categories;
-    } else if (state is CategoryActionLoading) {
-      categories = state.categories;
-    } else if (state is CategoryError && state.categories != null) {
-      categories = state.categories!;
-    }
-
-    if (categories.isEmpty) {
-      return _buildEmptyState(context);
-    }
-
-    return Stack(
-      children: [
-        GridView.builder(
-          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-            crossAxisCount: 2,
-            childAspectRatio: 0.88,
-            crossAxisSpacing: 8,
-            mainAxisSpacing: 8,
-          ),
-          itemCount: categories.length,
-          itemBuilder: (context, index) {
-            final category = categories[index];
-            return _buildCategoryCard(context, category);
-          },
-        ),
-
-        // Loading overlay
-        if (state is CategoryActionLoading)
-          Container(
-            color: Colors.black.withOpacity(0.3),
-            child: Center(
-              child: CircularProgressIndicator(color: AppColour.primary),
-            ),
-          ),
-      ],
-    );
-  }
-
-  Widget _buildCategoryCard(BuildContext context, CategoryModel category) {
+  Widget _buildCategoryCard(BuildContext context, Category category) {
     return Card(
       elevation: 2,
       color: AppColour.white,
@@ -131,11 +111,10 @@ class AdminCategoriesScreen extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Image Section
             Container(
               height: 120,
               width: double.infinity,
-              padding: EdgeInsets.all(4),
+              padding: const EdgeInsets.all(4),
               decoration: BoxDecoration(
                 borderRadius: const BorderRadius.vertical(
                   top: Radius.circular(16),
@@ -146,9 +125,10 @@ class AdminCategoriesScreen extends StatelessWidget {
                 borderRadius: const BorderRadius.vertical(
                   top: Radius.circular(12),
                 ),
-                child: category.image.isNotEmpty
+                child:
+                    (category.imageUrl != null && category.imageUrl!.isNotEmpty)
                     ? Image.network(
-                        category.image,
+                        category.imageUrl!,
                         fit: BoxFit.cover,
                         errorBuilder: (_, __, ___) => Icon(
                           Icons.category_outlined,
@@ -163,8 +143,6 @@ class AdminCategoriesScreen extends StatelessWidget {
                       ),
               ),
             ),
-
-            // Content Section
             Expanded(
               child: Padding(
                 padding: const EdgeInsets.symmetric(
@@ -175,7 +153,7 @@ class AdminCategoriesScreen extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      category.name,
+                      category.name ?? "Unnamed",
                       style: simple_text_style(
                         fontSize: 16,
                         fontWeight: FontWeight.w600,
@@ -184,7 +162,7 @@ class AdminCategoriesScreen extends StatelessWidget {
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      'Value: ${category.value}',
+                      'ID: ${category.id}',
                       style: simple_text_style(
                         fontSize: 12,
                         color: AppColour.grey,
@@ -241,27 +219,18 @@ class AdminCategoriesScreen extends StatelessWidget {
     );
   }
 
-  void _navigateToAddCategory(BuildContext context) async {
+  void _navigateToAddCategory(BuildContext context) {
     Navigator.push(
       context,
-      MaterialPageRoute(
-        builder: (_) => BlocProvider.value(
-          value: BlocProvider.of<CategoryBloc>(context),
-          child: const AddEditCategoryScreen(),
-        ),
-      ),
+      MaterialPageRoute(builder: (_) => const AddEditCategoryScreen()),
     );
-
   }
 
-  void _navigateToCategoryProducts(
-    BuildContext context,
-    CategoryModel category,
-  ) async {
+  void _navigateToCategoryProducts(BuildContext context, Category category) {
     Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (context) => CategoryProductsScreen(category: category),
+        builder: (_) => CategoryProductsScreen(category: category),
       ),
     );
   }

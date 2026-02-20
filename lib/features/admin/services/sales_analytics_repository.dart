@@ -1,3 +1,4 @@
+/*
 // lib/repositories/sales_analytics_repository.dart
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:raising_india/constant/ConString.dart';
@@ -303,3 +304,4 @@ class SalesAnalyticsRepositoryImpl implements SalesAnalyticsRepository {
     return ((thisMonthRevenue - lastMonthRevenue) / lastMonthRevenue) * 100;
   }
 }
+*/

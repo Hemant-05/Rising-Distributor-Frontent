@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'package:raising_india/comman/back_button.dart';
 import 'package:raising_india/comman/simple_text_style.dart';
 import 'package:raising_india/constant/AppColour.dart';
-import 'package:raising_india/models/product_model.dart';
+import 'package:raising_india/data/services/admin_service.dart';
+import 'package:raising_india/models/model/product.dart';
 
 class LowStockAlertScreen extends StatefulWidget {
   const LowStockAlertScreen({super.key});
@@ -13,12 +15,9 @@ class LowStockAlertScreen extends StatefulWidget {
 
 class _LowStockAlertScreenState extends State<LowStockAlertScreen>
     with TickerProviderStateMixin {
-
-  List<ProductModel> _lowStockProducts = [];
-  bool _isLoading = true;
-
   late AnimationController _fadeAnimationController;
   late Animation<double> _fadeAnimation;
+  List<Product> _lowStockProducts = [];
 
   @override
   void initState() {
@@ -30,7 +29,10 @@ class _LowStockAlertScreenState extends State<LowStockAlertScreen>
     );
 
     _fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
-      CurvedAnimation(parent: _fadeAnimationController, curve: Curves.easeInOut),
+      CurvedAnimation(
+        parent: _fadeAnimationController,
+        curve: Curves.easeInOut,
+      ),
     );
 
     _loadLowStockProducts();
@@ -44,38 +46,39 @@ class _LowStockAlertScreenState extends State<LowStockAlertScreen>
   }
 
   Future<void> _loadLowStockProducts() async {
-    setState(() => _isLoading = true);
-
-    List<ProductModel> products = [];
-
-    setState(() {
-      _lowStockProducts = products;
-      _isLoading = false;
-    });
+    context.read<AdminService>().fetchDashboard();
   }
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Colors.grey.shade50,
-      appBar: _buildStunningAppBar(),
-      body: FadeTransition(
-        opacity: _fadeAnimation,
-        child: _isLoading
-            ? _buildLoadingState()
-            : _lowStockProducts.isEmpty
-            ? _buildEmptyState()
-            : _buildLowStockList(),
-      ),
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: _loadLowStockProducts,
-        backgroundColor: AppColour.primary,
-        icon: Icon(Icons.refresh, color: Colors.white),
-        label: Text(
-          'Refresh',
-          style: simple_text_style(color: Colors.white, fontWeight: FontWeight.w600),
-        ),
-      ),
+    return Consumer<AdminService>(
+      builder: (context, adminService, _) {
+        _lowStockProducts = adminService.dashboardStats!.lowStockProducts!;
+        return Scaffold(
+          backgroundColor: Colors.grey.shade50,
+          appBar: _buildStunningAppBar(),
+          body: FadeTransition(
+            opacity: _fadeAnimation,
+            child: adminService.isLoading
+                ? _buildLoadingState()
+                : _lowStockProducts.isEmpty
+                ? _buildEmptyState()
+                : _buildLowStockList(),
+          ),
+          floatingActionButton: FloatingActionButton.extended(
+            onPressed: _loadLowStockProducts,
+            backgroundColor: AppColour.primary,
+            icon: Icon(Icons.refresh, color: Colors.white),
+            label: Text(
+              'Refresh',
+              style: simple_text_style(
+                color: Colors.white,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+        );
+      },
     );
   }
 
@@ -87,10 +90,7 @@ class _LowStockAlertScreenState extends State<LowStockAlertScreen>
       flexibleSpace: Container(
         decoration: BoxDecoration(
           gradient: LinearGradient(
-            colors: [
-              Colors.red.shade600,
-              Colors.red.shade500,
-            ],
+            colors: [Colors.red.shade600, Colors.red.shade500],
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
           ),
@@ -106,11 +106,7 @@ class _LowStockAlertScreenState extends State<LowStockAlertScreen>
               color: Colors.white.withOpacity(0.2),
               borderRadius: BorderRadius.circular(10),
             ),
-            child: Icon(
-              Icons.warning_amber,
-              color: Colors.white,
-              size: 24,
-            ),
+            child: Icon(Icons.warning_amber, color: Colors.white, size: 24),
           ),
           const SizedBox(width: 12),
           Expanded(
@@ -243,7 +239,9 @@ class _LowStockAlertScreenState extends State<LowStockAlertScreen>
   }
 
   Widget _buildSummaryHeader() {
-    final outOfStockCount = _lowStockProducts.where((p) => p.isOutOfStock).length;
+    final outOfStockCount = _lowStockProducts
+        .where((p) => !p.isAvailable!)
+        .length;
     final lowStockCount = _lowStockProducts.length - outOfStockCount;
 
     return Container(
@@ -329,8 +327,8 @@ class _LowStockAlertScreenState extends State<LowStockAlertScreen>
     );
   }
 
-  Widget _buildLowStockCard(ProductModel product, int index) {
-    final isOutOfStock = product.isOutOfStock;
+  Widget _buildLowStockCard(Product product, int index) {
+    final isOutOfStock = !product.isAvailable!;
     final urgencyColor = isOutOfStock ? Colors.red : Colors.orange;
 
     return TweenAnimationBuilder<double>(
@@ -345,7 +343,10 @@ class _LowStockAlertScreenState extends State<LowStockAlertScreen>
             decoration: BoxDecoration(
               color: Colors.white,
               borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: urgencyColor.withOpacity(0.3), width: 2),
+              border: Border.all(
+                color: urgencyColor.withOpacity(0.3),
+                width: 2,
+              ),
               boxShadow: [
                 BoxShadow(
                   color: urgencyColor.withOpacity(0.1),
@@ -363,9 +364,7 @@ class _LowStockAlertScreenState extends State<LowStockAlertScreen>
                   const SizedBox(width: 16),
 
                   // Product Info
-                  Expanded(
-                    child: _buildProductInfo(product),
-                  ),
+                  Expanded(child: _buildProductInfo(product)),
 
                   // Stock Status
                   _buildStockStatus(product),
@@ -378,7 +377,7 @@ class _LowStockAlertScreenState extends State<LowStockAlertScreen>
     );
   }
 
-  Widget _buildProductImage(ProductModel product) {
+  Widget _buildProductImage(Product product) {
     return Container(
       width: 80,
       height: 80,
@@ -388,37 +387,37 @@ class _LowStockAlertScreenState extends State<LowStockAlertScreen>
       ),
       child: ClipRRect(
         borderRadius: BorderRadius.circular(12),
-        child: product.photosList.isNotEmpty
+        child: product.photosList!.isNotEmpty
             ? Image.network(
-          product.photosList.first,
-          fit: BoxFit.cover,
-          errorBuilder: (context, error, stackTrace) => Container(
-            color: Colors.grey.shade100,
-            child: Icon(
-              Icons.broken_image,
-              color: Colors.grey.shade400,
-              size: 32,
-            ),
-          ),
-        )
+                product.photosList!.first,
+                fit: BoxFit.cover,
+                errorBuilder: (context, error, stackTrace) => Container(
+                  color: Colors.grey.shade100,
+                  child: Icon(
+                    Icons.broken_image,
+                    color: Colors.grey.shade400,
+                    size: 32,
+                  ),
+                ),
+              )
             : Container(
-          color: Colors.grey.shade100,
-          child: Icon(
-            Icons.image_not_supported,
-            color: Colors.grey.shade400,
-            size: 32,
-          ),
-        ),
+                color: Colors.grey.shade100,
+                child: Icon(
+                  Icons.image_not_supported,
+                  color: Colors.grey.shade400,
+                  size: 32,
+                ),
+              ),
       ),
     );
   }
 
-  Widget _buildProductInfo(ProductModel product) {
+  Widget _buildProductInfo(Product product) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          product.name,
+          product.name!,
           style: simple_text_style(
             fontSize: 16,
             fontWeight: FontWeight.bold,
@@ -434,7 +433,7 @@ class _LowStockAlertScreenState extends State<LowStockAlertScreen>
             Icon(Icons.category, size: 14, color: Colors.grey.shade500),
             const SizedBox(width: 4),
             Text(
-              product.category,
+              product.category!.name!,
               style: simple_text_style(
                 color: Colors.grey.shade600,
                 fontSize: 12,
@@ -451,7 +450,7 @@ class _LowStockAlertScreenState extends State<LowStockAlertScreen>
             borderRadius: BorderRadius.circular(6),
           ),
           child: Text(
-            '₹${product.price.toStringAsFixed(0)} • ${product.quantity.toStringAsFixed(0)} ${product.measurement}',
+            '₹${product.price!.toStringAsFixed(0)} • ${product.quantity!.toStringAsFixed(0)} ${product.measurement}',
             style: simple_text_style(
               color: Colors.grey.shade700,
               fontSize: 12,
@@ -463,8 +462,8 @@ class _LowStockAlertScreenState extends State<LowStockAlertScreen>
     );
   }
 
-  Widget _buildStockStatus(ProductModel product) {
-    final isOutOfStock = product.isOutOfStock;
+  Widget _buildStockStatus(Product product) {
+    final isOutOfStock = !product.isAvailable!;
     final urgencyColor = isOutOfStock ? Colors.red : Colors.orange;
     final stockPercentage = product.lowStockQuantity! > 0
         ? (product.stockQuantity! / product.lowStockQuantity!).clamp(0.0, 1.0)

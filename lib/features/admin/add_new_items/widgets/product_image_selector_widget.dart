@@ -1,31 +1,29 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:provider/provider.dart';
 import 'package:raising_india/comman/simple_text_style.dart';
 import 'package:raising_india/constant/AppColour.dart';
-import 'package:raising_india/features/admin/add_new_items/bloc/Image_cubit/image_cubit.dart';
-import 'package:raising_india/features/admin/services/image_services.dart';
+import 'package:raising_india/features/admin/services/admin_image_service.dart';
 
 class ProductImageSelector extends StatelessWidget {
-  final ImageServices _imageServices = ImageServices();
-
-  ProductImageSelector({super.key});
+  const ProductImageSelector({super.key});
 
   @override
   Widget build(BuildContext context) {
-    return BlocBuilder<ImageSelectionCubit, ImageSelectionState >(
-      builder: (context, state) {
+    // Listen to the new Service
+    return Consumer<AdminImageService>(
+      builder: (context, imageService, child) {
         return Row(
           mainAxisAlignment: MainAxisAlignment.spaceEvenly,
           children: [
             _buildImagePicker(
               context,
-              imageFile: state.images[0],
+              imageFile: imageService.selectedImages[0],
               onTap: () => _showImageSourceDialog(context, 0),
             ),
             _buildImagePicker(
               context,
-              imageFile: state.images[1],
+              imageFile: imageService.selectedImages[1],
               onTap: () => _showImageSourceDialog(context, 1),
             ),
           ],
@@ -42,12 +40,15 @@ class ProductImageSelector extends StatelessWidget {
         height: 100,
         decoration: BoxDecoration(
           color: AppColour.primary.withOpacity(0.2),
-            borderRadius: BorderRadius.circular(8)),
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(color: AppColour.primary.withOpacity(0.5)),
+        ),
         child: imageFile != null
             ? ClipRRect(
-                borderRadius: BorderRadius.circular(8),
-            child: Image.file(imageFile, fit: BoxFit.cover))
-            : Icon(Icons.add_a_photo, size: 40),
+          borderRadius: BorderRadius.circular(8),
+          child: Image.file(imageFile, fit: BoxFit.cover),
+        )
+            : Icon(Icons.add_a_photo, size: 40, color: AppColour.primary),
       ),
     );
   }
@@ -59,25 +60,19 @@ class ProductImageSelector extends StatelessWidget {
       builder: (ctx) => Wrap(
         children: [
           ListTile(
-            leading: Icon(Icons.photo),
-            title: Text('Pick from gallery',style: simple_text_style(),),
-            onTap: () async {
-              final image = await _imageServices.pickFromGallery();
-              if (image != null) {
-                context.read<ImageSelectionCubit>().setImageAtIndex(imageSlot, image);
-              }
+            leading: const Icon(Icons.photo),
+            title: Text('Pick from gallery', style: simple_text_style()),
+            onTap: () {
               Navigator.pop(ctx);
+              context.read<AdminImageService>().pickImage(imageSlot, false);
             },
           ),
           ListTile(
-            leading: Icon(Icons.camera_alt),
-            title: Text('Take a photo',style: simple_text_style(),),
-            onTap: () async {
-              final image = await _imageServices.pickFromCamera();
-              if (image != null) {
-                context.read<ImageSelectionCubit>().setImageAtIndex(imageSlot, image);
-              }
+            leading: const Icon(Icons.camera_alt),
+            title: Text('Take a photo', style: simple_text_style()),
+            onTap: () {
               Navigator.pop(ctx);
+              context.read<AdminImageService>().pickImage(imageSlot, true);
             },
           ),
         ],

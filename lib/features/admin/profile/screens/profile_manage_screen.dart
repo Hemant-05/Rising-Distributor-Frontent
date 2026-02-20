@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:provider/provider.dart';
 import 'package:raising_india/constant/AppColour.dart';
 import 'package:raising_india/constant/ConPath.dart';
-import 'package:raising_india/features/admin/banner/bloc/banner_bloc.dart';
+import 'package:raising_india/data/services/auth_service.dart';
+import 'package:raising_india/data/services/banner_service.dart';
 import 'package:raising_india/features/admin/banner/screen/all_banner_screen.dart';
 import 'package:raising_india/features/admin/category/screens/admin_categories_screen.dart';
 import 'package:raising_india/features/admin/profile/screens/admin_profile_screen.dart';
@@ -11,7 +13,7 @@ import 'package:raising_india/features/admin/profile/widgets/upper_widget.dart';
 import 'package:raising_india/features/admin/review/screens/admin_reviews_screen.dart';
 import 'package:raising_india/features/admin/sales_analytics/screens/sales_analytics_screen.dart';
 import 'package:raising_india/features/admin/stock_management/screens/low_stock_alert_screen.dart';
-import 'package:raising_india/features/auth/bloc/auth_bloc.dart';
+import 'package:raising_india/features/auth/screens/login_screen.dart';
 import 'package:raising_india/features/auth/screens/signup_screen.dart';
 
 class ProfileManageScreen extends StatefulWidget {
@@ -59,12 +61,12 @@ class _ProfileManageScreenState extends State<ProfileManageScreen> {
                         ),
                         optionsListTileWidget(
                           () {
-                            Navigator.push(
+                            /*Navigator.push(
                               context,
                               MaterialPageRoute(
                                 builder: (_) => const SalesAnalyticsScreen(),
                               ),
-                            );
+                            );*/
                           },
                           receipt_svg,
                           'Sale Analytics',
@@ -124,9 +126,7 @@ class _ProfileManageScreenState extends State<ProfileManageScreen> {
                       children: [
                         optionsListTileWidget(
                           () {
-                            BlocProvider.of<BannerBloc>(
-                              context,
-                            ).add(LoadAllBannerEvent());
+                            context.read<BannerService>().loadAdminBanners();
                             Navigator.push(
                               context,
                               MaterialPageRoute(
@@ -164,27 +164,22 @@ class _ProfileManageScreenState extends State<ProfileManageScreen> {
                   ),
                   SizedBox(height: 10),
                   CusContainer(
-                    BlocBuilder<UserBloc, UserState>(
-                      builder: (context, state) {
+                    Consumer<AuthService>(
+                      builder: (context, authService,_) {
                         return optionsListTileWidget(
                           () {
-                            BlocProvider.of<UserBloc>(
-                              context,
-                            ).add(UserLoggedOut());
-                            if (state is UserAuthenticated) {
+                            context.read<AuthService>().signOut();
+                            if (authService.admin != null) {
                               ScaffoldMessenger.of(context).showSnackBar(
                                 SnackBar(
                                   content: Text(
-                                    'Logged out : ${state.user.name}',
+                                    'Logged out : ${authService.admin!.name}',
                                   ),
                                 ),
                               );
-                              Navigator.pushAndRemoveUntil(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (_) => const SignupScreen(),
-                                ),
-                                (route) => false,
+                              Navigator.of(context, rootNavigator: true).pushAndRemoveUntil(
+                                MaterialPageRoute(builder: (_) => const LoginScreen()),
+                                    (route) => false,
                               );
                             }
                           },

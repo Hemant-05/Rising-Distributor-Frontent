@@ -1,16 +1,16 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:provider/provider.dart';
 import 'package:raising_india/comman/simple_text_style.dart';
 import 'package:raising_india/constant/AppColour.dart';
-import 'package:raising_india/features/admin/review/bloc/admin_review_bloc.dart';
+import 'package:raising_india/data/services/review_service.dart';
 
 class ReviewAnalyticsWidget extends StatelessWidget {
   const ReviewAnalyticsWidget({super.key});
 
   @override
   Widget build(BuildContext context) {
-    return BlocBuilder<AdminReviewBloc, AdminReviewState>(
-      builder: (context, state) {
+    return Consumer<ReviewService>(
+      builder: (context, reviewService, _ ) {
         return Container(
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
@@ -24,7 +24,7 @@ class ReviewAnalyticsWidget extends StatelessWidget {
               ),
             ],
           ),
-          child: state is AdminReviewLoaded
+          child: !reviewService.isLoading
               ? Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -40,9 +40,7 @@ class ReviewAnalyticsWidget extends StatelessWidget {
                         ),
                         InkWell(
                           onTap: () {
-                            context.read<AdminReviewBloc>().add(
-                              LoadAllReviews(),
-                            );
+                            context.read<ReviewService>().loadAdminReviews();
                           },
                           child: Icon(Icons.refresh_rounded),
                         ),
@@ -54,7 +52,7 @@ class ReviewAnalyticsWidget extends StatelessWidget {
                         Expanded(
                           child: _buildQuickStat(
                             'Total Reviews',
-                            state.summary.totalReviews.toString(),
+                            reviewService.totalReviews.toString(),
                             Icons.rate_review,
                             Colors.blue,
                           ),
@@ -62,10 +60,7 @@ class ReviewAnalyticsWidget extends StatelessWidget {
                         Expanded(
                           child: _buildQuickStat(
                             'Avg Rating',
-                            ((state.summary.averageServiceRating +
-                                        state.summary.averageProductRating) /
-                                    2)
-                                .toStringAsFixed(1),
+                            reviewService.avgRating.toString(),
                             Icons.star,
                             Colors.amber,
                           ),

@@ -1,16 +1,17 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:provider/provider.dart';
 import 'package:raising_india/comman/back_button.dart';
 import 'package:raising_india/comman/simple_text_style.dart';
 import 'package:raising_india/constant/AppColour.dart';
-import 'package:raising_india/features/admin/category/bloc/category_bloc.dart';
+import 'package:raising_india/data/services/category_service.dart';
+import 'package:raising_india/data/services/product_service.dart';
 import 'package:raising_india/features/admin/category/screens/add_edit_category_screen.dart';
-import 'package:raising_india/models/category_model.dart';
-import 'package:raising_india/models/product_model.dart';
+import 'package:raising_india/models/model/category.dart'; // New Model
+import 'package:raising_india/models/model/product.dart'; // New Model
 
 class CategoryProductsScreen extends StatefulWidget {
-  final CategoryModel category;
+  final Category category;
 
   const CategoryProductsScreen({
     super.key,
@@ -22,43 +23,18 @@ class CategoryProductsScreen extends StatefulWidget {
 }
 
 class _CategoryProductsScreenState extends State<CategoryProductsScreen> {
-  List<ProductModel> products = [];
-  bool isLoading = true;
 
   @override
   void initState() {
     super.initState();
-    _loadProducts();
+    context.read<ProductService>().fetchProductsByCategory(widget.category.name!);
   }
 
-  Future<void> _loadProducts() async {
-    try {
-      final snapshot = await FirebaseFirestore.instance
-          .collection('products')
-          .where('category', isEqualTo: widget.category.value)
-          .get();
-
-      setState(() {
-        products = snapshot.docs
-            .map((doc) => ProductModel.fromMap(doc.data(), doc.id))
-            .toList();
-        isLoading = false;
-      });
-    } catch (e) {
-      setState(() => isLoading = false);
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Error loading products: $e',style: simple_text_style(color: AppColour.white)),
-          backgroundColor: Colors.red,
-        ),
-      );
-    }
-  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-    backgroundColor: AppColour.white,
+      backgroundColor: AppColour.white,
       appBar: AppBar(
         backgroundColor: AppColour.white,
         automaticallyImplyLeading: false,
@@ -66,7 +42,7 @@ class _CategoryProductsScreenState extends State<CategoryProductsScreen> {
           children: [
             back_button(),
             const SizedBox(width: 8),
-            Text(widget.category.name,style: simple_text_style(fontSize: 20),),
+            Expanded(child: Text(widget.category.name ?? "Category", style: simple_text_style(fontSize: 20), overflow: TextOverflow.ellipsis,)),
           ],
         ),
         actions: [
@@ -83,20 +59,20 @@ class _CategoryProductsScreenState extends State<CategoryProductsScreen> {
               PopupMenuItem(
                 value: 'delete',
                 child: Row(
-                  children: [
+                  children: const [
                     Icon(Icons.delete_outline, color: Colors.red),
                     SizedBox(width: 8),
-                    Text('Delete Category', style: simple_text_style(color: Colors.red)),
+                    Text('Delete Category', style: TextStyle(color: Colors.red)),
                   ],
                 ),
               ),
               PopupMenuItem(
                 value: 'edit',
                 child: Row(
-                  children: [
+                  children: const [
                     Icon(Icons.edit, color: Colors.black),
                     SizedBox(width: 8),
-                    Text('Edit Category', style: simple_text_style(color: Colors.black)),
+                    Text('Edit Category', style: TextStyle(color: Colors.black)),
                   ],
                 ),
               ),
@@ -104,25 +80,26 @@ class _CategoryProductsScreenState extends State<CategoryProductsScreen> {
           ),
         ],
       ),
-      body: Column(
-        children: [
-          // Category Header
-          _buildCategoryHeader(),
-
-          // Products List
-          Expanded(
-            child: isLoading
-                ? Center(child: CircularProgressIndicator(color: AppColour.primary,))
-                : products.isEmpty
-                ? _buildEmptyState()
-                : _buildProductsList(),
-          ),
-        ],
+      body: Consumer<ProductService>(
+        builder: (context, productService, _) {
+          return Column(
+            children: [
+              _buildCategoryHeader(productService.categoryProducts),
+              Expanded(
+                child: productService.isLoading
+                    ? Center(child: CircularProgressIndicator(color: AppColour.primary))
+                    : productService.categoryProducts.isEmpty
+                    ? _buildEmptyState()
+                    : _buildProductsList(productService.categoryProducts),
+              ),
+            ],
+          );
+        }
       ),
     );
   }
 
-  Widget _buildCategoryHeader() {
+  Widget _buildCategoryHeader(List list) {
     return Card(
       margin: const EdgeInsets.all(16),
       elevation: 2,
@@ -134,55 +111,21 @@ class _CategoryProductsScreenState extends State<CategoryProductsScreen> {
           children: [
             ClipRRect(
               borderRadius: BorderRadius.circular(8),
-              child: widget.category.image.isNotEmpty
+              child: (widget.category.imageUrl != null && widget.category.imageUrl!.isNotEmpty)
                   ? Image.network(
-                widget.category.image,
-                width: 60,
-                height: 60,
-                fit: BoxFit.cover,
-                errorBuilder: (_, __, ___) => Container(
-                  width: 60,
-                  height: 60,
-                  color: Colors.grey.shade200,
-                  child: const Icon(Icons.category_outlined),
-                ),
+                widget.category.imageUrl!,
+                width: 60, height: 60, fit: BoxFit.cover,
+                errorBuilder: (_, __, ___) => Container(width: 60, height: 60, color: Colors.grey[200], child: const Icon(Icons.category)),
               )
-                  : Container(
-                width: 60,
-                height: 60,
-                color: Colors.grey.shade200,
-                child: const Icon(Icons.category_outlined),
-              ),
+                  : Container(width: 60, height: 60, color: Colors.grey[200], child: const Icon(Icons.category)),
             ),
             const SizedBox(width: 16),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
-                    widget.category.name,
-                    style: simple_text_style(
-                      fontSize: 18,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    'Value: ${widget.category.value}',
-                    style: simple_text_style(
-                      color: Colors.grey.shade600,
-                      fontSize: 14,
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    '${products.length} products available',
-                    style: simple_text_style(
-                      color: Colors.orange.shade600,
-                      fontSize: 14,
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
+                  Text(widget.category.name ?? "Unnamed", style: simple_text_style(fontSize: 18, fontWeight: FontWeight.w600)),
+                  Text('${list.length} products', style: simple_text_style(color: Colors.orange, fontSize: 14, fontWeight: FontWeight.w500)),
                 ],
               ),
             ),
@@ -192,7 +135,7 @@ class _CategoryProductsScreenState extends State<CategoryProductsScreen> {
     );
   }
 
-  Widget _buildProductsList() {
+  Widget _buildProductsList(List<Product> products) {
     return ListView.builder(
       padding: const EdgeInsets.symmetric(horizontal: 16),
       itemCount: products.length,
@@ -200,95 +143,17 @@ class _CategoryProductsScreenState extends State<CategoryProductsScreen> {
         final product = products[index];
         return Card(
           margin: const EdgeInsets.only(bottom: 12),
-          elevation: 1,
-          color: AppColour.white,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
-          ),
-          child: Padding(
-            padding: const EdgeInsets.all(12),
-            child: Row(
-              children: [
-                ClipRRect(
-                  borderRadius: BorderRadius.circular(8),
-                  child: Image.network(
-                    product.photosList.isNotEmpty
-                        ? product.photosList.first
-                        : '',
-                    width: 60,
-                    height: 60,
-                    fit: BoxFit.cover,
-                    errorBuilder: (_, __, ___) => Container(
-                      width: 60,
-                      height: 60,
-                      color: Colors.grey.shade200,
-                      child: const Icon(Icons.fastfood),
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        product.name,
-                        style: simple_text_style(
-                          fontWeight: FontWeight.w600,
-                          fontSize: 16,
-                        ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        '${product.quantity} ${product.measurement}',
-                        style: simple_text_style(
-                          color: AppColour.grey,
-                          fontSize: 12,
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      Row(
-                        children: [
-                          Text(
-                            '₹${product.price.toStringAsFixed(2)}',
-                            style: simple_text_style(
-                              fontWeight: FontWeight.w600,
-                              fontSize: 16,
-                              color: AppColour.green,
-                            ),
-                          ),
-                          const Spacer(),
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 8,
-                              vertical: 4,
-                            ),
-                            decoration: BoxDecoration(
-                              color: product.isAvailable
-                                  ? AppColour.green.withOpacity(0.2)
-                                  : AppColour.red.withOpacity(0.2),
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            child: Text(
-                              product.isAvailable ? 'Available' : 'Out of Stock',
-                              style: simple_text_style(
-                                color: product.isAvailable
-                                    ? AppColour.green
-                                    : AppColour.red,
-                                fontSize: 11,
-                                fontWeight: FontWeight.w500,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
-                ),
-              ],
+          child: ListTile(
+            leading: ClipRRect(
+              borderRadius: BorderRadius.circular(8),
+              child: Image.network(
+                (product.photosList != null && product.photosList!.isNotEmpty) ? product.photosList!.first : '',
+                width: 50, height: 50, fit: BoxFit.cover,
+                errorBuilder: (_,__,___) => const Icon(Icons.fastfood),
+              ),
             ),
+            title: Text(product.name ?? "Product", style: simple_text_style(fontWeight: FontWeight.bold)),
+            subtitle: Text('₹${product.price}'),
           ),
         );
       },
@@ -296,90 +161,47 @@ class _CategoryProductsScreenState extends State<CategoryProductsScreen> {
   }
 
   Widget _buildEmptyState() {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(
-            Icons.inventory_2_outlined,
-            size: 80,
-            color: Colors.grey.shade400,
-          ),
-          const SizedBox(height: 16),
-          Text(
-            'No products found',
-            style: simple_text_style(
-              fontSize: 18,
-              color: AppColour.grey,
-              fontWeight: FontWeight.w500,
-            ),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            'No products in this category yet',
-            style: simple_text_style(
-              color: AppColour.grey,
-            ),
-          ),
-        ],
-      ),
-    );
+    return const Center(child: Text("No products in this category"));
   }
 
-  void _navigateToEditCategory(BuildContext context, CategoryModel category) async {
+  void _navigateToEditCategory(BuildContext context, Category category) async {
     final result = await Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (_) => BlocProvider.value(
-          value: BlocProvider.of<CategoryBloc>(context),
-          child: AddEditCategoryScreen(category: category),
-        ),
+        builder: (_) => AddEditCategoryScreen(category: category),
       ),
     );
-
-    // ✅ Reload categories if operation was successful
-    if (result == true) {
-      if (mounted) {
-        context.read<CategoryBloc>().add(LoadCategories());
-        Navigator.pop(context);
-      }
+    // Reload list if needed
+    if (result == true && mounted) {
+      context.read<ProductService>().fetchProductsByCategory(widget.category.name!);
+      Navigator.pop(context); // Optional: close detail screen after edit
     }
   }
 
-  void _showDeleteCategoryDialog(BuildContext screenContext) {
+  void _showDeleteCategoryDialog(BuildContext context) {
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        backgroundColor: AppColour.white,
-        title: Text('Delete Category',style: simple_text_style(fontWeight: FontWeight.bold)),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text('Are you sure you want to delete "${widget.category.name}"?',style: TextStyle(fontFamily: 'Sen'),),
-            const SizedBox(height: 8),
-            Text(
-              'This category has ${products.length} products. The products will not be deleted, but they will need to be recategorized.',
-              style: TextStyle(
-                fontFamily: 'Sen',
-                color: AppColour.red,
-                fontSize: 12,
-              ),
-            ),
-          ],
-        ),
+      builder: (ctx) => AlertDialog(
+        title: const Text('Delete Category'),
+        content: Text('Are you sure you want to delete "${widget.category.name}"?'),
         actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
           TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: Text('Cancel',style: simple_text_style(),),
-          ),
-          InkWell(
-            onTap: () {
-              context.read<CategoryBloc>().add(DeleteCategory(widget.category.id, widget.category.image));
-              Navigator.pop(context);
-              Navigator.pop(screenContext);
+            onPressed: () async {
+              Navigator.pop(ctx);
+
+              if (widget.category.id != null) {
+                final error = await context.read<CategoryService>().deleteCategory(widget.category.id!);
+
+                if (error == null) {
+                  Navigator.pop(context); // Close Screen
+                  ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Category Deleted"), backgroundColor: Colors.green));
+                } else {
+                  ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(error), backgroundColor: Colors.red));
+                }
+              }
             },
-            child: Text('Delete',style: simple_text_style(color: AppColour.red,fontWeight: FontWeight.bold),),
+            child: const Text('Delete', style: TextStyle(color: Colors.red)),
           ),
         ],
       ),

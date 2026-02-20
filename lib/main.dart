@@ -1,36 +1,28 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:provider/provider.dart';
 import 'package:raising_india/constant/AppColour.dart';
-import 'package:raising_india/features/admin/add_new_items/bloc/Image_cubit/image_cubit.dart';
-import 'package:raising_india/features/admin/add_new_items/bloc/product_bloc/product_bloc.dart';
-import 'package:raising_india/features/admin/banner/bloc/banner_bloc.dart';
-import 'package:raising_india/features/admin/product/bloc/products_cubit.dart';
-import 'package:raising_india/features/admin/category/bloc/category_bloc.dart';
-import 'package:raising_india/features/admin/home/bloc/order_cubit/order_stats_cubit.dart';
-import 'package:raising_india/features/admin/order/bloc/admin_order_details_cubit.dart';
-import 'package:raising_india/features/admin/review/bloc/admin_review_bloc.dart';
-import 'package:raising_india/features/admin/sales_analytics/bloc/sales_analytics_bloc.dart';
-import 'package:raising_india/features/admin/services/category_repository.dart';
-import 'package:raising_india/features/admin/services/order_repository.dart';
-import 'package:raising_india/features/admin/services/sales_analytics_repository.dart';
-import 'package:raising_india/features/user/coupon/bloc/coupon_bloc.dart';
-import 'package:raising_india/features/user/home/bloc/user_product_bloc/category_product_bloc.dart';
-import 'package:raising_india/features/user/order/bloc/order_bloc.dart';
-import 'package:raising_india/features/user/product_details/bloc/product_funtction_bloc/product_fun_bloc.dart';
-import 'package:raising_india/features/user/profile/bloc/profile_bloc.dart';
-import 'package:raising_india/features/user/review/bloc/review_bloc.dart';
-import 'package:raising_india/features/user/search/bloc/product_search_bloc/product_search_bloc.dart';
-import 'package:raising_india/features/user/services/coupon_repository.dart';
-import 'package:raising_india/features/services/review_repository.dart';
-import 'package:raising_india/features/user/services/user_product_services.dart';
+import 'package:raising_india/data/services/address_service.dart';
+import 'package:raising_india/data/services/admin_service.dart';
+import 'package:raising_india/data/services/analytics_service.dart';
+import 'package:raising_india/data/services/banner_service.dart';
+import 'package:raising_india/data/services/brand_service.dart';
+import 'package:raising_india/data/services/cart_service.dart';
+import 'package:raising_india/data/services/category_service.dart';
+import 'package:raising_india/data/services/coupon_service.dart';
+import 'package:raising_india/data/services/image_service.dart';
+import 'package:raising_india/data/services/order_service.dart';
+import 'package:raising_india/data/services/product_service.dart';
+import 'package:raising_india/data/services/review_service.dart';
+import 'package:raising_india/data/services/user_service.dart';
+import 'package:raising_india/data/services/wishlist_service.dart';
+import 'package:raising_india/data/services/notification_service.dart';
+import 'package:raising_india/features/admin/services/admin_image_service.dart';
 import 'package:raising_india/screens/splash_screen.dart';
 import 'package:raising_india/services/notification_service.dart';
 import 'package:raising_india/services/service_locator.dart';
-import 'features/auth/bloc/auth_bloc.dart';
-import 'features/auth/services/auth_service.dart';
+import 'data/services/auth_service.dart';
 import 'firebase_options.dart';
 
 final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
@@ -42,7 +34,7 @@ void main() async {
 
   setupServiceLocator();
 
-  await NotificationService.initialize();
+  await NotificationBackgroundService.initialize();
   runApp(MyApp(navigatorKey: navigatorKey));
 }
 
@@ -52,35 +44,30 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MultiRepositoryProvider(
+    return MultiProvider(
       providers: [
-        RepositoryProvider<CategoryRepository>(create: (_) => CategoryRepositoryImpl(),),
-        RepositoryProvider<OrderRepository>(create: (_) => OrderRepository(firestore: null)),
-        RepositoryProvider<CouponRepository>(create: (_) => CouponRepositoryImpl(),),
-        RepositoryProvider<ReviewRepository>(create: (_) => ReviewRepositoryImpl(),),
-        RepositoryProvider<SalesAnalyticsRepository>(create: (_) => SalesAnalyticsRepositoryImpl(),),
+        // Core User Services
+        ChangeNotifierProvider(create: (_) => getIt<AuthService>()),
+        ChangeNotifierProvider(create: (_) => getIt<ProductService>()),
+        ChangeNotifierProvider(create: (_) => getIt<CartService>()),
+        ChangeNotifierProvider(create: (_) => getIt<OrderService>()),
+        ChangeNotifierProvider(create: (_) => getIt<AddressService>()),
+        ChangeNotifierProvider(create: (_) => getIt<CategoryService>()),
+        ChangeNotifierProvider(create: (_) => getIt<BannerService>()),
+        ChangeNotifierProvider(create: (_) => getIt<ReviewService>()),
+        ChangeNotifierProvider(create: (_) => getIt<WishlistService>()),
+        ChangeNotifierProvider(create: (_) => getIt<UserService>()),
+        ChangeNotifierProvider(create: (_) => getIt<BrandService>()),
+        ChangeNotifierProvider(create: (_) => getIt<CouponService>()),
+
+        // Admin Services (Even if regular users don't use them, it's safe to keep them here)
+        ChangeNotifierProvider(create: (_) => getIt<AdminService>()),
+        ChangeNotifierProvider(create: (_) => getIt<ImageService>()),
+        ChangeNotifierProvider(create: (_) => getIt<AdminImageService>()),
+        ChangeNotifierProvider(create: (_) => getIt<NotificationService>()),
+        ChangeNotifierProvider(create: (_) => getIt<AnalyticsService>()),
       ],
-      child: MultiBlocProvider(
-        providers: [
-          BlocProvider<UserBloc>(create: (_) => UserBloc(AuthService())..add(AppStarted()),),
-          BlocProvider<ProductBloc>(create: (_) => ProductBloc()),
-          BlocProvider<ImageSelectionCubit>(create: (_) => ImageSelectionCubit()),
-          BlocProvider<ProductSearchBloc>(create: (context) => ProductSearchBloc(firestore: FirebaseFirestore.instance),),
-          BlocProvider<CategoryProductBloc>(create: (context) =>CategoryProductBloc(services: UserProductServices())..add(FetchBestSellingProducts())),
-          BlocProvider<CategoryBloc>(create: (context) => CategoryBloc(repository: CategoryRepositoryImpl(),)..add(LoadCategories()),),
-          BlocProvider<ProductFunBloc>(create: (context) => ProductFunBloc()),
-          BlocProvider<OrderBloc>(create: (context) => OrderBloc()),
-          BlocProvider<ProfileBloc>(create: (context) => ProfileBloc(),),
-          BlocProvider<OrderStatsCubit>(create: (context)=>OrderStatsCubit(FirebaseFirestore.instance),),
-          BlocProvider<ProductsCubit>(create: (context) => ProductsCubit(null)..fetchProducts()),
-          BlocProvider<AdminOrderDetailsCubit>(create: (context) => AdminOrderDetailsCubit(),),
-          BlocProvider<CouponBloc>(create: (context) => CouponBloc(couponRepository: context.read<CouponRepository>(),),),
-          BlocProvider<ReviewBloc>(create: (context) => ReviewBloc(reviewRepository: context.read<ReviewRepository>(), orderRepository: context.read<OrderRepository>(),),),
-          BlocProvider<AdminReviewBloc>(create: (context) => AdminReviewBloc(reviewRepository: context.read<ReviewRepository>(),),),
-          BlocProvider<SalesAnalyticsBloc>(create: (context) => SalesAnalyticsBloc(repository: context.read<SalesAnalyticsRepository>(),),),
-          BlocProvider<BannerBloc>(create: (context) => BannerBloc(),),
-        ],
-        child: MaterialApp(
+      child: MaterialApp(
           navigatorKey: navigatorKey,
           title: 'Rising Distributor',
           debugShowCheckedModeBanner: false,
@@ -93,7 +80,7 @@ class MyApp extends StatelessWidget {
           ),
           home: const SplashScreen(),
         ),
-      ),
+
     );
   }
 }

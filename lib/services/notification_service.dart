@@ -3,7 +3,7 @@ import 'package:firebase_messaging/firebase_messaging.dart';
 import 'dart:developer';
 
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
-import 'package:raising_india/features/auth/services/auth_service.dart';
+import 'package:raising_india/data/services/auth_service.dart';
 import 'package:raising_india/services/service_locator.dart';
 
 // Top-level function for background handling
@@ -13,7 +13,7 @@ Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
   log('🔔 Background message received: ${message.notification?.title}');
 }
 
-class NotificationService {
+class NotificationBackgroundService {
   static final FirebaseMessaging _firebaseMessaging = FirebaseMessaging.instance;
   static final FlutterLocalNotificationsPlugin _flutterLocalNotificationsPlugin = FlutterLocalNotificationsPlugin();
 
@@ -143,7 +143,8 @@ class NotificationService {
 
       // We assume the user might not be logged in yet.
       // Add a check or wrap in try-catch so it doesn't crash the app.
-      await authService.updateFCMToken(token);
+      // await authService.updateFCMToken(token);
+      //
       log("FCM Token synced with server successfully.");
     } catch (e) {
       log("Skipping token sync (User might be logged out or server error): $e");

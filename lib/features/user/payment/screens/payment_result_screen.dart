@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:provider/provider.dart';
 import 'package:raising_india/comman/elevated_button_style.dart';
 import 'package:raising_india/comman/simple_text_style.dart';
 import 'package:raising_india/constant/AppColour.dart';
-import 'package:raising_india/features/user/order/bloc/order_bloc.dart';
+import 'package:raising_india/data/services/order_service.dart';
 
 class PaymentResultScreen extends StatelessWidget {
   final bool isSuccess;
@@ -33,24 +33,23 @@ class PaymentResultScreen extends StatelessWidget {
               color: isSuccess ? Colors.green : Colors.red,
               size: 100,
             ),
-            SizedBox(height: 16),
+            const SizedBox(height: 16),
             Text(
               isSuccess ? "Payment Successful!" : "Payment Failed!",
-              style: TextStyle(fontSize: 20),
+              style: const TextStyle(fontSize: 20),
             ),
-            SizedBox(height: 8),
+            const SizedBox(height: 8),
             Text("Transaction ID: $transactionId"),
-            SizedBox(height: 24),
+            const SizedBox(height: 24),
             ElevatedButton(
               style: elevated_button_style(),
               onPressed: () {
-                BlocProvider.of<OrderBloc>(context).add(LoadUserOngoingOrderEvent());
+                // Refresh order list if success (or failure, to show cancelled state)
+                context.read<OrderService>().fetchMyOrders();
                 Navigator.popUntil(context, (route) => route.isFirst);
               },
               child: Text(
-                isSuccess
-                    ? "Continue Shopping"
-                    : "Sorry for trouble \n Back to home",
+                isSuccess ? "Continue Shopping" : "Back to Home",
                 style: simple_text_style(
                   color: AppColour.white,
                   fontWeight: FontWeight.bold,

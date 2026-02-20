@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
 import 'package:raising_india/comman/back_button.dart';
 import 'package:raising_india/comman/simple_text_style.dart';
 import 'package:raising_india/constant/AppColour.dart';
-import 'package:raising_india/features/user/coupon/bloc/coupon_bloc.dart';
-import 'package:raising_india/models/coupon_model.dart';
+import 'package:raising_india/data/services/coupon_service.dart';
+import 'package:raising_india/models/model/coupon.dart';
 
 class CouponsScreen extends StatefulWidget {
   const CouponsScreen({super.key, required this.isSelectionMode});
@@ -16,23 +16,17 @@ class CouponsScreen extends StatefulWidget {
   State<CouponsScreen> createState() => _CouponsScreenState();
 }
 
-class _CouponsScreenState extends State<CouponsScreen>
-    with TickerProviderStateMixin {
-  late TabController _tabController;
-
-  final List<String> _filters = ['all', 'unused', 'used', 'expired'];
-  final List<String> _filterTitles = ['All', 'Available', 'Used', 'Expired'];
+class _CouponsScreenState extends State<CouponsScreen> {
 
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: _filterTitles.length, vsync: this);
-    _tabController.addListener(() {
-      if (!_tabController.indexIsChanging) {
-        context.read<CouponBloc>().add(
-          FilterCoupons(_filters[_tabController.index]),
-        );
-      }
+    // Fetch coupons on load
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      // Assuming 'fetchAllCoupons' gets all available coupons
+      // You might need a specific user-facing method in service if 'fetchAllCoupons' is admin-only
+      // For now, using what we have in the service.
+      context.read<CouponService>().fetchAllCoupons();
     });
   }
 
@@ -47,70 +41,35 @@ class _CouponsScreenState extends State<CouponsScreen>
           children: [
             back_button(),
             const SizedBox(width: 8),
-            Text('My Coupons', style: simple_text_style(fontSize: 20)),
+            Text('Coupons', style: simple_text_style(fontSize: 20)),
           ],
         ),
-        bottom: TabBar(
-          labelStyle: simple_text_style(),
-          controller: _tabController,
-          labelColor: AppColour.primary,
-          unselectedLabelColor: Colors.grey,
-          indicatorColor: AppColour.primary,
-          tabs: _filterTitles.map((title) => Tab(text: title)).toList(),
-        ),
       ),
-      body: BlocConsumer<CouponBloc, CouponState>(
-        listener: (context, state) {
-          if (state is CouponError) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text(state.message),
-                backgroundColor: Colors.red,
-              ),
-            );
-          } else if (state is CouponUsed) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text(state.message),
-                backgroundColor: Colors.green,
-              ),
-            );
-          }
-        },
-        builder: (context, state) {
-          if (state is CouponLoading) {
+      body: Consumer<CouponService>(
+        builder: (context, couponService, child) {
+          if (couponService.isLoading) {
             return Center(
               child: CircularProgressIndicator(color: AppColour.primary),
             );
           }
 
-          if (state is CouponLoaded) {
-            return TabBarView(
-              controller: _tabController,
-              children: _filterTitles
-                  .map((title) => _buildCouponList(state.filteredCoupons))
-                  .toList(),
-            );
+          // You might want to filter active coupons locally if the API returns everything
+          final coupons = couponService.coupons;
+
+          if (coupons.isEmpty) {
+            return _buildEmptyState();
           }
 
-          return const Center(child: Text('Something went wrong'));
+          return ListView.builder(
+            padding: const EdgeInsets.all(16),
+            itemCount: coupons.length,
+            itemBuilder: (context, index) {
+              final coupon = coupons[index];
+              return _buildCouponCard(coupon);
+            },
+          );
         },
       ),
-    );
-  }
-
-  Widget _buildCouponList(List<CouponModel> coupons) {
-    if (coupons.isEmpty) {
-      return _buildEmptyState();
-    }
-
-    return ListView.builder(
-      padding: const EdgeInsets.all(16),
-      itemCount: coupons.length,
-      itemBuilder: (context, index) {
-        final coupon = coupons[index];
-        return _buildCouponCard(coupon);
-      },
     );
   }
 
@@ -120,32 +79,34 @@ class _CouponsScreenState extends State<CouponsScreen>
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           Icon(
-            Icons.card_giftcard_outlined,
+            Icons.local_offer_outlined, // Changed icon
             size: 80,
             color: Colors.grey.shade400,
           ),
           const SizedBox(height: 16),
           Text(
-            'No coupons found',
+            'No coupons available',
             style: simple_text_style(
               color: Colors.grey.shade600,
               fontSize: 18,
               fontWeight: FontWeight.w600,
             ),
           ),
-          const SizedBox(height: 8),
-          Text(
-            'Your coupons will appear here',
-            style: simple_text_style(color: Colors.grey.shade500, fontSize: 14),
-          ),
         ],
       ),
     );
   }
 
-  Widget _buildCouponCard(CouponModel coupon) {
-    final Color statusColor = _getStatusColor(coupon);
-    final bool isUsable = coupon.isValid;
+  Widget _buildCouponCard(Coupon coupon) {
+    // Determine status logic (assuming your model has isActive and expirationDate)
+    bool isExpired = false;
+    if (coupon.expirationDate != null) {
+      isExpired = coupon.expirationDate!.isBefore(DateTime.now());
+    }
+    bool isActive = (coupon.isActive ?? true) && !isExpired;
+
+    final Color statusColor = isActive ? Colors.green : Colors.red;
+    final String statusText = isActive ? 'AVAILABLE' : 'EXPIRED';
 
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
@@ -153,7 +114,7 @@ class _CouponsScreenState extends State<CouponsScreen>
         color: Colors.white,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
-          color: isUsable
+          color: isActive
               ? AppColour.primary.withOpacity(0.3)
               : Colors.grey.shade300,
           width: 1.5,
@@ -170,7 +131,7 @@ class _CouponsScreenState extends State<CouponsScreen>
         borderRadius: BorderRadius.circular(16),
         child: Stack(
           children: [
-            // Decorative pattern
+            // Decorative background circle
             Positioned(
               right: -20,
               top: -20,
@@ -189,7 +150,7 @@ class _CouponsScreenState extends State<CouponsScreen>
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Header Row
+                  // --- Header: Discount Tag & Status ---
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
@@ -203,7 +164,10 @@ class _CouponsScreenState extends State<CouponsScreen>
                           borderRadius: BorderRadius.circular(20),
                         ),
                         child: Text(
-                          '${coupon.discountPercent}% CASHBACK',
+                          // Show "50% OFF" or "₹100 OFF" based on type
+                          coupon.discountType == 'PERCENTAGE'
+                              ? '${coupon.discountValue?.toStringAsFixed(0)}% OFF'
+                              : '₹${coupon.discountValue?.toStringAsFixed(0)} OFF',
                           style: simple_text_style(
                             color: AppColour.primary,
                             fontSize: 12,
@@ -224,7 +188,7 @@ class _CouponsScreenState extends State<CouponsScreen>
                           ),
                         ),
                         child: Text(
-                          _getStatusText(coupon),
+                          statusText,
                           style: simple_text_style(
                             color: statusColor,
                             fontSize: 10,
@@ -237,7 +201,7 @@ class _CouponsScreenState extends State<CouponsScreen>
 
                   const SizedBox(height: 16),
 
-                  // Coupon Code
+                  // --- Coupon Code Section ---
                   Container(
                     width: double.infinity,
                     padding: const EdgeInsets.all(16),
@@ -246,7 +210,6 @@ class _CouponsScreenState extends State<CouponsScreen>
                       borderRadius: BorderRadius.circular(12),
                       border: Border.all(
                         color: Colors.grey.shade200,
-                        style: BorderStyle.solid,
                       ),
                     ),
                     child: Column(
@@ -261,9 +224,9 @@ class _CouponsScreenState extends State<CouponsScreen>
                         ),
                         const SizedBox(height: 4),
                         GestureDetector(
-                          onLongPress: () => _copyCouponCode(coupon.code),
+                          onLongPress: () => _copyCouponCode(coupon.code ?? ""),
                           child: Text(
-                            coupon.code,
+                            coupon.code ?? "NO CODE",
                             style: simple_text_style(
                               color: AppColour.black,
                               fontSize: 20,
@@ -277,89 +240,117 @@ class _CouponsScreenState extends State<CouponsScreen>
 
                   const SizedBox(height: 16),
 
-                  // Value and Expiry
+                  // --- Description & Terms ---
+                  if (coupon.minOrderAmount != null)
+                    Padding(
+                      padding: const EdgeInsets.only(bottom: 8.0),
+                      child: Text(
+                        "Min Order: ₹${coupon.minOrderAmount}\nMax Discount: ₹${coupon.maxDiscountAmount}",
+                        style: simple_text_style(
+                          color: Colors.grey.shade700,
+                          fontSize: 14,
+                        ),
+                      ),
+                    ),
+
+                  // Terms Row
                   Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Expanded(
-                        child: Column(
+                      // Min Order
+                      if (coupon.minOrderAmount != null)
+                        Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              'Cashback Value',
+                              'Min Order',
                               style: simple_text_style(
-                                color: Colors.grey.shade600,
+                                color: Colors.grey.shade500,
                                 fontSize: 12,
                               ),
                             ),
                             Text(
-                              '₹${coupon.value.toStringAsFixed(2)}',
+                              '₹${coupon.minOrderAmount}',
                               style: simple_text_style(
-                                color: Colors.green.shade600,
-                                fontSize: 18,
+                                color: AppColour.black,
                                 fontWeight: FontWeight.bold,
+                                fontSize: 14,
                               ),
                             ),
                           ],
                         ),
-                      ),
-                      Expanded(
-                        child: Column(
+
+                      // Max Discount (if Percentage)
+                      if (coupon.discountType == 'PERCENTAGE' && coupon.maxDiscountAmount != null)
+                        Column(
                           crossAxisAlignment: CrossAxisAlignment.end,
                           children: [
                             Text(
-                              coupon.isExpired ? 'Expired' : 'Expires',
+                              'Max Discount',
                               style: simple_text_style(
-                                color: Colors.grey.shade600,
+                                color: Colors.grey.shade500,
                                 fontSize: 12,
                               ),
                             ),
                             Text(
-                              DateFormat(
-                                'MMM d, h:mm a',
-                              ).format(coupon.expiresAt),
+                              '₹${coupon.maxDiscountAmount}',
                               style: simple_text_style(
-                                color: coupon.isExpired
-                                    ? Colors.red
-                                    : AppColour.black,
+                                color: AppColour.black,
+                                fontWeight: FontWeight.bold,
                                 fontSize: 14,
-                                fontWeight: FontWeight.w600,
                               ),
                             ),
                           ],
                         ),
-                      ),
                     ],
                   ),
 
-                  if (isUsable) ...[
+                  const SizedBox(height: 12),
+
+                  // Expiry Date
+                  if (coupon.expirationDate != null)
+                    Align(
+                      alignment: Alignment.centerRight,
+                      child: Text(
+                        'Expires: ${DateFormat('MMM d, yyyy').format(coupon.expirationDate!)}',
+                        style: simple_text_style(
+                          color: isExpired ? Colors.red : Colors.grey.shade600,
+                          fontSize: 12,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ),
+
+                  // --- Action Button ---
+                  if (isActive) ...[
                     const SizedBox(height: 16),
-                    Row(
-                      children: [
-                        Expanded(
-                          child: ElevatedButton(
-                            onPressed: widget.isSelectionMode
-                                ? () => Navigator.pop(context, coupon)
-                                : () => _copyCouponCode(coupon.code),
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: AppColour.primary,
-                              padding: const EdgeInsets.symmetric(vertical: 12),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(8),
-                              ),
-                            ),
-                            child: Text(
-                              widget.isSelectionMode
-                                  ? 'Select Coupon'
-                                  : 'Copy Code',
-                              style: simple_text_style(
-                                color: Colors.white,
-                                fontSize: 14,
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
+                    SizedBox(
+                      width: double.infinity,
+                      child: ElevatedButton(
+                        onPressed: () {
+                          if (widget.isSelectionMode) {
+                            // Return the Code to the previous screen (Cart)
+                            Navigator.pop(context, coupon.code);
+                          } else {
+                            _copyCouponCode(coupon.code ?? "");
+                          }
+                        },
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: AppColour.primary,
+                          padding: const EdgeInsets.symmetric(vertical: 12),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(8),
                           ),
                         ),
-                      ],
+                        child: Text(
+                          widget.isSelectionMode ? 'APPLY COUPON' : 'COPY CODE',
+                          style: simple_text_style(
+                            color: Colors.white,
+                            fontSize: 14,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ),
                     ),
                   ],
                 ],
@@ -371,60 +362,28 @@ class _CouponsScreenState extends State<CouponsScreen>
     );
   }
 
-  Color _getStatusColor(CouponModel coupon) {
-    if (coupon.status == 'used') return Colors.grey;
-    if (coupon.isExpired || coupon.status == 'expired') return Colors.red;
-    return Colors.green;
-  }
-
-  String _getStatusText(CouponModel coupon) {
-    if (coupon.status == 'used') return 'USED';
-    if (coupon.isExpired || coupon.status == 'expired') return 'EXPIRED';
-    return 'AVAILABLE';
-  }
-
   Future<void> _copyCouponCode(String couponCode) async {
+    if (couponCode.isEmpty) return;
     try {
       await Clipboard.setData(ClipboardData(text: couponCode));
-
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Row(
               children: [
-                Icon(Icons.check_circle, color: Colors.white),
+                const Icon(Icons.check_circle, color: Colors.white),
                 const SizedBox(width: 8),
-                Text('Coupon "$couponCode" copied!'),
+                Text('Code "$couponCode" copied!'),
               ],
             ),
             backgroundColor: Colors.green,
             behavior: SnackBarBehavior.floating,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12),
-            ),
             duration: const Duration(seconds: 2),
           ),
         );
       }
     } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Failed to copy coupon code'),
-            backgroundColor: Colors.red,
-            behavior: SnackBarBehavior.floating,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12),
-            ),
-          ),
-        );
-      }
+      // Ignore copy errors
     }
-  }
-
-  @override
-  void dispose() {
-    _tabController.dispose();
-    super.dispose();
   }
 }

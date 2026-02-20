@@ -9,23 +9,23 @@ class PersonalInfoScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColour.white,
-      appBar: AppBar(
-        automaticallyImplyLeading: false,
-        title: Row(
-          children: [
-            back_button(),
-            const SizedBox(width: 8),
-            Text('Persona Info', style: simple_text_style(fontSize: 18)),
-            const Spacer(),
-          ],
-        ),
         backgroundColor: AppColour.white,
-      ),
-      body:  Container(
-        alignment: Alignment.center,
-        child: Text('Working on Profile..'),
-      )
+        appBar: AppBar(
+          automaticallyImplyLeading: false,
+          backgroundColor: AppColour.white,
+          title: Row(
+            children: [
+              back_button(),
+              const SizedBox(width: 8),
+              Text('Personal Info', style: simple_text_style(fontSize: 18)),
+              const Spacer(),
+            ],
+          ),
+        ),
+        body: Container(
+          alignment: Alignment.center,
+          child: const Text('Working on Profile..'),
+        )
     );
   }
 }

@@ -1,24 +1,24 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:provider/provider.dart';
 import 'package:raising_india/comman/back_button.dart';
 import 'package:raising_india/comman/elevated_button_style.dart';
 import 'package:raising_india/comman/simple_text_style.dart';
 import 'package:raising_india/constant/AppColour.dart';
 import 'package:raising_india/constant/ConString.dart';
-import 'package:raising_india/features/admin/order/bloc/admin_order_details_cubit.dart';
-import 'package:raising_india/features/user/order/bloc/order_bloc.dart';
-import 'package:raising_india/models/order_model.dart';
-import 'package:raising_india/models/order_with_product_model.dart';
-import 'package:raising_india/models/ordered_product.dart';
+import 'package:raising_india/data/services/admin_service.dart';
+import 'package:raising_india/data/services/order_service.dart';
+import 'package:raising_india/models/model/order.dart';
+import 'package:raising_india/models/model/order_item.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:intl/intl.dart';
 
 class AdminOrderDetailScreen extends StatefulWidget {
-  final OrderWithProducts orderWithProducts;
+  final Order order;
 
-  const AdminOrderDetailScreen({super.key, required this.orderWithProducts});
+  const AdminOrderDetailScreen({super.key, required this.order});
 
   @override
   State<AdminOrderDetailScreen> createState() => _AdminOrderDetailScreenState();
@@ -27,8 +27,8 @@ class AdminOrderDetailScreen extends StatefulWidget {
 class _AdminOrderDetailScreenState extends State<AdminOrderDetailScreen> {
   late String currentOrderStatus;
   late String currentPaymentStatus;
-  late String orderId = widget.orderWithProducts.order.orderId;
-  late OrderModel order = widget.orderWithProducts.order;
+  late int orderId = widget.order.id!;
+  late Order order = widget.order;
   late bool payIsPending = true;
   late bool orderIsRunning = true;
   bool isUpdating = false;
@@ -55,14 +55,18 @@ class _AdminOrderDetailScreenState extends State<AdminOrderDetailScreen> {
       'label': 'Dispatched',
       'icon': Icons.local_shipping_outlined,
     },
-    {'key': OrderStatusDeliverd, 'label': 'Delivered', 'icon': Icons.done_all},
+    {
+      'key': OrderStatusDeliverd,
+      'label': 'Delivered',
+      'icon': Icons.done_all
+    },
   ];
 
   @override
   void initState() {
     super.initState();
-    currentOrderStatus = widget.orderWithProducts.order.orderStatus;
-    currentPaymentStatus = widget.orderWithProducts.order.paymentStatus;
+    currentOrderStatus = widget.order.status!;
+    currentPaymentStatus = widget.order.payment!.paymentStatus!;
   }
 
   int get currentStatusIndex {
@@ -122,7 +126,7 @@ class _AdminOrderDetailScreenState extends State<AdminOrderDetailScreen> {
   }
 
   // Function to show location options dialog
-  void _showLocationOptions(OrderModel order) {
+  void _showLocationOptions(Order order) {
     showModalBottomSheet(
       backgroundColor: AppColour.white,
       context: context,
@@ -153,8 +157,8 @@ class _AdminOrderDetailScreenState extends State<AdminOrderDetailScreen> {
               onTap: () {
                 Navigator.pop(context);
                 _openGoogleMaps(
-                  order.address.latitude,
-                  order.address.longitude,
+                  order.address!.latitude,
+                  order.address!.longitude,
                 );
               },
             ),
@@ -169,7 +173,7 @@ class _AdminOrderDetailScreenState extends State<AdminOrderDetailScreen> {
               onTap: () {
                 Navigator.pop(context);
                 Clipboard.setData(
-                  ClipboardData(text: order.address.streetAddress),
+                  ClipboardData(text: order.address!.streetAddress!),
                 );
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(
@@ -182,17 +186,17 @@ class _AdminOrderDetailScreenState extends State<AdminOrderDetailScreen> {
               },
             ),
 
-            if (order.address.phoneNumber.isNotEmpty)
+            if (order.address!.phoneNumber!.isNotEmpty)
               ListTile(
                 leading: const Icon(Icons.phone_outlined, color: Colors.orange),
                 title: Text('Call Customer', style: simple_text_style()),
                 subtitle: Text(
-                  order.address.phoneNumber,
+                  order.address!.phoneNumber!,
                   style: simple_text_style(),
                 ),
                 onTap: () {
                   Navigator.pop(context);
-                  _launchPhone(order.address.phoneNumber);
+                  _launchPhone(order.address!.phoneNumber);
                 },
               ),
           ],
@@ -205,8 +209,8 @@ class _AdminOrderDetailScreenState extends State<AdminOrderDetailScreen> {
     setState(() => isUpdating = true);
 
     try {
-      await context.read<AdminOrderDetailsCubit>().updateOrderStatus(
-        order,
+      await context.read<AdminService>().updateOrderStatus(
+        order.id!,
         newStatus,
       );
       setState(() => currentOrderStatus = newStatus);
@@ -234,21 +238,25 @@ class _AdminOrderDetailScreenState extends State<AdminOrderDetailScreen> {
     }
   }
 
-  Future<void> _updatePaymentStatus(String newStatus) async {
+  Future<void> _updatePaymentStatus(
+    String transactionId,
+    String payId,
+    String signature,
+  ) async {
     setState(() => isUpdating = true);
 
     try {
-      context.read<AdminOrderDetailsCubit>().updatePaymentStatus(
-        orderId,
-        newStatus,
+      context.read<OrderService>().confirmPayment(
+        orderId: orderId,
+        transactionId: transactionId,
+        payId: payId,
+        signature: signature,
       );
-
-      setState(() => currentPaymentStatus = newStatus);
 
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
-            'Payment status updated to ${newStatus.toUpperCase()}',
+            'Payment status updated to Confirm',
             style: simple_text_style(color: AppColour.white),
           ),
           backgroundColor: AppColour.primary,
@@ -270,21 +278,23 @@ class _AdminOrderDetailScreenState extends State<AdminOrderDetailScreen> {
   }
 
   void _shareOrderDetails() {
-    final order = widget.orderWithProducts.order;
+    final order = widget.order;
     String shareContent = '';
-    shareContent += '📦 Order ID: #${order.orderId.substring(0, 8)}\n\n';
-    shareContent += '🧑🏻 Name : ${order.name ?? 'Unknown User'}\n\n';
-    shareContent += '📱 Contact: ${order.address.phoneNumber}\n\n';
+    shareContent += '📦 Order ID: #${order.id!.toString()}\n\n';
     shareContent +=
-        '🏡 Address:https://www.google.com/maps/search/?api=1&query=${order.address.latitude},${order.address.longitude}\n\n';
+        '🧑🏻 Name : ${order.address!.recipientName ?? 'Unknown User'}\n\n';
+    shareContent += '📱 Contact: ${order.address!.phoneNumber}\n\n';
     shareContent +=
-        '💰 Payment Status: ${_getStatusLabel(order.paymentStatus)}\n\n';
-    shareContent += '💵 Total Amount: ₹${order.total.toStringAsFixed(2)}\n\n';
+        '🏡 Address:https://www.google.com/maps/search/?api=1&query=${order.address!.latitude},${order.address!.longitude}\n\n';
     shareContent +=
-        '📅 Order Date: ${DateFormat('MMM d, yyyy • h:mm a').format(order.createdAt)}\n\n';
+        '💰 Payment Status: ${_getStatusLabel(order.payment!.paymentStatus!)}\n\n';
+    shareContent +=
+        '💵 Total Amount: ₹${order.totalPrice!.toStringAsFixed(2)}\n\n';
+    shareContent +=
+        '📅 Order Date: ${DateFormat('MMM d, yyyy • h:mm a').format(order.createdAt!)}\n\n';
     Share.share(
       shareContent,
-      subject: 'Order Details - #${order.orderId.substring(0, 8)}',
+      subject: 'Order Details - #${order.id!.toString()}',
     );
   }
 
@@ -307,16 +317,16 @@ class _AdminOrderDetailScreenState extends State<AdminOrderDetailScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final order = widget.orderWithProducts.order;
-    final products = widget.orderWithProducts.products;
+    final order = widget.order;
+    final products = widget.order.orderItems;
 
-    return BlocBuilder<AdminOrderDetailsCubit, AdminOrderDetailsState>(
-      builder: (context, state) {
-        if (state.loading) {
+    return Consumer<AdminService>(
+      builder: (context, adminService, _) {
+        if (adminService.isLoading) {
           return Scaffold(body: Center(child: CircularProgressIndicator()));
         }
-        if (state.error != null) {
-          return Scaffold(body: Center(child: Text(state.error!)));
+        if (adminService.dashboardStats == null) {
+          return Scaffold(body: Center(child: Text('Some Error.....')));
         }
         return Scaffold(
           backgroundColor: AppColour.white,
@@ -329,7 +339,7 @@ class _AdminOrderDetailScreenState extends State<AdminOrderDetailScreen> {
                 back_button(),
                 SizedBox(width: 8),
                 Text(
-                  'Order #${order.orderId.substring(0, 8)}',
+                  'Order #${order.id!.toString()}',
                   style: simple_text_style(
                     fontSize: 20,
                     fontWeight: FontWeight.bold,
@@ -354,7 +364,7 @@ class _AdminOrderDetailScreenState extends State<AdminOrderDetailScreen> {
                 const SizedBox(height: 16),
 
                 // Products Section
-                _buildProductsSection(products),
+                _buildProductsSection(products!),
                 const SizedBox(height: 16),
 
                 // Customer Details Section
@@ -366,7 +376,8 @@ class _AdminOrderDetailScreenState extends State<AdminOrderDetailScreen> {
                 const SizedBox(height: 16),
 
                 // Cancel Order Status Section
-                if (currentOrderStatus != OrderStatusCancelled && currentOrderStatus != OrderStatusDeliverd) ...{
+                if (currentOrderStatus != OrderStatusCancelled &&
+                    currentOrderStatus != OrderStatusDeliverd) ...{
                   _cancelOrderStatus(),
                   const SizedBox(height: 16),
                 },
@@ -385,7 +396,7 @@ class _AdminOrderDetailScreenState extends State<AdminOrderDetailScreen> {
     );
   }
 
-  Widget _buildOrderInfoCard(OrderModel order) {
+  Widget _buildOrderInfoCard(Order order) {
     return Card(
       color: AppColour.white,
       elevation: 2,
@@ -409,7 +420,7 @@ class _AdminOrderDetailScreenState extends State<AdminOrderDetailScreen> {
                       ),
                     ),
                     Text(
-                      DateFormat('d/MM/yy • h:mm a').format(order.createdAt),
+                      DateFormat('d/MM/yy • h:mm a').format(order.createdAt!),
                       style: simple_text_style(
                         fontWeight: FontWeight.w600,
                         fontSize: 14,
@@ -424,19 +435,19 @@ class _AdminOrderDetailScreenState extends State<AdminOrderDetailScreen> {
                     vertical: 6,
                   ),
                   decoration: BoxDecoration(
-                    color: order.paymentMethod == 'prepaid'
+                    color: order.payment?.paymentMethod == 'prepaid'
                         ? Colors.blue.shade100
                         : Colors.orange.shade100,
                     borderRadius: BorderRadius.circular(20),
                   ),
                   child: Text(
-                    order.paymentMethod == 'prepaid'
+                    order.payment?.paymentMethod == 'prepaid'
                         ? 'PREPAID'
                         : 'CASH ON DELIVERY',
                     style: simple_text_style(
                       fontSize: 12,
                       fontWeight: FontWeight.w600,
-                      color: order.paymentMethod == 'prepaid'
+                      color: order.payment?.paymentMethod == 'prepaid'
                           ? Colors.blue.shade700
                           : Colors.orange.shade700,
                     ),
@@ -450,7 +461,7 @@ class _AdminOrderDetailScreenState extends State<AdminOrderDetailScreen> {
     );
   }
 
-  Widget _buildProductsSection(List<OrderedProduct> products) {
+  Widget _buildProductsSection(List<OrderItem> products) {
     return Card(
       elevation: 2,
       color: AppColour.white,
@@ -489,8 +500,8 @@ class _AdminOrderDetailScreenState extends State<AdminOrderDetailScreen> {
                     ClipRRect(
                       borderRadius: BorderRadius.circular(8),
                       child: Image.network(
-                        product?.photosList.isNotEmpty == true
-                            ? product!.photosList.first
+                        product?.photosList!.isNotEmpty == true
+                            ? product!.photosList!.first
                             : '',
                         width: 60,
                         height: 60,
@@ -540,7 +551,7 @@ class _AdminOrderDetailScreenState extends State<AdminOrderDetailScreen> {
                                   borderRadius: BorderRadius.circular(12),
                                 ),
                                 child: Text(
-                                  'Qty: ${item.qty}',
+                                  'Qty: ${item.quantity}',
                                   style: simple_text_style(
                                     fontSize: 12,
                                     color: AppColour.primary,
@@ -570,9 +581,8 @@ class _AdminOrderDetailScreenState extends State<AdminOrderDetailScreen> {
     );
   }
 
-  Widget _buildCustomerDetailsSection(OrderModel order) {
-    final hasCoordinates = order.address.longitude != null;
-
+  Widget _buildCustomerDetailsSection(Order order) {
+    final hasCoordinates = order.address!.longitude != null;
 
     return Card(
       color: AppColour.white,
@@ -609,7 +619,7 @@ class _AdminOrderDetailScreenState extends State<AdminOrderDetailScreen> {
                 const SizedBox(width: 8),
                 Expanded(
                   child: Text(
-                    order.name ?? 'Unknown User',
+                    order.address!.recipientName ?? 'Unknown User',
                     style: simple_text_style(),
                   ),
                 ),
@@ -627,12 +637,12 @@ class _AdminOrderDetailScreenState extends State<AdminOrderDetailScreen> {
                 const SizedBox(width: 8),
                 Expanded(
                   child: Text(
-                    order.address.phoneNumber,
+                    order.address!.phoneNumber ?? 'Unknown Number',
                     style: simple_text_style(),
                   ),
                 ),
                 IconButton(
-                  onPressed: () => _launchPhone(order.address.phoneNumber),
+                  onPressed: () => _launchPhone(order.address!.phoneNumber!),
                   icon: Icon(Icons.call, color: Colors.green.shade600),
                 ),
               ],
@@ -663,8 +673,8 @@ class _AdminOrderDetailScreenState extends State<AdminOrderDetailScreen> {
                       InkWell(
                         onTap: hasCoordinates
                             ? () => _openGoogleMaps(
-                                order.address.latitude,
-                                order.address.longitude,
+                                order.address!.latitude,
+                                order.address!.longitude,
                               )
                             : null,
                         borderRadius: BorderRadius.circular(8),
@@ -686,7 +696,7 @@ class _AdminOrderDetailScreenState extends State<AdminOrderDetailScreen> {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Text(
-                                order.address.streetAddress,
+                                order.address!.streetAddress!,
                                 style: TextStyle(
                                   fontFamily: 'Sen',
                                   color: hasCoordinates
@@ -732,8 +742,8 @@ class _AdminOrderDetailScreenState extends State<AdminOrderDetailScreen> {
                             Expanded(
                               child: OutlinedButton.icon(
                                 onPressed: () => _openGoogleMaps(
-                                  order.address.latitude,
-                                  order.address.longitude,
+                                  order.address!.latitude,
+                                  order.address!.longitude,
                                 ),
                                 icon: const Icon(Icons.map_outlined, size: 18),
                                 label: const Text('Open Map'),
@@ -744,8 +754,7 @@ class _AdminOrderDetailScreenState extends State<AdminOrderDetailScreen> {
                               ),
                             ),
 
-                          if (hasCoordinates)
-                            const SizedBox(width: 8),
+                          if (hasCoordinates) const SizedBox(width: 8),
 
                           // More Options Button
                           Expanded(
@@ -755,9 +764,7 @@ class _AdminOrderDetailScreenState extends State<AdminOrderDetailScreen> {
                               label: const Text('Options'),
                               style: OutlinedButton.styleFrom(
                                 foregroundColor: Colors.orange.shade600,
-                                side: BorderSide(
-                                  color: Colors.orange.shade300,
-                                ),
+                                side: BorderSide(color: Colors.orange.shade300),
                               ),
                             ),
                           ),
@@ -811,11 +818,12 @@ class _AdminOrderDetailScreenState extends State<AdminOrderDetailScreen> {
                   onPressed: () {
                     String reason = _cancelController.text.trim().toString();
                     if (reason.isNotEmpty) {
-                      context.read<AdminOrderDetailsCubit>().cancelOrder(
-                        order.orderId,
+                      /*context.read<AdminOrderDetailsCubit>().cancelOrder(
+                        order.id.toString(),
                         '$reason \nCancelled By : Rising India Corporation',
-                        order.paymentStatus,
-                      );
+                        order.paymentStatus!,
+                      );*/
+                      // @ add cancel order from admin side.
                       Navigator.pop(context);
                     } else {
                       ScaffoldMessenger.of(context).showSnackBar(
@@ -1010,10 +1018,9 @@ class _AdminOrderDetailScreenState extends State<AdminOrderDetailScreen> {
                     }).toList(),
                   )
                 : Text(
-                    widget.orderWithProducts.order.orderStatus ==
-                            OrderStatusCancelled
-                        ? 'Reason : ${widget.orderWithProducts.order.cancellationReason}'
-                        : 'Delivered At : ${DateFormat('d/MM/yy • h:mm a').format(widget.orderWithProducts.order.deliveredAt ?? DateTime.now())}',
+                    widget.order.status == OrderStatusCancelled
+                        ? 'Reason : ${widget.order.payment?.paymentStatus}' // @ add cancellation reason
+                        : 'Delivered At : ${DateFormat('d/MM/yy • h:mm a').format(widget.order.createdAt ?? DateTime.now())}',
                     style: simple_text_style(fontSize: 14),
                   ),
           ],
@@ -1078,12 +1085,13 @@ class _AdminOrderDetailScreenState extends State<AdminOrderDetailScreen> {
               ],
             ),
             const SizedBox(height: 16),
-            if(currentOrderStatus != OrderStatusDeliverd && currentPaymentStatus == PayStatusPaid)
+            if (currentOrderStatus != OrderStatusDeliverd &&
+                currentPaymentStatus == PayStatusPaid)
               Wrap(
                 spacing: 12,
                 runSpacing: 12,
                 children: [
-                  _buildPaymentStatusChip('refunded','Refunded',Colors.blue),
+                  _buildPaymentStatusChip('refunded', 'Refunded', Colors.blue),
                 ],
               ),
 
@@ -1109,7 +1117,9 @@ class _AdminOrderDetailScreenState extends State<AdminOrderDetailScreen> {
     final isSelected = currentPaymentStatus == value;
 
     return GestureDetector(
-      onTap: isUpdating ? null : () => _updatePaymentStatus(value),
+      onTap: isUpdating
+          ? null
+          : () => _updatePaymentStatus('transactionId', 'payId', 'signature'),
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 200),
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
@@ -1130,7 +1140,7 @@ class _AdminOrderDetailScreenState extends State<AdminOrderDetailScreen> {
     );
   }
 
-  Widget _buildTotalSection(OrderModel order) {
+  Widget _buildTotalSection(Order order) {
     return Card(
       color: AppColour.white,
       elevation: 2,
@@ -1144,7 +1154,7 @@ class _AdminOrderDetailScreenState extends State<AdminOrderDetailScreen> {
               children: [
                 Text('Subtotal:', style: simple_text_style(fontSize: 16)),
                 Text(
-                  '₹${order.subtotal.toStringAsFixed(2)}',
+                  '₹${order.totalPrice!.toStringAsFixed(2)}', // @ sub total price
                   style: simple_text_style(fontSize: 16),
                 ),
               ],
@@ -1155,7 +1165,7 @@ class _AdminOrderDetailScreenState extends State<AdminOrderDetailScreen> {
               children: [
                 Text('Delivery Fee:', style: simple_text_style(fontSize: 16)),
                 Text(
-                  '₹${order.deliveryFee.toStringAsFixed(2)}',
+                  '₹${order.totalPrice!.toStringAsFixed(2)}', // @ Delivery fee
                   style: simple_text_style(fontSize: 16),
                 ),
               ],
@@ -1172,7 +1182,7 @@ class _AdminOrderDetailScreenState extends State<AdminOrderDetailScreen> {
                   ),
                 ),
                 Text(
-                  '₹${order.total.toStringAsFixed(2)}',
+                  '₹${order.totalPrice!.toStringAsFixed(2)}', // @ total price
                   style: simple_text_style(
                     fontSize: 18,
                     fontWeight: FontWeight.w600,

@@ -1,13 +1,27 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:provider/provider.dart';
 import 'package:raising_india/comman/back_button.dart';
 import 'package:raising_india/comman/simple_text_style.dart';
 import 'package:raising_india/constant/AppColour.dart';
+import 'package:raising_india/data/services/category_service.dart';
 import 'package:raising_india/features/user/categories/widgets/category_widget.dart';
-import 'package:raising_india/features/user/home/bloc/user_product_bloc/category_product_bloc.dart';
 
-class AllCategoriesScreen extends StatelessWidget {
+class AllCategoriesScreen extends StatefulWidget {
   const AllCategoriesScreen({super.key});
+
+  @override
+  State<AllCategoriesScreen> createState() => _AllCategoriesScreenState();
+}
+
+class _AllCategoriesScreenState extends State<AllCategoriesScreen> {
+  @override
+  void initState() {
+    super.initState();
+    // Load categories when screen opens (if not already loaded)
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      context.read<CategoryService>().loadCategories();
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -24,27 +38,34 @@ class AllCategoriesScreen extends StatelessWidget {
           ],
         ),
       ),
-      body: BlocBuilder<CategoryProductBloc, CategoryProductState>(
-        builder: (context, state) {
+      body: Consumer<CategoryService>(
+        builder: (context, categoryService, child) {
+          if (categoryService.isLoading) {
+            return Center(
+              child: CircularProgressIndicator(color: AppColour.primary),
+            );
+          }
+
+          if (categoryService.categories.isEmpty) {
+            return const Center(child: Text('No Categories Found'));
+          }
+
           return Padding(
             padding: const EdgeInsets.all(8.0),
-            child: state.isLoading
-                ? Center(
-                    child: CircularProgressIndicator(color: AppColour.primary),
-                  )
-                : state.categories.isEmpty
-                ? Center(child: Text('No Categories Found'))
-                : GridView.builder(
-                    itemCount: state.categories.length,
-                    gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                      crossAxisCount: 3,
-                      crossAxisSpacing: 12,
-                      mainAxisSpacing: 12,
-                      childAspectRatio: 0.85
-                    ),
-                    itemBuilder: (context, index) =>
-                        category_widget(context, state.categories[index]),
-                  ),
+            child: GridView.builder(
+              itemCount: categoryService.categories.length,
+              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                crossAxisCount: 3,
+                crossAxisSpacing: 12,
+                mainAxisSpacing: 12,
+                childAspectRatio: 0.85,
+              ),
+              // Ensure category_widget accepts the new Category model
+              itemBuilder: (context, index) => category_widget(
+                  context,
+                  categoryService.categories[index]
+              ),
+            ),
           );
         },
       ),

@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:raising_india/features/user/home/widgets/product_card.dart';
-import 'package:raising_india/models/product_model.dart';
+import 'package:raising_india/models/model/product.dart';
 
 class ProductGrid extends StatelessWidget {
-  final List<ProductModel> products;
+  final List<Product> products;
 
   const ProductGrid({super.key, required this.products});
 
@@ -11,17 +11,17 @@ class ProductGrid extends StatelessWidget {
   Widget build(BuildContext context) {
     return GridView.builder(
       shrinkWrap: true,
-      physics: const BouncingScrollPhysics(),
+      physics: const NeverScrollableScrollPhysics(), // Important inside CustomScrollView
       gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: 3,
-        childAspectRatio: 0.6,
-        crossAxisSpacing: 4,
-        mainAxisSpacing: 4,
+        crossAxisCount: 2,
+        childAspectRatio: 0.7,
+        crossAxisSpacing: 8,
+        mainAxisSpacing: 8,
       ),
       itemCount: products.length,
       itemBuilder: (context, index) {
         final product = products[index];
-        return product_card(product: product,isBig: false);
+        return product_card(product: product, isBig: false);
       },
     );
   }

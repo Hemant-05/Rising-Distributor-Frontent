@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'package:raising_india/comman/back_button.dart';
 import 'package:raising_india/comman/simple_text_style.dart';
 import 'package:raising_india/constant/AppColour.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
-import 'package:raising_india/features/admin/review/bloc/admin_review_bloc.dart';
-import 'package:raising_india/models/review_model.dart';
+import 'package:raising_india/data/services/review_service.dart';
+import 'package:raising_india/models/dto/admin_order_review_dto.dart';
+import 'package:raising_india/models/model/product_review.dart';
+import 'package:raising_india/models/model/service_review.dart';
 
 class AdminReviewsScreen extends StatefulWidget {
   const AdminReviewsScreen({super.key});
@@ -50,8 +52,7 @@ class _AdminReviewsScreenState extends State<AdminReviewsScreen>
 
     _animationController.forward();
 
-    // Load reviews
-    context.read<AdminReviewBloc>().add(LoadAllReviews());
+    context.read<ReviewService>().loadAdminReviews();
   }
 
   @override
@@ -59,26 +60,14 @@ class _AdminReviewsScreenState extends State<AdminReviewsScreen>
     return Scaffold(
       backgroundColor: Colors.grey.shade50,
       appBar: _buildAppBar(),
-      body: BlocConsumer<AdminReviewBloc, AdminReviewState>(
-        listener: (context, state) {
-          if (state is AdminReviewError) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text(state.message),
-                backgroundColor: Colors.red,
-                behavior: SnackBarBehavior.floating,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-              ),
-            );
-          }
-        },
-        builder: (context, state) {
-          if (state is AdminReviewLoading) {
+      body: Consumer<ReviewService>(
+        builder: (context, reviewService,_) {
+          if (reviewService.isLoading) {
             return _buildLoadingState();
-          } else if (state is AdminReviewLoaded) {
-            return _buildLoadedState(state);
-          } else if (state is AdminReviewError) {
-            return _buildErrorState(state.message);
+          } else if (reviewService.totalReviews > 0 && reviewService.adminReviews.isNotEmpty) {
+            return _buildLoadedState(reviewService.adminReviews);
+          } else if (reviewService.error != null) {
+            return _buildErrorState(reviewService.error!);
           }
           return Container();
         },
@@ -147,7 +136,7 @@ class _AdminReviewsScreenState extends State<AdminReviewsScreen>
           const SizedBox(height: 24),
           ElevatedButton(
             onPressed: () {
-              context.read<AdminReviewBloc>().add(LoadAllReviews());
+              context.read<ReviewService>().loadAdminReviews();
             },
             style: ElevatedButton.styleFrom(
               backgroundColor: AppColour.primary,
@@ -159,26 +148,26 @@ class _AdminReviewsScreenState extends State<AdminReviewsScreen>
     );
   }
 
-  Widget _buildLoadedState(AdminReviewLoaded state) {
+  Widget _buildLoadedState(List<AdminOrderReviewDto> list) {
     return RefreshIndicator(
       color: AppColour.primary,
       backgroundColor: AppColour.white,
       onRefresh: () async{
-        context.read<AdminReviewBloc>().add(RefreshReviews());
+        context.read<ReviewService>().loadAdminReviews();
       },
       child: FadeTransition(
         opacity: _fadeAnimation,
         child: Column(
           children: [
             // Statistics Header
-            _buildStatsHeader(state),
+            _buildStatsHeader(list),
 
             // Search and Filter Section
-            _buildSearchAndFilterSection(state),
+            _buildSearchAndFilterSection(list),
 
             // Reviews List
             Expanded(
-              child: _buildReviewsList(state.filteredReviews),
+              child: _buildReviewsList(list),
             ),
           ],
         ),
@@ -186,7 +175,7 @@ class _AdminReviewsScreenState extends State<AdminReviewsScreen>
     );
   }
 
-  Widget _buildStatsHeader(AdminReviewLoaded state) {
+  Widget _buildStatsHeader(List list) {
     return Container(
       margin: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -211,7 +200,7 @@ class _AdminReviewsScreenState extends State<AdminReviewsScreen>
             Expanded(
               child: _buildStatItem(
                 'Total Reviews',
-                state.summary.totalReviews.toString(),
+                list.length.toString(),
                 Icons.rate_review,
               ),
             ),
@@ -223,7 +212,7 @@ class _AdminReviewsScreenState extends State<AdminReviewsScreen>
             Expanded(
               child: _buildStatItem(
                 'Service Rating',
-                state.summary.averageServiceRating.toStringAsFixed(1),
+                list.length.toStringAsFixed(1),
                 Icons.room_service,
               ),
             ),
@@ -235,7 +224,7 @@ class _AdminReviewsScreenState extends State<AdminReviewsScreen>
             Expanded(
               child: _buildStatItem(
                 'Product Rating',
-                state.summary.averageProductRating.toStringAsFixed(1),
+                '10',
                 Icons.shopping_basket,
               ),
             ),
@@ -270,7 +259,7 @@ class _AdminReviewsScreenState extends State<AdminReviewsScreen>
     );
   }
 
-  Widget _buildSearchAndFilterSection(AdminReviewLoaded state) {
+  Widget _buildSearchAndFilterSection(List<AdminOrderReviewDto> list) {
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 16),
       child: Column(
@@ -291,7 +280,8 @@ class _AdminReviewsScreenState extends State<AdminReviewsScreen>
             child: TextField(
               controller: _searchController,
               onChanged: (value) {
-                context.read<AdminReviewBloc>().add(SearchReviews(value));
+                context.read<ReviewService>().loadAdminReviews(page: 0, keyword: value);
+                // @ add search review in admin side
               },
               decoration: InputDecoration(
                 hintText: 'Search reviews, users, or order IDs...',
@@ -315,7 +305,8 @@ class _AdminReviewsScreenState extends State<AdminReviewsScreen>
                     scrollDirection: Axis.horizontal,
                     itemCount: _filterOptions.length,
                     itemBuilder: (context, index) {
-                      final isSelected = state.currentFilter == _filterOptions[index];
+                      // final isSelected = state.currentFilter == _filterOptions[index];
+                      final isSelected = false;
                       return Container(
                         margin: const EdgeInsets.only(right: 8),
                         child: FilterChip(
@@ -329,7 +320,8 @@ class _AdminReviewsScreenState extends State<AdminReviewsScreen>
                           ),
                           selected: isSelected,
                           onSelected: (_) {
-                            context.read<AdminReviewBloc>().add(FilterReviews(_filterOptions[index]));
+                            // context.read<ReviewService>().filterReviews();
+                            // @ add filter review in admin side
                           },
                           backgroundColor: Colors.white,
                           selectedColor: AppColour.primary,
@@ -346,9 +338,8 @@ class _AdminReviewsScreenState extends State<AdminReviewsScreen>
                   final parts = value.split(' ');
                   final sortBy = parts[0];
                   final ascending = parts[1] == 'asc';
-                  context.read<AdminReviewBloc>().add(
-                    SortReviews(sortBy: sortBy, ascending: ascending),
-                  );
+                  // context.read<ReviewService>().sortReviews(sortBy, ascending);
+                  // @ add sort review in admin side
                 },
                 color: AppColour.white,
                 itemBuilder: (context) => [
@@ -394,7 +385,7 @@ class _AdminReviewsScreenState extends State<AdminReviewsScreen>
     );
   }
 
-  Widget _buildReviewsList(List<ReviewModel> reviews) {
+  Widget _buildReviewsList(List<AdminOrderReviewDto> reviews) {
     if (reviews.isEmpty) {
       return _buildEmptyState();
     }
@@ -442,7 +433,9 @@ class _AdminReviewsScreenState extends State<AdminReviewsScreen>
     );
   }
 
-  Widget _buildReviewCard(ReviewModel review, int index) {
+  Widget _buildReviewCard(AdminOrderReviewDto review, int index) {
+    ProductReview productReview = review.productReviews![1];
+    ServiceReview serviceReview = review.serviceReview!;
     return TweenAnimationBuilder<double>(
       duration: Duration(milliseconds: 500 + (index * 100)),
       tween: Tween<double>(begin: 0.0, end: 1.0),
@@ -491,8 +484,8 @@ class _AdminReviewsScreenState extends State<AdminReviewsScreen>
                             radius: 25,
                             backgroundColor: AppColour.primary,
                             child: Text(
-                              review.userName.isNotEmpty
-                                  ? review.userName[0].toUpperCase()
+                              productReview.userName!.isNotEmpty
+                                  ? productReview.userName![0].toUpperCase()
                                   : 'U',
                               style: simple_text_style(
                                 color: Colors.white,
@@ -507,7 +500,7 @@ class _AdminReviewsScreenState extends State<AdminReviewsScreen>
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 Text(
-                                  review.userName.isEmpty? 'Unknown User' : review.userName,
+                                  productReview.userName ?? 'Unknown User',
                                   style: simple_text_style(
                                     fontSize: 18,
                                     fontWeight: FontWeight.bold,
@@ -519,7 +512,7 @@ class _AdminReviewsScreenState extends State<AdminReviewsScreen>
                                     Icon(Icons.receipt, size: 16, color: Colors.grey.shade600),
                                     const SizedBox(width: 4),
                                     Text(
-                                      'Id #${review.orderId.substring(0, 8)}',
+                                      'Id #${productReview.productId!.toString().substring(0, 8)}',
                                       style: simple_text_style(
                                         color: Colors.grey.shade600,
                                         fontSize: 12,
@@ -529,7 +522,7 @@ class _AdminReviewsScreenState extends State<AdminReviewsScreen>
                                     Icon(Icons.access_time, size: 16, color: Colors.grey.shade600),
                                     const SizedBox(width: 4),
                                     Text(
-                                      DateFormat('d/M/yy, hh:mm a').format(review.createdAt),
+                                      DateFormat('d/M/yy, hh:mm a').format(productReview.createdAt!),
                                       style: simple_text_style(
                                         color: Colors.grey.shade600,
                                         fontSize: 12,
@@ -551,7 +544,7 @@ class _AdminReviewsScreenState extends State<AdminReviewsScreen>
                           Expanded(
                             child: _buildRatingSection(
                               'Service',
-                              review.serviceRating,
+                              serviceReview.rating!,
                               Icons.room_service,
                               Colors.blue,
                             ),
@@ -564,7 +557,7 @@ class _AdminReviewsScreenState extends State<AdminReviewsScreen>
                           Expanded(
                             child: _buildRatingSection(
                               'Product',
-                              review.productRating,
+                              productReview.rating!,
                               Icons.shopping_basket,
                               Colors.green,
                             ),
@@ -581,26 +574,26 @@ class _AdminReviewsScreenState extends State<AdminReviewsScreen>
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      if (review.serviceReview.isNotEmpty) ...[
+                      if (serviceReview.reviewText!.isNotEmpty) ...[
                         _buildReviewSection(
                           'Service Review',
-                          review.serviceReview,
+                          serviceReview.reviewText!,
                           Icons.room_service,
                           Colors.blue,
                         ),
                         const SizedBox(height: 16),
                       ],
 
-                      if (review.productReview.isNotEmpty) ...[
+                      if (productReview.reviewText!.isNotEmpty) ...[
                         _buildReviewSection(
                           'Product Review',
-                          review.productReview,
+                          productReview.reviewText!,
                           Icons.shopping_basket,
                           Colors.green,
                         ),
                       ],
 
-                      if (review.serviceReview.isEmpty && review.productReview.isEmpty)
+                      if (productReview.reviewText!.isEmpty && serviceReview.reviewText!.isEmpty)
                         Container(
                           padding: const EdgeInsets.all(12),
                           decoration: BoxDecoration(

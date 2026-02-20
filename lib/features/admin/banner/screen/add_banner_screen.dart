@@ -1,13 +1,13 @@
 import 'dart:io';
-
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:provider/provider.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:raising_india/comman/back_button.dart';
 import 'package:raising_india/comman/elevated_button_style.dart';
 import 'package:raising_india/comman/simple_text_style.dart';
 import 'package:raising_india/constant/AppColour.dart';
-import 'package:raising_india/features/admin/banner/bloc/banner_bloc.dart';
+import 'package:raising_india/data/services/banner_service.dart';
+import 'package:raising_india/data/services/image_service.dart';
 
 class AddBannerScreen extends StatefulWidget {
   const AddBannerScreen({super.key});
@@ -19,19 +19,58 @@ class AddBannerScreen extends StatefulWidget {
 class _AddBannerScreenState extends State<AddBannerScreen> {
   final ImagePicker _picker = ImagePicker();
   File? _imageFile;
+  bool _isUploading = false; // Local loading state for this screen
 
   Future<void> _pickImage() async {
-    final XFile? pickedFile = await _picker.pickImage(
-      source: ImageSource.gallery,
-      maxWidth: 1024,
-      maxHeight: 1024,
-      imageQuality: 80,
-    );
+    try {
+      final XFile? pickedFile = await _picker.pickImage(
+        source: ImageSource.gallery,
+        maxWidth: 1024,
+        maxHeight: 1024,
+        imageQuality: 80,
+      );
 
-    if (pickedFile != null) {
-      setState(() {
-        _imageFile = File(pickedFile.path);
-      });
+      if (pickedFile != null) {
+        setState(() {
+          _imageFile = File(pickedFile.path);
+        });
+      }
+    } catch (e) {
+      // Handle permission errors
+    }
+  }
+
+  Future<void> _handleAddBanner() async {
+    if (_imageFile == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            'Please select an image for Banner',
+            style: simple_text_style(color: AppColour.white),
+          ),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
+
+    setState(() => _isUploading = true);
+
+    // Get services
+    final bannerService = context.read<BannerService>();
+    final imageService = context.read<ImageService>(); // Needed for uploading
+
+    final error = await bannerService.addBanner(_imageFile!, imageService);
+
+    if (mounted) {
+      setState(() => _isUploading = false);
+      if (error == null) {
+        Navigator.pop(context); // Go back on success
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(error), backgroundColor: Colors.red),
+        );
+      }
     }
   }
 
@@ -50,50 +89,44 @@ class _AddBannerScreenState extends State<AddBannerScreen> {
         ),
         backgroundColor: AppColour.white,
       ),
-      body: BlocBuilder<BannerBloc, BannerState>(
-        builder: (context, state) {
-          if (state is BannerLoading) {
-            return Center(child: CircularProgressIndicator(color: AppColour.primary,));
-          } else if (state is ErrorBanner) {
-            return Center(child: Text(state.error));
-          } if(state is BannerAdded){
-            BlocProvider.of<BannerBloc>(
-              context,
-            ).add(LoadAllBannerEvent());
-            Navigator.pop(context);
-          }
-          return Column(
+      body: Stack(
+        children: [
+          Column(
             children: [
               _buildImageSection(),
               const SizedBox(height: 32),
               ElevatedButton(
-                onPressed: () {
-                  if (_imageFile != null) {
-                    context.read<BannerBloc>().add(AddBannerEvent(_imageFile!));
-                  } else {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: Text(
-                          'Please select an image for Banner',
-                          style: simple_text_style(color: AppColour.white),
-                        ),
-                        backgroundColor: Colors.red,
-                      ),
-                    );
-                  }
-                },
+                onPressed: _isUploading ? null : _handleAddBanner,
                 style: elevated_button_style(),
-                child: Text(
-                  'Add Banner',
-                  style: simple_text_style(
-                    color: AppColour.white,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
+                child: _isUploading
+                    ? const SizedBox(
+                        height: 20,
+                        width: 20,
+                        child: CircularProgressIndicator(
+                          color: Colors.white,
+                          strokeWidth: 2,
+                        ),
+                      )
+                    : Text(
+                        'Add Banner',
+                        style: simple_text_style(
+                          color: AppColour.white,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
               ),
             ],
-          );
-        },
+          ),
+
+          // Optional: Overlay while uploading
+          if (_isUploading)
+            Positioned.fill(
+              child: Container(
+                color: Colors.black12,
+                child: const Center(child: CircularProgressIndicator()),
+              ),
+            ),
+        ],
       ),
     );
   }

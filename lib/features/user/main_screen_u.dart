@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:persistent_bottom_nav_bar/persistent_bottom_nav_bar.dart';
 import 'package:raising_india/constant/AppColour.dart';
@@ -8,7 +7,6 @@ import 'package:raising_india/features/user/cart/screens/cart_screen.dart';
 import 'package:raising_india/features/user/home/screens/home_screen_u.dart';
 import 'package:raising_india/features/user/notification/screens/notification_screen.dart';
 
-import 'profile/bloc/profile_bloc.dart';
 import 'profile/screens/profile_screen.dart';
 
 class MainScreenU extends StatefulWidget {
@@ -75,9 +73,6 @@ class _MainScreenUState extends State<MainScreenU> {
       context,
       onItemSelected: (value) => setState(() {
         currentIndex = value;
-        if(value == 3){
-          context.read<ProfileBloc>().add(OnProfileOpened());
-        }
       }),
       backgroundColor: AppColour.white,
       screens: pages,

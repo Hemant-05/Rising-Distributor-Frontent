@@ -1,8 +1,9 @@
 import 'package:carousel_slider/carousel_slider.dart';
 import 'package:cached_network_image/cached_network_image.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'package:raising_india/constant/AppColour.dart';
+import 'package:raising_india/data/services/banner_service.dart';
 
 class AddBannerWidget extends StatefulWidget {
   const AddBannerWidget({super.key});
@@ -11,24 +12,28 @@ class AddBannerWidget extends StatefulWidget {
 }
 
 class _AddBannerWidgetState extends State<AddBannerWidget> {
-  final CarouselSliderController? _controller = CarouselSliderController();
+  final CarouselSliderController _controller = CarouselSliderController();
   int _index = 0;
-
-  Query<Map<String, dynamic>> _query() {
-    return FirebaseFirestore.instance
-        .collection('banner');
-  }
 
   @override
   Widget build(BuildContext context) {
     final radius = BorderRadius.circular(16);
-    return StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
-      stream: _query().snapshots(),
-      builder: (context, snap) {
-        if (!snap.hasData || snap.data!.docs.isEmpty) {
-          return const SizedBox.shrink();
+
+    return Consumer<BannerService>(
+      builder: (context, bannerService, child) {
+        if (bannerService.isLoading && bannerService.homeBanners.isEmpty) {
+          return SizedBox(
+            height: 150,
+            child: Center(child: CircularProgressIndicator(
+              color: AppColour.primary,
+            )),
+          );
         }
-        final items = snap.data!.docs.map((d) => {'id': d.id, ...d.data()}).toList();
+
+        final items = bannerService.homeBanners;
+
+        if (items.isEmpty) return const SizedBox.shrink();
+
         return Column(
           children: [
             Padding(
@@ -39,8 +44,9 @@ class _AddBannerWidgetState extends State<AddBannerWidget> {
                   carouselController: _controller,
                   itemCount: items.length,
                   itemBuilder: (context, i, realIdx) {
-                    final b = items[i];
-                    final img = (b['image'] ?? '').toString();
+                    final banner = items[i];
+                    final img = banner.imageUrl ?? '';
+
                     return Stack(
                       fit: StackFit.expand,
                       children: [

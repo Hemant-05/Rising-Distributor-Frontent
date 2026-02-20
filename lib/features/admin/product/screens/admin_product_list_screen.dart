@@ -1,11 +1,12 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:provider/provider.dart';
 import 'package:raising_india/comman/simple_text_style.dart';
 import 'package:raising_india/constant/AppColour.dart';
-import 'package:raising_india/features/admin/product/bloc/products_cubit.dart';
+import 'package:raising_india/data/services/admin_service.dart';
+import 'package:raising_india/data/services/product_service.dart';
 import 'package:raising_india/features/admin/product/screens/admin_product_details_screen.dart';
-import 'package:raising_india/models/product_model.dart';
+import 'package:raising_india/models/model/product.dart';
 
 class AdminProductListScreen extends StatefulWidget {
   const AdminProductListScreen({super.key});
@@ -29,6 +30,8 @@ class _AdminProductListScreenState extends State<AdminProductListScreen>
   @override
   void initState() {
     super.initState();
+
+    context.read<AdminService>().fetchAllProducts();
 
     // ✅ Initialize animations
     _fadeAnimationController = AnimationController(
@@ -63,14 +66,14 @@ class _AdminProductListScreenState extends State<AdminProductListScreen>
     return Scaffold(
       backgroundColor: Colors.grey.shade50,
       appBar: _buildStunningAppBar(),
-      body: BlocBuilder<ProductsCubit, ProductsState>(
-        builder: (context, state) {
-          if (state.loading) {
+      body: Consumer<AdminService>(
+        builder: (context, adminService, _) {
+          if (adminService.isLoading) {
             return _buildLoadingState();
-          } else if (state.error != null) {
-            return _buildErrorState(state.error!);
+          } else if (adminService.error != null) {
+            return _buildErrorState(adminService.error!);
           } else {
-            final filteredProducts = _getFilteredProducts(state.products);
+            final filteredProducts = _getFilteredProducts(adminService.products);
             return _buildProductList(filteredProducts);
           }
         },
@@ -264,7 +267,7 @@ class _AdminProductListScreenState extends State<AdminProductListScreen>
             const SizedBox(height: 20),
             ElevatedButton.icon(
               onPressed: () {
-                context.read<ProductsCubit>().fetchProducts();
+                context.read<ProductService>().fetchAvailableProducts();
               },
               style: ElevatedButton.styleFrom(
                 backgroundColor: Colors.red.shade600,
@@ -307,7 +310,7 @@ class _AdminProductListScreenState extends State<AdminProductListScreen>
               padding: const EdgeInsets.all(16),
               itemCount: products.length,
               itemBuilder: (context, index) {
-                ProductModel product = products[index];
+                Product product = products[index];
                 return _buildProductCard(product, index);
               },
             ),
@@ -404,7 +407,7 @@ class _AdminProductListScreenState extends State<AdminProductListScreen>
     );
   }
 
-  Widget _buildProductCard(ProductModel product, int index) {
+  Widget _buildProductCard(Product product, int index) {
     return TweenAnimationBuilder<double>(
       duration: Duration(milliseconds: 500 + (index * 100)),
       tween: Tween<double>(begin: 0.0, end: 1.0),
@@ -493,13 +496,13 @@ class _AdminProductListScreenState extends State<AdminProductListScreen>
     );
   }
 
-  Widget _buildProductInfo(ProductModel product) {
+  Widget _buildProductInfo(Product product) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         // Product Name
         Text(
-          product.name,
+          product.name!,
           style: simple_text_style(
             fontSize: 16,
             fontWeight: FontWeight.bold,
@@ -520,7 +523,7 @@ class _AdminProductListScreenState extends State<AdminProductListScreen>
                 borderRadius: BorderRadius.circular(6),
               ),
               child: Text(
-                '₹${product.mrp?.toStringAsFixed(0) ?? (product.price + 5).toStringAsFixed(0)}',
+                '₹${product.mrp?.toStringAsFixed(0) ?? (product.price! + 5).toStringAsFixed(0)}',
                 style: TextStyle(
                   fontFamily: 'Sen',
                   decoration: TextDecoration.lineThrough,
@@ -538,7 +541,7 @@ class _AdminProductListScreenState extends State<AdminProductListScreen>
                 borderRadius: BorderRadius.circular(6),
               ),
               child: Text(
-                '₹${product.price.toStringAsFixed(0)}',
+                '₹${product.price!.toStringAsFixed(0)}',
                 style: simple_text_style(
                   color: AppColour.primary,
                   fontSize: 14,
@@ -554,7 +557,7 @@ class _AdminProductListScreenState extends State<AdminProductListScreen>
                 borderRadius: BorderRadius.circular(6),
               ),
               child: Text(
-                '${product.quantity.toStringAsFixed(0)} ${product.measurement ?? 'pcs'}',
+                '${product.quantity!.toStringAsFixed(0)} ${product.measurement ?? 'pcs'}',
                 style: simple_text_style(
                   color: Colors.grey.shade700,
                   fontSize: 12,
@@ -567,13 +570,13 @@ class _AdminProductListScreenState extends State<AdminProductListScreen>
         const SizedBox(height: 8),
 
         // Category
-        if (product.category.isNotEmpty)
+        if (product.category!.name!.isNotEmpty)
           Row(
             children: [
               Icon(Icons.category, size: 14, color: Colors.grey.shade500),
               const SizedBox(width: 4),
               Text(
-                product.category,
+                product.category!.name!,
                 style: simple_text_style(
                   color: Colors.grey.shade600,
                   fontSize: 12,

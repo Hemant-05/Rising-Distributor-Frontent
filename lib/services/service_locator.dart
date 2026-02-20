@@ -1,59 +1,135 @@
 import 'package:dio/dio.dart';
 import 'package:get_it/get_it.dart';
-import 'package:raising_india/constant/ConString.dart' as ConString;
-import 'package:raising_india/features/auth/services/auth_service.dart';
-import 'package:raising_india/network/dio_client.dart';
-import 'package:shared_preferences/shared_preferences.dart';
-
-import '../error/exceptions.dart';
+import 'package:raising_india/data/rest_client.dart';
+import 'package:raising_india/data/services/auth_service.dart';
+import 'package:raising_india/features/admin/services/admin_image_service.dart';
+import '../constant/ConString.dart' as ConString;
+import '../data/services/address_service.dart';
+import '../data/services/admin_service.dart';
+import '../data/services/analytics_service.dart';
+import '../data/services/banner_service.dart';
+import '../data/services/brand_service.dart';
+import '../data/services/cart_service.dart';
+import '../data/services/category_service.dart';
+import '../data/services/coupon_service.dart';
+import '../data/services/image_service.dart';
+import '../data/services/notification_service.dart';
+import '../data/services/order_service.dart';
+import '../data/services/product_service.dart';
+import '../data/services/review_service.dart';
+import '../data/services/user_service.dart';
+import '../data/services/wishlist_service.dart';
 
 final getIt = GetIt.instance;
 
 void setupServiceLocator() {
+  // 1. Register Dio (The Engine)
+  final dio = Dio(BaseOptions(
+    baseUrl: ConString.baseUrl, // Ensure you set your Base URL here
+    contentType: "application/json",
+    receiveTimeout: const Duration(seconds: 15),
+    connectTimeout: const Duration(seconds: 15),
+  ));
 
-  final dio = Dio(
-    BaseOptions(
-      baseUrl: ConString.baseUrl,
-      connectTimeout: const Duration(seconds: 15),
-      receiveTimeout: const Duration(seconds: 15),
-      headers: {
-        'Accept': 'application/json',
-        'Content-Type': 'application/json',
-      },
-    ),
-  );
-
+  // 2. Add Interceptors
+  // Note: Order matters. AuthInterceptor should often be first to add headers.
   dio.interceptors.add(AuthInterceptor());
   dio.interceptors.add(LoggingInterceptor());
 
-  getIt.registerSingleton<DioClient>(DioClient(dio: dio));
+  getIt.registerLazySingleton<Dio>(() => dio);
+  getIt.registerLazySingleton<RestClient>(() => RestClient(getIt<Dio>()));
+
+  // 3. Register Services
+  getIt.registerLazySingleton(() => AuthService());
+  getIt.registerLazySingleton(() => ProductService());
+  getIt.registerLazySingleton(() => CartService());
+  getIt.registerLazySingleton(() => OrderService());
+  getIt.registerLazySingleton(() => AddressService());
+  getIt.registerLazySingleton(() => CategoryService());
+  getIt.registerLazySingleton(() => BannerService());
+  getIt.registerLazySingleton(() => ReviewService());
+  getIt.registerLazySingleton(() => WishlistService());
+  getIt.registerLazySingleton(() => UserService());
+  getIt.registerLazySingleton(() => BrandService());
+  getIt.registerLazySingleton(() => CouponService());
+
+  // Admin specific services
+  getIt.registerLazySingleton(() => AdminService());
+  getIt.registerLazySingleton(() => ImageService());
+  getIt.registerLazySingleton(() => AdminImageService());
+  getIt.registerLazySingleton(() => NotificationService());
+  getIt.registerLazySingleton(() => AnalyticsService()); // Added AnalyticsService
 }
 
-Exception mapDioException(DioException e) {
-  if (e.type == DioExceptionType.badResponse) {
-    final status = e.response?.statusCode ?? 0;
-    final data = e.response?.data;
-    final message = (data is Map && data['message'] != null)
-        ? data['message'].toString()
-        : 'Server error';
-    if (status == 401) return AuthenticationException(message: message);
-    if (status == 403) return UnAuthorizedException(message : message);
-    if (status == 404) return NotFoundException(message: message);
-    if (status == 422) return ValidationException(message: message);
-    return ServerException(message: message);
+// --- UPDATED AUTH INTERCEPTOR ---
+
+class AuthInterceptor extends Interceptor {
+  // We use a separate Dio instance for the refresh call to avoid
+  // the main Dio interceptor catching this request and causing an infinite loop.
+  final Dio _tokenDio = Dio(BaseOptions(
+    baseUrl: ConString.baseUrl, // Must match your API Base URL
+    contentType: "application/json",
+  ));
+
+  @override
+  void onRequest(RequestOptions options, RequestInterceptorHandler handler) async {
+    // 1. Get Access Token from AuthService (which uses SharedPreferences internally)
+    final authService = getIt<AuthService>();
+    final token = await authService.getAccessToken();
+
+    if (token != null) {
+      options.headers['Authorization'] = 'Bearer $token';
+    }
+
+    return handler.next(options);
   }
 
-  if (e.type == DioExceptionType.connectionError) {
-    return NetworkException(message: 'No internet connection');
-  }
+  @override
+  void onError(DioException err, ErrorInterceptorHandler handler) async {
+    // 2. Check if the error is 401 (Unauthorized)
+    if (err.response?.statusCode == 401) {
+      final authService = getIt<AuthService>();
+      final refreshToken = await authService.getRefreshToken();
 
-  if (e.type == DioExceptionType.receiveTimeout ||
-      e.type == DioExceptionType.sendTimeout ||
-      e.type == DioExceptionType.connectionTimeout) {
-    return NetworkException(message: 'Connection timeout');
-  }
+      // If we have a refresh token, try to refresh
+      if (refreshToken != null) {
+        try {
+          // 3. Call Refresh API using the separate _tokenDio
+          // Adjust the endpoint '/api/auth/refresh-token' to match your backend
+          final response = await _tokenDio.post('/api/auth/refresh', data: {
+            'refresh_token': refreshToken,
+          });
+          // final response = await authService.tryRefreshToken();
 
-  return ServerException(message: 'An unexpected error occurred');
+          print('=======================');
+          print(response.data);
+          if (response != null) {
+            // 4. Extract new tokens (Adjust parsing based on your API response)
+            final newAccessToken = response.data['access_token'];
+            final newRefreshToken = response.data['refresh_token']; // If backend rotates it
+
+            // 5. Save new tokens
+            await authService.saveTokens(newAccessToken!, newRefreshToken);
+
+            // 6. Retry the original request with the NEW token
+            final opts = err.requestOptions;
+            opts.headers['Authorization'] = 'Bearer $newAccessToken';
+
+            // We use a basic Dio() fetch here to ensure we just retry the HTTP call
+            final cloneReq = await Dio().fetch(opts);
+
+            return handler.resolve(cloneReq);
+          }
+        } catch (e) {
+          // Refresh failed (Session truly expired) -> Log out user
+          await authService.signOut();
+        }
+      }
+    }
+
+    // If not 401 or refresh failed, pass the error along
+    return handler.next(err);
+  }
 }
 
 class LoggingInterceptor extends Interceptor {
@@ -86,9 +162,6 @@ class LoggingInterceptor extends Interceptor {
 
   @override
   void onError(DioException err, ErrorInterceptorHandler handler) {
-    if(err.response?.statusCode == 401){
-      AuthService().refreshToken();
-    }
     print('╔════════════════════════════════════════════════════════════╗');
     print('║                    ❌ API ERROR                            ║');
     print('╠════════════════════════════════════════════════════════════╣');
@@ -99,22 +172,3 @@ class LoggingInterceptor extends Interceptor {
     handler.next(err);
   }
 }
-class AuthInterceptor extends Interceptor {
-
-  AuthInterceptor();
-
-  @override
-  Future<void> onRequest(
-      RequestOptions options, RequestInterceptorHandler handler) async {
-    SharedPreferences prefs = await SharedPreferences.getInstance();
-    var token = prefs.get('access_token');
-    if (token != null) {
-      options.headers.addAll({
-        'Authorization': 'Bearer $token',
-      });
-    }
-
-    return handler.next(options);
-  }
-}
-
