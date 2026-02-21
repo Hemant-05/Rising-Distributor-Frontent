@@ -32,7 +32,7 @@ class ReviewService extends ChangeNotifier {
 
     try {
       await _repo.submitReview(request);
-      return null; // Success
+      return null;
     } on AppError catch (e) {
       return e.message;
     } catch (e) {
@@ -48,7 +48,7 @@ class ReviewService extends ChangeNotifier {
     try {
       return await _repo.getProductReviews(productId);
     } catch (e) {
-      print("Error fetching product reviews: $e");
+      debugPrint("Error fetching product reviews: $e");
       return [];
     }
   }
@@ -59,15 +59,32 @@ class ReviewService extends ChangeNotifier {
     notifyListeners();
 
     try {
-      // We fetch the first page just to get the 'totalElements' count from the Page object
-      final pageData = await _repo.getAllReviews(page: 0, size: 1);
+      // Fetch a larger chunk to calculate accurate overall average rating
+      final pageData = await _repo.getAllReviews(page: 0, size: 50);
 
-      _totalReviewsCount = pageData.totalElements ?? 0;
+      _totalReviewsCount = pageData.totalElements ?? pageData.content?.length ?? 0;
 
-      // Since your backend controller doesn't have a specific "stats" endpoint yet,
-      // we mock the average rating or calculate it if you fetch all data.
-      // Ideally, ask backend dev to add /api/reviews/stats endpoint.
-      _averageRating = 4.5;
+      // Dynamically calculate average rating from fetched elements
+      final reviews = pageData.content ?? [];
+      double totalStars = 0.0;
+      int ratingCount = 0;
+
+      for (var review in reviews) {
+        if (review.serviceReview != null && review.serviceReview!.rating != null) {
+          totalStars += review.serviceReview!.rating!;
+          ratingCount++;
+        }
+        if (review.productReviews != null && review.productReviews!.isNotEmpty) {
+          for (var pr in review.productReviews!) {
+            if (pr.rating != null) {
+              totalStars += pr.rating!;
+              ratingCount++;
+            }
+          }
+        }
+      }
+
+      _averageRating = ratingCount > 0 ? (totalStars / ratingCount) : 0.0;
 
     } catch (e) {
       debugPrint("Review Analytics Error: $e");
@@ -94,6 +111,8 @@ class ReviewService extends ChangeNotifier {
       } else {
         _adminReviews.addAll(pageData.content ?? []);
       }
+
+      _totalReviewsCount = pageData.totalElements ?? _adminReviews.length;
 
     } on AppError catch (e) {
       _error = e.message;

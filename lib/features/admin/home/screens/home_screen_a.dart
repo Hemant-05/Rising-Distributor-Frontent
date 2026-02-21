@@ -64,10 +64,11 @@ class _HomeScreenAState extends State<HomeScreenA>
     _fadeAnimationController.forward();
     _slideAnimationController.forward();
 
-    // @ fetch all review for admin
-    context.read<ReviewService>().loadAdminReviews();
-    context.read<AnalyticsService>().fetchAnalytics();
-    context.read<AdminService>().fetchDashboard();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      context.read<ReviewService>().loadAdminReviews();
+      context.read<AnalyticsService>().fetchAnalytics();
+      context.read<AdminService>().fetchDashboard();
+    });
   }
 
   @override
@@ -627,46 +628,59 @@ class _HomeScreenAState extends State<HomeScreenA>
     return Consumer<AdminService>(
       builder: (context, adminService, _) {
         if (adminService.isLoading) {
-          return Center(child: CircularProgressIndicator(color: AppColour.primary,));
+          return SizedBox(
+              height: 100,
+              width: double.infinity,
+              child: Center(
+                  child: CircularProgressIndicator(color: AppColour.primary,)));
         }
-        return adminService.dashboardStats!.lowStockCount! > 0
-            ? Container(
-          margin: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              colors: [Colors.red.shade100, Colors.red.shade50],
-            ),
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: Colors.red.shade300),
-          ),
-          child: ListTile(
-            leading: Container(
-              padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(
-                color: Colors.red.shade200,
-                borderRadius: BorderRadius.circular(8),
+        if (adminService.dashboardStats != null) {
+          return adminService.dashboardStats!.lowStockCount! > 0
+              ? Container(
+            margin: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: [Colors.red.shade100, Colors.red.shade50],
               ),
-              child: Icon(Icons.warning, color: Colors.red.shade700),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: Colors.red.shade300),
             ),
-            title: Text(
-              '${adminService.dashboardStats!.lowStockCount} Low Stock Alert${adminService.dashboardStats!.lowStockCount! > 1 ? 's' : ''}',
-              style: simple_text_style(
-                fontWeight: FontWeight.bold,
-                color: Colors.red.shade700,
+            child: ListTile(
+              leading: Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: Colors.red.shade200,
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Icon(Icons.warning, color: Colors.red.shade700),
               ),
+              title: Text(
+                '${adminService.dashboardStats!
+                    .lowStockCount} Low Stock Alert${adminService
+                    .dashboardStats!.lowStockCount! > 1 ? 's' : ''}',
+                style: simple_text_style(
+                  fontWeight: FontWeight.bold,
+                  color: Colors.red.shade700,
+                ),
+              ),
+              subtitle: Text(
+                'Products need restocking',
+                style: simple_text_style(
+                    color: Colors.red.shade600, fontSize: 12),
+              ),
+              trailing: Icon(
+                  Icons.arrow_forward_ios, color: Colors.red.shade400),
+              onTap: () =>
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                        builder: (_) => const LowStockAlertScreen()),
+                  ),
             ),
-            subtitle: Text(
-              'Products need restocking',
-              style: simple_text_style(color: Colors.red.shade600, fontSize: 12),
-            ),
-            trailing: Icon(Icons.arrow_forward_ios, color: Colors.red.shade400),
-            onTap: () => Navigator.push(
-              context,
-              MaterialPageRoute(builder: (_) => const LowStockAlertScreen()),
-            ),
-          ),
-        ) : const SizedBox();
-      }
+          ) : const SizedBox();
+        }
+        return SizedBox();
+        }
     );
   }
 

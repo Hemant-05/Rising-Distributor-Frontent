@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:raising_india/features/admin/review/screens/admin_reviews_screen.dart';
 import 'package:shimmer/shimmer.dart';
 import 'package:raising_india/comman/simple_text_style.dart';
 import 'package:raising_india/constant/AppColour.dart';
@@ -86,10 +87,10 @@ class _ReviewAnalyticsWidgetState extends State<ReviewAnalyticsWidget> {
                       reviewService.loadAdminReviews(page: 0);
                     },
                     child: reviewService.isLoading
-                        ? const SizedBox(
+                        ? SizedBox(
                       width: 20,
                       height: 20,
-                      child: CircularProgressIndicator(strokeWidth: 2),
+                      child: CircularProgressIndicator(strokeWidth: 2, color: AppColour.primary,),
                     )
                         : const Icon(Icons.refresh_rounded, color: Colors.grey),
                   ),
@@ -134,13 +135,12 @@ class _ReviewAnalyticsWidgetState extends State<ReviewAnalyticsWidget> {
                   ),
                   TextButton(
                     onPressed: () {
-                      // Redirect to full screen
-                      // Navigator.push(
-                      //   context,
-                      //   MaterialPageRoute(
-                      //     builder: (_) => const AdminReviewsScreen(),
-                      //   ),
-                      // );
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => const AdminReviewsScreen(),
+                        ),
+                      );
                     },
                     style: TextButton.styleFrom(
                       padding: EdgeInsets.zero,

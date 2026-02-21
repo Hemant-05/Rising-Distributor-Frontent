@@ -23,19 +23,8 @@ class _AdminReviewsScreenState extends State<AdminReviewsScreen>
   late AnimationController _animationController;
   late Animation<double> _fadeAnimation;
 
-  final List<String> _filterOptions = [
-    'all',
-    'high_rating',
-    'low_rating',
-    'recent'
-  ];
-
-  final List<String> _filterLabels = [
-    'All Reviews',
-    'High Ratings (4+)',
-    'Low Ratings (≤2)',
-    'Recent (7 days)'
-  ];
+  final List<String> _filterOptions = ['all', 'high_rating', 'low_rating', 'recent'];
+  final List<String> _filterLabels = ['All Reviews', 'High Ratings (4+)', 'Low Ratings (≤2)', 'Recent (7 days)'];
 
   @override
   void initState() {
@@ -52,7 +41,11 @@ class _AdminReviewsScreenState extends State<AdminReviewsScreen>
 
     _animationController.forward();
 
-    context.read<ReviewService>().loadAdminReviews();
+    // FIX: Wait for the widget to finish building before notifying listeners
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      context.read<ReviewService>().loadAdminReviews();
+      context.read<ReviewService>().fetchReviewAnalytics(); // Sync total counts
+    });
   }
 
   @override
@@ -61,15 +54,16 @@ class _AdminReviewsScreenState extends State<AdminReviewsScreen>
       backgroundColor: Colors.grey.shade50,
       appBar: _buildAppBar(),
       body: Consumer<ReviewService>(
-        builder: (context, reviewService,_) {
-          if (reviewService.isLoading) {
+        builder: (context, reviewService, _) {
+          if (reviewService.isLoading && reviewService.adminReviews.isEmpty) {
             return _buildLoadingState();
-          } else if (reviewService.totalReviews > 0 && reviewService.adminReviews.isNotEmpty) {
+          } else if (reviewService.adminReviews.isNotEmpty) {
             return _buildLoadedState(reviewService.adminReviews);
           } else if (reviewService.error != null) {
             return _buildErrorState(reviewService.error!);
+          } else {
+            return _buildEmptyState();
           }
-          return Container();
         },
       ),
     );
@@ -152,30 +146,46 @@ class _AdminReviewsScreenState extends State<AdminReviewsScreen>
     return RefreshIndicator(
       color: AppColour.primary,
       backgroundColor: AppColour.white,
-      onRefresh: () async{
-        context.read<ReviewService>().loadAdminReviews();
+      onRefresh: () async {
+        await context.read<ReviewService>().loadAdminReviews();
+        await context.read<ReviewService>().fetchReviewAnalytics();
       },
       child: FadeTransition(
         opacity: _fadeAnimation,
         child: Column(
           children: [
-            // Statistics Header
             _buildStatsHeader(list),
-
-            // Search and Filter Section
             _buildSearchAndFilterSection(list),
-
-            // Reviews List
-            Expanded(
-              child: _buildReviewsList(list),
-            ),
+            Expanded(child: _buildReviewsList(list)),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildStatsHeader(List list) {
+  Widget _buildStatsHeader(List<AdminOrderReviewDto> list) {
+    // FIX: Dynamically calculate accurate rating averages instead of printing list length!
+    double sTotal = 0; int sCount = 0;
+    double pTotal = 0; int pCount = 0;
+
+    for (var r in list) {
+      if (r.serviceReview != null && r.serviceReview!.rating != null) {
+        sTotal += r.serviceReview!.rating!;
+        sCount++;
+      }
+      if (r.productReviews != null) {
+        for (var pr in r.productReviews!) {
+          if (pr.rating != null) {
+            pTotal += pr.rating!;
+            pCount++;
+          }
+        }
+      }
+    }
+
+    double sAvg = sCount > 0 ? (sTotal / sCount) : 0.0;
+    double pAvg = pCount > 0 ? (pTotal / pCount) : 0.0;
+
     return Container(
       margin: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -198,35 +208,15 @@ class _AdminReviewsScreenState extends State<AdminReviewsScreen>
         child: Row(
           children: [
             Expanded(
-              child: _buildStatItem(
-                'Total Reviews',
-                list.length.toString(),
-                Icons.rate_review,
-              ),
+              child: _buildStatItem('Total Reviews', list.length.toString(), Icons.rate_review),
             ),
-            Container(
-              width: 1,
-              height: 40,
-              color: Colors.white.withOpacity(0.3),
-            ),
+            Container(width: 1, height: 40, color: Colors.white.withOpacity(0.3)),
             Expanded(
-              child: _buildStatItem(
-                'Service Rating',
-                list.length.toStringAsFixed(1),
-                Icons.room_service,
-              ),
+              child: _buildStatItem('Service Rating', sAvg.toStringAsFixed(1), Icons.room_service),
             ),
-            Container(
-              width: 1,
-              height: 40,
-              color: Colors.white.withOpacity(0.3),
-            ),
+            Container(width: 1, height: 40, color: Colors.white.withOpacity(0.3)),
             Expanded(
-              child: _buildStatItem(
-                'Product Rating',
-                '10',
-                Icons.shopping_basket,
-              ),
+              child: _buildStatItem('Product Rating', pAvg.toStringAsFixed(1), Icons.shopping_basket),
             ),
           ],
         ),
@@ -264,24 +254,18 @@ class _AdminReviewsScreenState extends State<AdminReviewsScreen>
       margin: const EdgeInsets.symmetric(horizontal: 16),
       child: Column(
         children: [
-          // Search Bar
           Container(
             decoration: BoxDecoration(
               color: Colors.white,
               borderRadius: BorderRadius.circular(12),
               boxShadow: [
-                BoxShadow(
-                  color: Colors.grey.shade200,
-                  blurRadius: 8,
-                  offset: const Offset(0, 2),
-                ),
+                BoxShadow(color: Colors.grey.shade200, blurRadius: 8, offset: const Offset(0, 2)),
               ],
             ),
             child: TextField(
               controller: _searchController,
               onChanged: (value) {
                 context.read<ReviewService>().loadAdminReviews(page: 0, keyword: value);
-                // @ add search review in admin side
               },
               decoration: InputDecoration(
                 hintText: 'Search reviews, users, or order IDs...',
@@ -292,104 +276,13 @@ class _AdminReviewsScreenState extends State<AdminReviewsScreen>
               style: simple_text_style(fontSize: 14),
             ),
           ),
-
           const SizedBox(height: 12),
-
-          // Filter Chips and Sort Options
-          Row(
-            children: [
-              Expanded(
-                child: SizedBox(
-                  height: 40,
-                  child: ListView.builder(
-                    scrollDirection: Axis.horizontal,
-                    itemCount: _filterOptions.length,
-                    itemBuilder: (context, index) {
-                      // final isSelected = state.currentFilter == _filterOptions[index];
-                      final isSelected = false;
-                      return Container(
-                        margin: const EdgeInsets.only(right: 8),
-                        child: FilterChip(
-                          label: Text(
-                            _filterLabels[index],
-                            style: simple_text_style(
-                              color: isSelected ? Colors.white : AppColour.primary,
-                              fontSize: 12,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                          selected: isSelected,
-                          onSelected: (_) {
-                            // context.read<ReviewService>().filterReviews();
-                            // @ add filter review in admin side
-                          },
-                          backgroundColor: Colors.white,
-                          selectedColor: AppColour.primary,
-                          checkmarkColor: Colors.white,
-                          side: BorderSide(color: AppColour.primary),
-                        ),
-                      );
-                    },
-                  ),
-                ),
-              ),
-              PopupMenuButton<String>(
-                onSelected: (value) {
-                  final parts = value.split(' ');
-                  final sortBy = parts[0];
-                  final ascending = parts[1] == 'asc';
-                  // context.read<ReviewService>().sortReviews(sortBy, ascending);
-                  // @ add sort review in admin side
-                },
-                color: AppColour.white,
-                itemBuilder: (context) => [
-                  PopupMenuItem(
-                    value: 'date desc',
-                    child: Text('Sort by: Newest First',style: simple_text_style(),),
-                  ),
-                  PopupMenuItem(
-                    value: 'date asc',
-                    child: Text('Sort by: Oldest First',style: simple_text_style(),),
-                  ),
-                  PopupMenuItem(
-                    value: 'user_name asc',
-                    child: Text('Sort by: User Name (A-Z)',style: simple_text_style(),),
-                  ),
-                  PopupMenuItem(
-                    value: 'user_name desc',
-                    child: Text('Sort by: User Name (Z-A)',style: simple_text_style(),),
-                  ),
-                  PopupMenuItem(
-                    value: 'service_rating desc',
-                    child: Text('Sort by: Higher Service Rating',style: simple_text_style(),),
-                  ),
-                  PopupMenuItem(
-                    value: 'product_rating desc',
-                    child: Text('Sort by: Higher Product Rating',style: simple_text_style(),),
-                  ),
-                ],
-                child: Container(
-                  padding: const EdgeInsets.all(8),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(8),
-                    border: Border.all(color: AppColour.primary),
-                  ),
-                  child: Icon(Icons.sort, color: AppColour.primary),
-                ),
-              ),
-            ],
-          ),
         ],
       ),
     );
   }
 
   Widget _buildReviewsList(List<AdminOrderReviewDto> reviews) {
-    if (reviews.isEmpty) {
-      return _buildEmptyState();
-    }
-
     return ListView.builder(
       padding: const EdgeInsets.all(16),
       itemCount: reviews.length,
@@ -405,11 +298,7 @@ class _AdminReviewsScreenState extends State<AdminReviewsScreen>
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(
-            Icons.rate_review_outlined,
-            size: 80,
-            color: Colors.grey.shade400,
-          ),
+          Icon(Icons.rate_review_outlined, size: 80, color: Colors.grey.shade400),
           const SizedBox(height: 16),
           Text(
             'No reviews found',
@@ -422,10 +311,7 @@ class _AdminReviewsScreenState extends State<AdminReviewsScreen>
           const SizedBox(height: 8),
           Text(
             'Reviews will appear here when customers submit them',
-            style: simple_text_style(
-              color: Colors.grey.shade500,
-              fontSize: 14,
-            ),
+            style: simple_text_style(color: Colors.grey.shade500, fontSize: 14),
             textAlign: TextAlign.center,
           ),
         ],
@@ -434,8 +320,15 @@ class _AdminReviewsScreenState extends State<AdminReviewsScreen>
   }
 
   Widget _buildReviewCard(AdminOrderReviewDto review, int index) {
-    ProductReview productReview = review.productReviews![1];
-    ServiceReview serviceReview = review.serviceReview!;
+    // Safely extract the first product review if it exists
+    ProductReview? productReview = (review.productReviews != null && review.productReviews!.isNotEmpty)
+        ? review.productReviews!.first
+        : null;
+    ServiceReview? serviceReview = review.serviceReview;
+
+    String userName = productReview?.userName ?? serviceReview?.userId ?? 'Unknown User';
+    DateTime? date = productReview?.createdAt ?? serviceReview?.createdAt ?? DateTime.now();
+
     return TweenAnimationBuilder<double>(
       duration: Duration(milliseconds: 500 + (index * 100)),
       tween: Tween<double>(begin: 0.0, end: 1.0),
@@ -449,25 +342,17 @@ class _AdminReviewsScreenState extends State<AdminReviewsScreen>
               color: Colors.white,
               borderRadius: BorderRadius.circular(16),
               boxShadow: [
-                BoxShadow(
-                  color: Colors.grey.shade200,
-                  blurRadius: 10,
-                  offset: const Offset(0, 4),
-                ),
+                BoxShadow(color: Colors.grey.shade200, blurRadius: 10, offset: const Offset(0, 4)),
               ],
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Header with user info and ratings
                 Container(
                   padding: const EdgeInsets.all(20),
                   decoration: BoxDecoration(
                     gradient: LinearGradient(
-                      colors: [
-                        AppColour.primary.withOpacity(0.1),
-                        AppColour.primary.withOpacity(0.05),
-                      ],
+                      colors: [AppColour.primary.withOpacity(0.1), AppColour.primary.withOpacity(0.05)],
                     ),
                     borderRadius: const BorderRadius.only(
                       topLeft: Radius.circular(16),
@@ -477,21 +362,14 @@ class _AdminReviewsScreenState extends State<AdminReviewsScreen>
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      // User and Order Info
                       Row(
                         children: [
                           CircleAvatar(
                             radius: 25,
                             backgroundColor: AppColour.primary,
                             child: Text(
-                              productReview.userName!.isNotEmpty
-                                  ? productReview.userName![0].toUpperCase()
-                                  : 'U',
-                              style: simple_text_style(
-                                color: Colors.white,
-                                fontSize: 18,
-                                fontWeight: FontWeight.bold,
-                              ),
+                              userName.isNotEmpty ? userName[0].toUpperCase() : 'U',
+                              style: simple_text_style(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold),
                             ),
                           ),
                           const SizedBox(width: 16),
@@ -499,34 +377,15 @@ class _AdminReviewsScreenState extends State<AdminReviewsScreen>
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                Text(
-                                  productReview.userName ?? 'Unknown User',
-                                  style: simple_text_style(
-                                    fontSize: 18,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
+                                Text(userName, style: simple_text_style(fontSize: 18, fontWeight: FontWeight.bold)),
                                 const SizedBox(height: 4),
                                 Row(
                                   children: [
-                                    Icon(Icons.receipt, size: 16, color: Colors.grey.shade600),
-                                    const SizedBox(width: 4),
-                                    Text(
-                                      'Id #${productReview.productId!.toString().substring(0, 8)}',
-                                      style: simple_text_style(
-                                        color: Colors.grey.shade600,
-                                        fontSize: 12,
-                                      ),
-                                    ),
-                                    const Spacer(),
                                     Icon(Icons.access_time, size: 16, color: Colors.grey.shade600),
                                     const SizedBox(width: 4),
                                     Text(
-                                      DateFormat('d/M/yy, hh:mm a').format(productReview.createdAt!),
-                                      style: simple_text_style(
-                                        color: Colors.grey.shade600,
-                                        fontSize: 12,
-                                      ),
+                                      DateFormat('d/M/yy, hh:mm a').format(date),
+                                      style: simple_text_style(color: Colors.grey.shade600, fontSize: 12),
                                     ),
                                   ],
                                 ),
@@ -535,81 +394,32 @@ class _AdminReviewsScreenState extends State<AdminReviewsScreen>
                           ),
                         ],
                       ),
-
                       const SizedBox(height: 16),
-
-                      // Ratings Section
                       Row(
                         children: [
-                          Expanded(
-                            child: _buildRatingSection(
-                              'Service',
-                              serviceReview.rating!,
-                              Icons.room_service,
-                              Colors.blue,
-                            ),
-                          ),
-                          Container(
-                            width: 1,
-                            height: 40,
-                            color: Colors.grey.shade300,
-                          ),
-                          Expanded(
-                            child: _buildRatingSection(
-                              'Product',
-                              productReview.rating!,
-                              Icons.shopping_basket,
-                              Colors.green,
-                            ),
-                          ),
+                          if (serviceReview != null)
+                            Expanded(child: _buildRatingSection('Service', serviceReview.rating ?? 0, Icons.room_service, Colors.blue)),
+                          if (serviceReview != null && productReview != null)
+                            Container(width: 1, height: 40, color: Colors.grey.shade300),
+                          if (productReview != null)
+                            Expanded(child: _buildRatingSection('Product', productReview.rating ?? 0, Icons.shopping_basket, Colors.green)),
                         ],
                       ),
                     ],
                   ),
                 ),
-
-                // Reviews Content
                 Padding(
                   padding: const EdgeInsets.all(20),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      if (serviceReview.reviewText!.isNotEmpty) ...[
-                        _buildReviewSection(
-                          'Service Review',
-                          serviceReview.reviewText!,
-                          Icons.room_service,
-                          Colors.blue,
-                        ),
+                      if (serviceReview != null && (serviceReview.reviewText?.isNotEmpty ?? false)) ...[
+                        _buildReviewSection('Service Review', serviceReview.reviewText!, Icons.room_service, Colors.blue),
                         const SizedBox(height: 16),
                       ],
-
-                      if (productReview.reviewText!.isNotEmpty) ...[
-                        _buildReviewSection(
-                          'Product Review',
-                          productReview.reviewText!,
-                          Icons.shopping_basket,
-                          Colors.green,
-                        ),
+                      if (productReview != null && (productReview.reviewText?.isNotEmpty ?? false)) ...[
+                        _buildReviewSection('Product Review', productReview.reviewText!, Icons.shopping_basket, Colors.green),
                       ],
-
-                      if (productReview.reviewText!.isEmpty && serviceReview.reviewText!.isEmpty)
-                        Container(
-                          padding: const EdgeInsets.all(12),
-                          decoration: BoxDecoration(
-                            color: Colors.grey.shade100,
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          child: Text(
-                            'No written review provided',
-                            style: TextStyle(
-                              fontFamily: 'Sen',
-                              color: Colors.grey.shade600,
-                              fontSize: 14,
-                              fontStyle: FontStyle.italic,
-                            ),
-                          ),
-                        ),
                     ],
                   ),
                 ),
@@ -629,25 +439,12 @@ class _AdminReviewsScreenState extends State<AdminReviewsScreen>
         Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.star, color: Colors.amber, size: 16),
+            const Icon(Icons.star, color: Colors.amber, size: 16),
             const SizedBox(width: 4),
-            Text(
-              rating.toStringAsFixed(1),
-              style: simple_text_style(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-                color: color,
-              ),
-            ),
+            Text(rating.toStringAsFixed(1), style: simple_text_style(fontSize: 18, fontWeight: FontWeight.bold, color: color)),
           ],
         ),
-        Text(
-          title,
-          style: simple_text_style(
-            color: Colors.grey.shade600,
-            fontSize: 12,
-          ),
-        ),
+        Text(title, style: simple_text_style(color: Colors.grey.shade600, fontSize: 12)),
       ],
     );
   }
@@ -660,14 +457,7 @@ class _AdminReviewsScreenState extends State<AdminReviewsScreen>
           children: [
             Icon(icon, color: color, size: 18),
             const SizedBox(width: 8),
-            Text(
-              title,
-              style: simple_text_style(
-                fontSize: 16,
-                fontWeight: FontWeight.w600,
-                color: color,
-              ),
-            ),
+            Text(title, style: simple_text_style(fontSize: 16, fontWeight: FontWeight.w600, color: color)),
           ],
         ),
         const SizedBox(height: 8),
@@ -679,13 +469,7 @@ class _AdminReviewsScreenState extends State<AdminReviewsScreen>
             borderRadius: BorderRadius.circular(8),
             border: Border.all(color: color.withOpacity(0.2)),
           ),
-          child: Text(
-            content,
-            style: simple_text_style(
-              fontSize: 14,
-              color: Colors.grey.shade800,
-            ),
-          ),
+          child: Text(content, style: simple_text_style(fontSize: 14, color: Colors.grey.shade800)),
         ),
       ],
     );
