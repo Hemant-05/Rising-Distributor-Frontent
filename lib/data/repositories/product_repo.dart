@@ -73,10 +73,10 @@ class ProductRepository with RepoErrorHandler {
     }
   }
 
-  Future<Product> updateProduct(Product product) async
+  Future<Product> updateProduct(String pid, ProductRequest request) async
   {
     try {
-      final res = await _client.updateProduct(product.pid!, product);
+      final res = await _client.updateProduct(pid, request);
       return res.data!;
     } catch (e) {
       throw handleError(e);

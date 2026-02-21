@@ -1,6 +1,9 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:raising_india/data/services/brand_service.dart';
+import 'package:raising_india/data/services/category_service.dart';
+import 'package:shimmer/shimmer.dart'; // ✅ Added Shimmer package
 import 'package:raising_india/comman/simple_text_style.dart';
 import 'package:raising_india/constant/AppColour.dart';
 import 'package:raising_india/data/services/admin_service.dart';
@@ -18,22 +21,22 @@ class AdminProductListScreen extends StatefulWidget {
 class _AdminProductListScreenState extends State<AdminProductListScreen>
     with TickerProviderStateMixin {
 
-  // ✅ Animation Controllers for stunning animations
   late AnimationController _fadeAnimationController;
   late Animation<double> _fadeAnimation;
 
-  // ✅ Search and filter functionality
   final TextEditingController _searchController = TextEditingController();
   String _searchQuery = '';
-  String _selectedFilter = 'all'; // 'all', 'available', 'unavailable'
+  String _selectedFilter = 'all'; // 'all', 'available', 'unavailable', 'low_stock'
 
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      context.read<AdminService>().fetchAllProducts();
+      context.read<CategoryService>().loadCategories();
+      context.read<BrandService>().fetchBrands();
+    });
 
-    context.read<AdminService>().fetchAllProducts();
-
-    // ✅ Initialize animations
     _fadeAnimationController = AnimationController(
       duration: const Duration(milliseconds: 800),
       vsync: this,
@@ -43,10 +46,8 @@ class _AdminProductListScreenState extends State<AdminProductListScreen>
       CurvedAnimation(parent: _fadeAnimationController, curve: Curves.easeInOut),
     );
 
-    // Start animations
     _fadeAnimationController.forward();
 
-    // Add search listener
     _searchController.addListener(() {
       setState(() {
         _searchQuery = _searchController.text.toLowerCase();
@@ -61,6 +62,10 @@ class _AdminProductListScreenState extends State<AdminProductListScreen>
     super.dispose();
   }
 
+  Future<void> _onRefresh() async {
+    await context.read<AdminService>().fetchAllProducts();
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -68,13 +73,42 @@ class _AdminProductListScreenState extends State<AdminProductListScreen>
       appBar: _buildStunningAppBar(),
       body: Consumer<AdminService>(
         builder: (context, adminService, _) {
-          if (adminService.isLoading) {
-            return _buildLoadingState();
+          // ✅ Show Shimmer instead of CircularProgressIndicator
+          if (adminService.isLoading && adminService.products.isEmpty) {
+            return _buildShimmerLoadingState();
           } else if (adminService.error != null) {
             return _buildErrorState(adminService.error!);
           } else {
             final filteredProducts = _getFilteredProducts(adminService.products);
-            return _buildProductList(filteredProducts);
+            return RefreshIndicator(
+              onRefresh: _onRefresh,
+              color: AppColour.primary,
+              child: CustomScrollView(
+                slivers: [
+                  SliverToBoxAdapter(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        _buildInlineSearchBar(),
+                        _buildFilterChips(),
+                        _buildStatsHeader(filteredProducts),
+                      ],
+                    ),
+                  ),
+                  SliverPadding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                    sliver: filteredProducts.isEmpty
+                        ? SliverToBoxAdapter(child: _buildEmptyState())
+                        : SliverList(
+                      delegate: SliverChildBuilderDelegate(
+                            (context, index) => _buildProductCard(filteredProducts[index], index),
+                        childCount: filteredProducts.length,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            );
           }
         },
       ),
@@ -88,10 +122,7 @@ class _AdminProductListScreenState extends State<AdminProductListScreen>
       flexibleSpace: Container(
         decoration: BoxDecoration(
           gradient: LinearGradient(
-            colors: [
-              AppColour.primary,
-              AppColour.primary.withOpacity(0.8),
-            ],
+            colors: [AppColour.primary, AppColour.primary.withOpacity(0.8)],
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
           ),
@@ -105,11 +136,7 @@ class _AdminProductListScreenState extends State<AdminProductListScreen>
               color: Colors.white.withOpacity(0.2),
               borderRadius: BorderRadius.circular(10),
             ),
-            child: Icon(
-              Icons.inventory_2_outlined,
-              color: Colors.white,
-              size: 24,
-            ),
+            child: const Icon(Icons.inventory_2_outlined, color: Colors.white, size: 24),
           ),
           const SizedBox(width: 12),
           Expanded(
@@ -118,666 +145,371 @@ class _AdminProductListScreenState extends State<AdminProductListScreen>
               children: [
                 Text(
                   'Product Inventory',
-                  style: simple_text_style(
-                    color: Colors.white,
-                    fontSize: 20,
-                    fontWeight: FontWeight.bold,
-                  ),
+                  style: simple_text_style(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold),
                 ),
                 Text(
                   'Manage your product catalog',
-                  style: simple_text_style(
-                    color: Colors.white.withOpacity(0.9),
-                    fontSize: 12,
-                  ),
+                  style: simple_text_style(color: Colors.white.withOpacity(0.9), fontSize: 12),
                 ),
               ],
             ),
           ),
         ],
       ),
-      actions: [
-        // ✅ Filter Button
-        Container(
-          margin: const EdgeInsets.only(right: 8),
-          decoration: BoxDecoration(
-            color: Colors.white.withOpacity(0.2),
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: Colors.white.withOpacity(0.3)),
-          ),
-          child: IconButton(
-            onPressed: _showFilterDialog,
-            icon: Icon(Icons.filter_list, color: Colors.white, size: 20),
-            tooltip: 'Filter Products',
-          ),
-        ),
-        // ✅ Search Button
-        Container(
-          margin: const EdgeInsets.only(right: 16),
-          decoration: BoxDecoration(
-            color: Colors.white.withOpacity(0.2),
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: Colors.white.withOpacity(0.3)),
-          ),
-          child: IconButton(
-            onPressed: _showSearchDialog,
-            icon: Icon(Icons.search, color: Colors.white, size: 20),
-            tooltip: 'Search Products',
-          ),
-        ),
-      ],
     );
   }
 
-  Widget _buildLoadingState() {
+  Widget _buildInlineSearchBar() {
     return Container(
+      margin: const EdgeInsets.fromLTRB(16, 16, 16, 8),
       decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: [
-            AppColour.primary.withOpacity(0.1),
-            Colors.white,
-          ],
-          begin: Alignment.topCenter,
-          end: Alignment.bottomCenter,
-        ),
-      ),
-      child: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Container(
-              padding: const EdgeInsets.all(20),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(20),
-                boxShadow: [
-                  BoxShadow(
-                    color: AppColour.primary.withOpacity(0.2),
-                    blurRadius: 20,
-                    offset: const Offset(0, 10),
-                  ),
-                ],
-              ),
-              child: CircularProgressIndicator(
-                strokeWidth: 3,
-                valueColor: AlwaysStoppedAnimation<Color>(AppColour.primary),
-              ),
-            ),
-            const SizedBox(height: 20),
-            Text(
-              'Loading Products...',
-              style: simple_text_style(
-                fontSize: 18,
-                fontWeight: FontWeight.w600,
-                color: AppColour.primary,
-              ),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              'Please wait while we fetch your inventory',
-              style: simple_text_style(
-                color: Colors.grey.shade600,
-                fontSize: 14,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildErrorState(String error) {
-    return Container(
-      padding: const EdgeInsets.all(32),
-      child: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Container(
-              padding: const EdgeInsets.all(20),
-              decoration: BoxDecoration(
-                color: Colors.red.shade50,
-                borderRadius: BorderRadius.circular(20),
-                border: Border.all(color: Colors.red.shade200),
-              ),
-              child: Icon(
-                Icons.error_outline,
-                size: 64,
-                color: Colors.red.shade400,
-              ),
-            ),
-            const SizedBox(height: 20),
-            Text(
-              'Failed to Load Products',
-              style: simple_text_style(
-                fontSize: 20,
-                fontWeight: FontWeight.bold,
-                color: Colors.red.shade700,
-              ),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              error,
-              style: simple_text_style(
-                color: Colors.red.shade600,
-                fontSize: 14,
-              ),
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: 20),
-            ElevatedButton.icon(
-              onPressed: () {
-                context.read<ProductService>().fetchAvailableProducts();
-              },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.red.shade600,
-                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-              ),
-              icon: const Icon(Icons.refresh, color: Colors.white),
-              label: Text(
-                'Retry',
-                style: simple_text_style(
-                  color: Colors.white,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildProductList(List products) {
-    if (products.isEmpty) {
-      return _buildEmptyState();
-    }
-
-    return FadeTransition(
-      opacity: _fadeAnimation,
-      child: Column(
-        children: [
-          // ✅ Stats Header
-          _buildStatsHeader(products),
-
-          // ✅ Products Grid/List
-          Expanded(
-            child: ListView.builder(
-              physics: const BouncingScrollPhysics(),
-              padding: const EdgeInsets.all(16),
-              itemCount: products.length,
-              itemBuilder: (context, index) {
-                Product product = products[index];
-                return _buildProductCard(product, index);
-              },
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildStatsHeader(List products) {
-    final availableProducts = products.where((p) => p.isAvailable).length;
-    final unavailableProducts = products.length - availableProducts;
-
-    return Container(
-      margin: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: [AppColour.primary, AppColour.primary.withOpacity(0.8)],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-        borderRadius: BorderRadius.circular(16),
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
         boxShadow: [
-          BoxShadow(
-            color: AppColour.primary.withOpacity(0.3),
-            blurRadius: 12,
-            offset: const Offset(0, 6),
-          ),
+          BoxShadow(color: Colors.grey.shade200, blurRadius: 8, offset: const Offset(0, 2)),
         ],
       ),
-      child: Padding(
-        padding: const EdgeInsets.all(20),
-        child: Row(
-          children: [
-            Expanded(
-              child: _buildStatItem(
-                'Total Products',
-                products.length.toString(),
-                Icons.inventory_2,
-              ),
-            ),
-            Container(
-              width: 1,
-              height: 40,
-              color: Colors.white.withOpacity(0.3),
-            ),
-            Expanded(
-              child: _buildStatItem(
-                'Available',
-                availableProducts.toString(),
-                Icons.check_circle,
-              ),
-            ),
-            Container(
-              width: 1,
-              height: 40,
-              color: Colors.white.withOpacity(0.3),
-            ),
-            Expanded(
-              child: _buildStatItem(
-                'Unavailable',
-                unavailableProducts.toString(),
-                Icons.cancel,
-              ),
-            ),
-          ],
+      child: TextField(
+        controller: _searchController,
+        decoration: InputDecoration(
+          hintText: 'Search products or categories...',
+          prefixIcon: Icon(Icons.search, color: AppColour.primary),
+          suffixIcon: _searchQuery.isNotEmpty
+              ? IconButton(
+            icon: const Icon(Icons.clear, color: Colors.grey),
+            onPressed: () => _searchController.clear(),
+          )
+              : null,
+          border: InputBorder.none,
+          contentPadding: const EdgeInsets.all(16),
         ),
       ),
     );
   }
 
-  Widget _buildStatItem(String title, String value, IconData icon) {
-    return Column(
-      children: [
-        Icon(icon, color: Colors.white, size: 24),
-        const SizedBox(height: 8),
-        Text(
-          value,
+  Widget _buildFilterChips() {
+    return SizedBox(
+      height: 50,
+      child: ListView(
+        scrollDirection: Axis.horizontal,
+        padding: const EdgeInsets.symmetric(horizontal: 16),
+        children: [
+          _buildChip('all', 'All Products'),
+          _buildChip('available', 'Available'),
+          _buildChip('unavailable', 'Unavailable'),
+          _buildChip('low_stock', 'Low Stock', isWarning: true),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildChip(String value, String label, {bool isWarning = false}) {
+    final isSelected = _selectedFilter == value;
+    final activeColor = isWarning ? Colors.orange : AppColour.primary;
+
+    return Padding(
+      padding: const EdgeInsets.only(right: 8.0),
+      child: ChoiceChip(
+        checkmarkColor: AppColour.white,
+        label: Text(
+          label,
           style: simple_text_style(
-            color: Colors.white,
-            fontSize: 24,
-            fontWeight: FontWeight.bold,
+            color: isSelected ? Colors.white : (isWarning ? Colors.orange.shade700 : Colors.grey.shade700),
+            fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
           ),
         ),
-        Text(
-          title,
-          style: simple_text_style(
-            color: Colors.white.withOpacity(0.9),
-            fontSize: 12,
+        selected: isSelected,
+        onSelected: (bool selected) {
+          setState(() {
+            _selectedFilter = selected ? value : 'all';
+          });
+        },
+        selectedColor: activeColor,
+        backgroundColor: Colors.white,
+        side: BorderSide(color: isSelected ? activeColor : Colors.grey.shade300),
+      ),
+    );
+  }
+
+  List<Product> _getFilteredProducts(List<Product> products) {
+    return products.where((product) {
+      final matchesSearch = _searchQuery.isEmpty ||
+          product.name!.toLowerCase().contains(_searchQuery) ||
+          (product.category!.name ?? '').toLowerCase().contains(_searchQuery);
+
+      bool matchesFilter = true;
+      if (_selectedFilter == 'available') {
+        matchesFilter = product.isAvailable ?? false;
+      } else if (_selectedFilter == 'unavailable') {
+        matchesFilter = !(product.isAvailable ?? false);
+      } else if (_selectedFilter == 'low_stock') {
+        matchesFilter = (product.stockQuantity ?? 0) <= (product.lowStockQuantity ?? 10);
+      }
+
+      return matchesSearch && matchesFilter;
+    }).toList();
+  }
+
+  Widget _buildStatsHeader(List<Product> products) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(
+            'Showing ${products.length} products',
+            style: simple_text_style(color: Colors.grey.shade600, fontWeight: FontWeight.w600),
           ),
-          textAlign: TextAlign.center,
-        ),
-      ],
+        ],
+      ),
     );
   }
 
   Widget _buildProductCard(Product product, int index) {
-    return TweenAnimationBuilder<double>(
-      duration: Duration(milliseconds: 500 + (index * 100)),
-      tween: Tween<double>(begin: 0.0, end: 1.0),
-      curve: Curves.easeOutBack,
-      builder: (context, value, child) {
-        return Transform.scale(
-          scale: value,
-          child: Container(
-            margin: const EdgeInsets.only(bottom: 16),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(16),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.grey.shade200,
-                  blurRadius: 10,
-                  offset: const Offset(0, 4),
-                ),
-              ],
-            ),
-            child: InkWell(
-              onTap: () => Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (_) => AdminProductDetailScreen(product: product),
-                ),
-              ),
-              borderRadius: BorderRadius.circular(16),
-              child: Padding(
-                padding: const EdgeInsets.all(16),
-                child: Row(
-                  children: [
-                    // ✅ Product Image
-                    _buildProductImage(product),
-                    const SizedBox(width: 16),
+    final isLowStock = (product.stockQuantity ?? 0) <= (product.lowStockQuantity ?? 10);
 
-                    // ✅ Product Info
-                    Expanded(
-                      child: _buildProductInfo(product),
-                    ),
-
-                    // ✅ Status Badge & Arrow
-                    _buildProductStatus(product),
-                  ],
-                ),
-              ),
-            ),
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: isLowStock ? Colors.orange.shade300 : Colors.transparent,
+          width: isLowStock ? 1.5 : 0,
+        ),
+        boxShadow: [
+          BoxShadow(color: Colors.grey.shade200, blurRadius: 6, offset: const Offset(0, 2)),
+        ],
+      ),
+      child: InkWell(
+        onTap: () => Navigator.push(
+          context,
+          MaterialPageRoute(builder: (_) => AdminProductDetailScreen(product: product)),
+        ),
+        borderRadius: BorderRadius.circular(16),
+        child: Padding(
+          padding: const EdgeInsets.all(12),
+          child: Row(
+            children: [
+              _buildProductImage(product),
+              const SizedBox(width: 16),
+              Expanded(child: _buildProductInfo(product, isLowStock)),
+              _buildProductStatus(product),
+            ],
           ),
-        );
-      },
+        ),
+      ),
     );
   }
 
-  Widget _buildProductImage(dynamic product) {
+  Widget _buildProductImage(Product product) {
     return Container(
-      width: 80,
-      height: 80,
+      width: 70,
+      height: 70,
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(12),
         border: Border.all(color: Colors.grey.shade200),
       ),
       child: ClipRRect(
         borderRadius: BorderRadius.circular(12),
-        child: product.photosList.isNotEmpty
+        child: product.photosList != null && product.photosList!.isNotEmpty
             ? CachedNetworkImage(
-          imageUrl : product.photosList.first,
+          imageUrl: product.photosList!.first,
           fit: BoxFit.cover,
-          errorWidget: (context, error, stackTrace) => Container(
-            color: Colors.grey.shade100,
-            child: Icon(
-              Icons.broken_image,
-              color: Colors.grey.shade400,
-              size: 32,
-            ),
-          ),
+          errorWidget: (_, __, ___) => const Icon(Icons.image_not_supported, color: Colors.grey),
         )
-            : Container(
-          color: Colors.grey.shade100,
-          child: Icon(
-            Icons.image_not_supported,
-            color: Colors.grey.shade400,
-            size: 32,
-          ),
-        ),
+            : const Icon(Icons.image_not_supported, color: Colors.grey),
       ),
     );
   }
 
-  Widget _buildProductInfo(Product product) {
+  Widget _buildProductInfo(Product product, bool isLowStock) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // Product Name
         Text(
-          product.name!,
-          style: simple_text_style(
-            fontSize: 16,
-            fontWeight: FontWeight.bold,
-            color: Colors.grey.shade800,
-          ),
+          product.name ?? 'Unknown',
+          style: simple_text_style(fontSize: 15, fontWeight: FontWeight.bold, color: Colors.grey.shade800),
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
         ),
         const SizedBox(height: 4),
-
-        // Price and Quantity
         Row(
           children: [
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-              decoration: BoxDecoration(
-                color: AppColour.primary.withOpacity(0.1),
-                borderRadius: BorderRadius.circular(6),
-              ),
-              child: Text(
-                '₹${product.mrp?.toStringAsFixed(0) ?? (product.price! + 5).toStringAsFixed(0)}',
-                style: TextStyle(
-                  fontFamily: 'Sen',
-                  decoration: TextDecoration.lineThrough,
-                  color: AppColour.primary,
-                  fontSize: 14,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
+            Text(
+              '₹${product.price?.toStringAsFixed(0) ?? '0'}',
+              style: simple_text_style(color: AppColour.primary, fontSize: 14, fontWeight: FontWeight.bold),
             ),
             const SizedBox(width: 8),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-              decoration: BoxDecoration(
-                color: AppColour.primary.withOpacity(0.1),
-                borderRadius: BorderRadius.circular(6),
-              ),
-              child: Text(
-                '₹${product.price!.toStringAsFixed(0)}',
-                style: simple_text_style(
-                  color: AppColour.primary,
-                  fontSize: 14,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
+            Text(
+              '${product.quantity?.toStringAsFixed(0) ?? '0'} ${product.measurement ?? 'pcs'}',
+              style: simple_text_style(color: Colors.grey.shade600, fontSize: 12),
             ),
-            const SizedBox(width: 8),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-              decoration: BoxDecoration(
-                color: Colors.grey.shade100,
-                borderRadius: BorderRadius.circular(6),
-              ),
-              child: Text(
-                '${product.quantity!.toStringAsFixed(0)} ${product.measurement ?? 'pcs'}',
-                style: simple_text_style(
-                  color: Colors.grey.shade700,
-                  fontSize: 12,
-                  fontWeight: FontWeight.w500,
-                ),
+          ],
+        ),
+        const SizedBox(height: 6),
+        Row(
+          children: [
+            Icon(Icons.inventory_2, size: 12, color: isLowStock ? Colors.orange : Colors.grey.shade500),
+            const SizedBox(width: 4),
+            Text(
+              'Stock: ${product.stockQuantity ?? 0}',
+              style: simple_text_style(
+                color: isLowStock ? Colors.orange.shade700 : Colors.grey.shade600,
+                fontSize: 12,
+                fontWeight: isLowStock ? FontWeight.bold : FontWeight.normal,
               ),
             ),
           ],
         ),
-        const SizedBox(height: 8),
-
-        // Category
-        if (product.category!.name!.isNotEmpty)
-          Row(
-            children: [
-              Icon(Icons.category, size: 14, color: Colors.grey.shade500),
-              const SizedBox(width: 4),
-              Text(
-                product.category!.name!,
-                style: simple_text_style(
-                  color: Colors.grey.shade600,
-                  fontSize: 12,
-                ),
-              ),
-            ],
-          ),
       ],
     );
   }
 
-  Widget _buildProductStatus(dynamic product) {
-    return Column(
-      children: [
-        // ✅ Status Badge (removed toggle functionality)
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 6),
-          decoration: BoxDecoration(
-            color: product.isAvailable
-                ? Colors.green.shade100
-                : Colors.red.shade100,
-            borderRadius: BorderRadius.circular(20),
-            border: Border.all(
-              color: product.isAvailable
-                  ? Colors.green.shade300
-                  : Colors.red.shade300,
-            ),
-          ),
-          child: Icon(
-            product.isAvailable ? Icons.check_circle : Icons.cancel,
-            size: 14,
-            color: product.isAvailable
-                ? Colors.green.shade600
-                : Colors.red.shade600,
-          ),
-        ),
-        const SizedBox(height: 12),
-
-        // ✅ Navigate Arrow
-        Icon(
-          Icons.arrow_forward_ios,
-          size: 16,
-          color: Colors.grey.shade400,
-        ),
-      ],
+  Widget _buildProductStatus(Product product) {
+    final isAvail = product.isAvailable ?? false;
+    return Container(
+      padding: const EdgeInsets.all(6),
+      decoration: BoxDecoration(
+        color: isAvail ? Colors.green.shade50 : Colors.red.shade50,
+        shape: BoxShape.circle,
+      ),
+      child: Icon(
+        isAvail ? Icons.check_circle : Icons.cancel,
+        size: 20,
+        color: isAvail ? Colors.green : Colors.red,
+      ),
     );
+  }
+
+  Widget _buildErrorState(String error) {
+    return Center(child: Text('Error: $error'));
   }
 
   Widget _buildEmptyState() {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
+    return const Center(
+      child: Padding(
+        padding: EdgeInsets.all(32.0),
+        child: Text('No products found matching your criteria.'),
+      ),
+    );
+  }
+
+  // ✅ NEW: Shimmer Loading State
+  Widget _buildShimmerLoadingState() {
+    return Shimmer.fromColors(
+      baseColor: Colors.grey.shade300,
+      highlightColor: Colors.grey.shade100,
+      child: CustomScrollView(
+        slivers: [
+          SliverToBoxAdapter(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Shimmer for Search Bar
+                Container(
+                  margin: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+                  height: 56,
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+                // Shimmer for Filter Chips
+                Container(
+                  height: 40,
+                  margin: const EdgeInsets.only(bottom: 8),
+                  child: ListView.builder(
+                    scrollDirection: Axis.horizontal,
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    itemCount: 4,
+                    itemBuilder: (context, index) => Container(
+                      width: 80,
+                      margin: const EdgeInsets.only(right: 8),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                    ),
+                  ),
+                ),
+                // Shimmer for Stats Header Text
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+                  child: Container(
+                    width: 140,
+                    height: 16,
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(4),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          // Shimmer for Product List Cards
+          SliverPadding(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            sliver: SliverList(
+              delegate: SliverChildBuilderDelegate(
+                    (context, index) => _buildShimmerProductCard(),
+                childCount: 6, // Show 6 dummy skeleton cards
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ✅ Helper for individual Shimmer Cards
+  Widget _buildShimmerProductCard() {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: Colors.transparent),
+      ),
+      child: Row(
         children: [
+          // Image skeleton
           Container(
-            padding: const EdgeInsets.all(32),
+            width: 70,
+            height: 70,
             decoration: BoxDecoration(
-              color: Colors.grey.shade100,
-              borderRadius: BorderRadius.circular(20),
-            ),
-            child: Icon(
-              Icons.inventory_2_outlined,
-              size: 80,
-              color: Colors.grey.shade400,
-            ),
-          ),
-          const SizedBox(height: 24),
-          Text(
-            'No Products Found',
-            style: simple_text_style(
-              fontSize: 24,
-              fontWeight: FontWeight.bold,
-              color: Colors.grey.shade700,
-            ),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            'Your product inventory is empty.\nAdd some products to get started!',
-            style: simple_text_style(
-              color: Colors.grey.shade600,
-              fontSize: 14,
-            ),
-            textAlign: TextAlign.center,
-          ),
-        ],
-      ),
-    );
-  }
-
-  // ✅ Filter products based on search and filter criteria
-  List _getFilteredProducts(List products) {
-    return products.where((product) {
-      // Search filter
-      final matchesSearch = _searchQuery.isEmpty ||
-          product.name.toLowerCase().contains(_searchQuery) ||
-          (product.category ?? '').toLowerCase().contains(_searchQuery);
-
-      // Availability filter
-      final matchesFilter = _selectedFilter == 'all' ||
-          (_selectedFilter == 'available' && product.isAvailable) ||
-          (_selectedFilter == 'unavailable' && !product.isAvailable);
-
-      return matchesSearch && matchesFilter;
-    }).toList();
-  }
-
-  // ✅ Show search dialog
-  void _showSearchDialog() {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: Text(
-          'Search Products',
-          style: simple_text_style(fontWeight: FontWeight.bold),
-        ),
-        content: TextField(
-          controller: _searchController,
-          autofocus: true,
-          decoration: InputDecoration(
-            hintText: 'Product name or category',
-            prefixIcon: Icon(Icons.search, color: AppColour.primary),
-            border: OutlineInputBorder(
+              color: Colors.white,
               borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide(color: AppColour.primary),
-            ),
-            focusedBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide(color: AppColour.primary, width: 2),
             ),
           ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () {
-              _searchController.clear();
-              Navigator.pop(context);
-            },
-            child: Text('Clear', style: simple_text_style(color: Colors.grey.shade600)),
-          ),
-          ElevatedButton(
-            onPressed: () => Navigator.pop(context),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppColour.primary,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+          const SizedBox(width: 16),
+          // Text block skeleton
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Container(width: double.infinity, height: 16, color: Colors.white),
+                const SizedBox(height: 8),
+                Container(width: 120, height: 14, color: Colors.white),
+                const SizedBox(height: 8),
+                Container(width: 80, height: 12, color: Colors.white),
+              ],
             ),
-            child: Text('Search', style: simple_text_style(color: Colors.white)),
           ),
-        ],
-      ),
-    );
-  }
-
-  // ✅ Show filter dialog
-  void _showFilterDialog() {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: Text(
-          'Filter Products',
-          style: simple_text_style(fontWeight: FontWeight.bold),
-        ),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            _buildFilterOption('all', 'All Products', Icons.inventory_2),
-            _buildFilterOption('available', 'Available Only', Icons.check_circle),
-            _buildFilterOption('unavailable', 'Unavailable Only', Icons.cancel),
-          ],
-        ),
-        actions: [
-          ElevatedButton(
-            onPressed: () => Navigator.pop(context),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppColour.primary,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+          const SizedBox(width: 16),
+          // Status icon skeleton
+          Container(
+            width: 32,
+            height: 32,
+            decoration: const BoxDecoration(
+              color: Colors.white,
+              shape: BoxShape.circle,
             ),
-            child: Text('Apply', style: simple_text_style(color: Colors.white)),
           ),
         ],
       ),
-    );
-  }
-
-  Widget _buildFilterOption(String value, String label, IconData icon) {
-    return RadioListTile<String>(
-      value: value,
-      groupValue: _selectedFilter,
-      onChanged: (String? newValue) {
-        setState(() {
-          _selectedFilter = newValue ?? 'all';
-        });
-      },
-      title: Row(
-        children: [
-          Icon(icon, size: 20, color: AppColour.primary),
-          const SizedBox(width: 4),
-          Text(label, style: simple_text_style(fontSize: 12)),
-        ],
-      ),
-      activeColor: AppColour.primary,
     );
   }
 }

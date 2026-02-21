@@ -290,7 +290,7 @@ abstract class RestClient {
   @PUT("/products/{pid}")
   Future<ApiResponse<Product>> updateProduct(
       @Path("pid") String pid,
-      @Body() Product product
+      @Body() ProductRequest request
       );
 
   // 7. Delete Product (Admin)

@@ -1,15 +1,15 @@
 import 'dart:io';
 
 import 'package:cached_network_image/cached_network_image.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:provider/provider.dart';
 import 'package:raising_india/comman/simple_text_style.dart';
 import 'package:raising_india/constant/AppColour.dart';
+import 'package:raising_india/data/services/brand_service.dart';
 import 'package:raising_india/data/services/category_service.dart';
 import 'package:raising_india/data/services/image_service.dart';
 import 'package:raising_india/data/services/product_service.dart';
+import 'package:raising_india/data/services/admin_service.dart'; // ✅ Ensure AdminService is imported
 import 'package:raising_india/features/admin/services/admin_image_service.dart';
 import 'package:raising_india/models/model/product.dart';
 import '../../../../models/model/brand.dart';
@@ -25,7 +25,6 @@ class AdminProductDetailScreen extends StatefulWidget {
 
 class _AdminProductDetailScreenState extends State<AdminProductDetailScreen>
     with TickerProviderStateMixin {
-  // ✅ Enhanced Controllers for all editable fields
   late TextEditingController nameController;
   late TextEditingController descriptionController;
   late TextEditingController priceController;
@@ -45,9 +44,9 @@ class _AdminProductDetailScreenState extends State<AdminProductDetailScreen>
 
   bool isAvailable = false;
   bool loading = false;
+  String loadingText = ''; // ✅ Dynamic loading text
   bool _hasUnsavedChanges = false;
 
-  // ✅ Animation Controllers
   late AnimationController _fadeAnimationController;
   late AnimationController _scaleAnimationController;
   late Animation<double> _fadeAnimation;
@@ -60,7 +59,6 @@ class _AdminProductDetailScreenState extends State<AdminProductDetailScreen>
     imageService = context.read<ImageService>();
     adminImageService = context.read<AdminImageService>();
 
-    // ✅ Initialize all controllers with product data
     nameController = TextEditingController(text: widget.product.name);
     photos_list.addAll(widget.product.photosList!);
     descriptionController = TextEditingController(
@@ -91,12 +89,10 @@ class _AdminProductDetailScreenState extends State<AdminProductDetailScreen>
     selectedBrand = widget.product.brand;
     isAvailable = widget.product.isAvailable!;
 
-    // ✅ Initialize animations
     _fadeAnimationController = AnimationController(
       duration: const Duration(milliseconds: 800),
       vsync: this,
     );
-
     _scaleAnimationController = AnimationController(
       duration: const Duration(milliseconds: 600),
       vsync: this,
@@ -116,11 +112,9 @@ class _AdminProductDetailScreenState extends State<AdminProductDetailScreen>
       ),
     );
 
-    // Start animations
     _fadeAnimationController.forward();
     _scaleAnimationController.forward();
 
-    // ✅ Add listeners for unsaved changes detection
     _addChangeListeners();
   }
 
@@ -163,11 +157,14 @@ class _AdminProductDetailScreenState extends State<AdminProductDetailScreen>
   Future<void> _saveChanges() async {
     if (loading) return;
 
-    setState(() => loading = true);
+    setState(() {
+      loading = true;
+      loadingText = 'Saving Changes...'; // ✅ Set specific text
+    });
 
     try {
       List<String> newPhotosList = [];
-      for(File file in photos_files_list) {
+      for (File file in photos_files_list) {
         String? url = await imageService.uploadImage(file);
         newPhotosList.add(url!);
       }
@@ -183,21 +180,26 @@ class _AdminProductDetailScreenState extends State<AdminProductDetailScreen>
         uid: widget.product.uid,
         name: nameController.text.trim(),
         description: descriptionController.text.trim(),
-        price: double.tryParse(priceController.text.trim()) ??
+        price:
+            double.tryParse(priceController.text.trim()) ??
             widget.product.price,
         mrp: mrpController.text.trim().isEmpty
             ? (widget.product.price! + 5)
             : double.parse(mrpController.text.trim()),
-        quantity: int.tryParse(quantityController.text.trim()) ??
+        quantity:
+            int.tryParse(quantityController.text.trim()) ??
             widget.product.quantity,
         measurement: measurementController.text.trim().isNotEmpty
             ? measurementController.text.trim()
             : widget.product.measurement,
-        stockQuantity: int.tryParse(stockQuantityController.text.trim()) ??
+        stockQuantity:
+            int.tryParse(stockQuantityController.text.trim()) ??
             widget.product.stockQuantity,
-        lowStockQuantity: int.tryParse(lowStockController.text.trim()) ??
+        lowStockQuantity:
+            int.tryParse(lowStockController.text.trim()) ??
             widget.product.lowStockQuantity,
-        rating: double.tryParse(ratingController.text.trim()) ??
+        rating:
+            double.tryParse(ratingController.text.trim()) ??
             widget.product.rating,
         category: selectedCategory,
         isAvailable: isAvailable,
@@ -205,61 +207,70 @@ class _AdminProductDetailScreenState extends State<AdminProductDetailScreen>
         brand: selectedBrand,
         nameLower: nameController.text.trim().toLowerCase(),
         lastStockUpdate: DateTime.now(),
-        isDiscountable: widget.product.isDiscountable,
+        isDiscountable: widget.product.isDiscountable ?? false,
       );
 
-      context.read<ProductService>().updateProduct(product);
+      final error = await context.read<ProductService>().updateProduct(product);
 
-      setState(() {
-        loading = false;
-        _hasUnsavedChanges = false;
-      });
+      if (error == null) {
+        // ✅ CRITICAL FIX: Sync AdminService list so the previous screen updates instantly!
+        await context.read<AdminService>().fetchAllProducts();
 
-      // ✅ Show success feedback
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Row(
-            children: [
-              Icon(Icons.check_circle, color: Colors.white),
-              const SizedBox(width: 8),
-              Text(
-                '🎉 Product updated successfully!',
-                style: simple_text_style(color: AppColour.white),
+        setState(() {
+          loading = false;
+          _hasUnsavedChanges = false;
+        });
+
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Row(
+                children: [
+                  const Icon(Icons.check_circle, color: Colors.white),
+                  const SizedBox(width: 8),
+                  Text(
+                    '🎉 Product updated successfully!',
+                    style: simple_text_style(color: AppColour.white),
+                  ),
+                ],
               ),
-            ],
-          ),
-          backgroundColor: Colors.green,
-          behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
-          ),
-        ),
-      );
-
-      if (mounted) Navigator.pop(context);
+              backgroundColor: Colors.green,
+              behavior: SnackBarBehavior.floating,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+            ),
+          );
+          Navigator.pop(context);
+        }
+      } else {
+        throw Exception(error);
+      }
     } catch (e) {
       setState(() => loading = false);
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Row(
-            children: [
-              Icon(Icons.error, color: Colors.white),
-              const SizedBox(width: 8),
-              Expanded(
-                child: Text(
-                  "Save Failed: $e",
-                  style: simple_text_style(color: AppColour.white),
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Row(
+              children: [
+                const Icon(Icons.error, color: Colors.white),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    "Save Failed: $e",
+                    style: simple_text_style(color: AppColour.white),
+                  ),
                 ),
-              ),
-            ],
+              ],
+            ),
+            backgroundColor: Colors.red,
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
           ),
-          backgroundColor: Colors.red,
-          behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
-          ),
-        ),
-      );
+        );
+      }
     }
   }
 
@@ -338,8 +349,55 @@ class _AdminProductDetailScreenState extends State<AdminProductDetailScreen>
       ),
     );
 
+    // ✅ NEW: Handle the deletion with a loading state and auto-navigation
     if (confirmed == true) {
-      context.read<ProductService>().deleteProduct(widget.product.pid!);
+      setState(() {
+        loading = true;
+        loadingText = 'Deleting Product...'; // ✅ Dynamic text
+      });
+
+      final error = await context.read<ProductService>().deleteProduct(
+        widget.product.pid!,
+      );
+
+      if (error == null) {
+        // ✅ CRITICAL FIX: Sync AdminService so the list removes the product instantly
+        await context.read<AdminService>().fetchAllProducts();
+
+        if (mounted) {
+          setState(() => loading = false);
+          Navigator.pop(context); // Go back to the product list
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Row(
+                children: [
+                  const Icon(Icons.delete_forever, color: Colors.white),
+                  const SizedBox(width: 8),
+                  Text(
+                    'Product deleted successfully',
+                    style: simple_text_style(color: Colors.white),
+                  ),
+                ],
+              ),
+              backgroundColor: Colors.green,
+              behavior: SnackBarBehavior.floating,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+            ),
+          );
+        }
+      } else {
+        if (mounted) {
+          setState(() => loading = false);
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Failed to delete: $error'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+      }
     }
   }
 
@@ -350,7 +408,7 @@ class _AdminProductDetailScreenState extends State<AdminProductDetailScreen>
       builder: (ctx) => Wrap(
         children: [
           ListTile(
-            leading: Icon(Icons.photo),
+            leading: const Icon(Icons.photo),
             title: Text('Pick from gallery', style: simple_text_style()),
             onTap: () async {
               final image = await adminImageService.pickFromGallery();
@@ -364,7 +422,7 @@ class _AdminProductDetailScreenState extends State<AdminProductDetailScreen>
             },
           ),
           ListTile(
-            leading: Icon(Icons.camera_alt),
+            leading: const Icon(Icons.camera_alt),
             title: Text('Take a photo', style: simple_text_style()),
             onTap: () async {
               final image = await adminImageService.pickFromCamera();
@@ -389,10 +447,9 @@ class _AdminProductDetailScreenState extends State<AdminProductDetailScreen>
       appBar: _buildStunningAppBar(),
       body: Stack(
         children: [
-          // ✅ Main Content
           _buildMainContent(),
 
-          // ✅ Loading Overlay
+          // ✅ Loading Overlay with Dynamic Text
           if (loading)
             Positioned.fill(
               child: Container(
@@ -422,7 +479,7 @@ class _AdminProductDetailScreenState extends State<AdminProductDetailScreen>
                         ),
                         const SizedBox(height: 16),
                         Text(
-                          'Updating Product...',
+                          loadingText, // ✅ Uses dynamic text (Saving or Deleting)
                           style: simple_text_style(
                             fontSize: 16,
                             fontWeight: FontWeight.w600,
@@ -431,7 +488,7 @@ class _AdminProductDetailScreenState extends State<AdminProductDetailScreen>
                         ),
                         const SizedBox(height: 8),
                         Text(
-                          'Please wait while we save changes',
+                          'Please wait...',
                           style: simple_text_style(
                             color: Colors.grey.shade600,
                             fontSize: 12,
@@ -468,7 +525,9 @@ class _AdminProductDetailScreenState extends State<AdminProductDetailScreen>
             onTap: () async {
               if (_hasUnsavedChanges) {
                 final shouldPop = await _showUnsavedChangesDialog();
-                if (shouldPop == true) Navigator.pop(context);
+                if (shouldPop == true) {
+                  if (mounted) Navigator.pop(context);
+                }
               } else {
                 Navigator.pop(context);
               }
@@ -479,7 +538,7 @@ class _AdminProductDetailScreenState extends State<AdminProductDetailScreen>
                 color: Colors.white.withOpacity(0.2),
                 borderRadius: BorderRadius.circular(10),
               ),
-              child: Icon(
+              child: const Icon(
                 Icons.arrow_back_ios_new,
                 color: Colors.white,
                 size: 20,
@@ -509,7 +568,6 @@ class _AdminProductDetailScreenState extends State<AdminProductDetailScreen>
               ],
             ),
           ),
-          // ✅ Unsaved Changes Indicator
           if (_hasUnsavedChanges)
             Container(
               margin: const EdgeInsets.only(right: 8),
@@ -538,7 +596,6 @@ class _AdminProductDetailScreenState extends State<AdminProductDetailScreen>
         ],
       ),
       actions: [
-        // ✅ Delete Button
         Container(
           margin: const EdgeInsets.only(right: 16),
           decoration: BoxDecoration(
@@ -566,27 +623,16 @@ class _AdminProductDetailScreenState extends State<AdminProductDetailScreen>
           padding: const EdgeInsets.all(16),
           child: Column(
             children: [
-              // ✅ Product Images Section
               _buildProductImagesSection(),
               const SizedBox(height: 20),
-
-              // ✅ Basic Information Section
               _buildBasicInfoSection(),
               const SizedBox(height: 20),
-
-              // ✅ Pricing & Inventory Section
               _buildPricingSection(),
               const SizedBox(height: 20),
-
-              // ✅ Stock Management Section
               _buildStockManagementSection(),
               const SizedBox(height: 20),
-
-              // ✅ Product Status Section
               _buildStatusSection(),
               const SizedBox(height: 32),
-
-              // ✅ Save Button
               _buildSaveButton(),
               const SizedBox(height: 20),
             ],
@@ -611,7 +657,6 @@ class _AdminProductDetailScreenState extends State<AdminProductDetailScreen>
       ),
       child: Column(
         children: [
-          // Header
           Container(
             width: double.infinity,
             padding: const EdgeInsets.all(20),
@@ -656,9 +701,7 @@ class _AdminProductDetailScreenState extends State<AdminProductDetailScreen>
                   ],
                 ),
                 InkWell(
-                  onTap: () {
-                    _showImageSourceDialog(context);
-                  },
+                  onTap: () => _showImageSourceDialog(context),
                   child: Container(
                     padding: const EdgeInsets.all(8),
                     decoration: BoxDecoration(
@@ -675,7 +718,6 @@ class _AdminProductDetailScreenState extends State<AdminProductDetailScreen>
               ],
             ),
           ),
-          // Images Content
           const SizedBox(height: 10),
           if (photos_list.isNotEmpty && photos_files_list.isNotEmpty)
             Text(
@@ -875,6 +917,12 @@ class _AdminProductDetailScreenState extends State<AdminProductDetailScreen>
             hintText: 'Select Category',
             icon: Icons.category_outlined,
           ),
+          const SizedBox(height: 16),
+          _buildStyledBrandDropdown(
+            label: 'Brand',
+            hintText: 'Select Brand',
+            icon: Icons.branding_watermark_outlined,
+          ),
         ],
       ),
     );
@@ -1038,7 +1086,6 @@ class _AdminProductDetailScreenState extends State<AdminProductDetailScreen>
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Section Header
           Container(
             width: double.infinity,
             padding: const EdgeInsets.all(20),
@@ -1076,8 +1123,6 @@ class _AdminProductDetailScreenState extends State<AdminProductDetailScreen>
               ],
             ),
           ),
-
-          // Section Content
           Padding(padding: const EdgeInsets.all(20), child: child),
         ],
       ),
@@ -1135,6 +1180,12 @@ class _AdminProductDetailScreenState extends State<AdminProductDetailScreen>
   }) {
     return Consumer<CategoryService>(
       builder: (context, categoryService, _) {
+        if (categoryService.isLoading) {
+          return Center(
+              child: LinearProgressIndicator(color: AppColour.primary));
+        }
+        final leafNodeCategories = _getAllLeafCategories(categoryService.categories);
+        Category c = widget.product.category!;
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -1160,7 +1211,17 @@ class _AdminProductDetailScreenState extends State<AdminProductDetailScreen>
                     child: Icon(icon, color: AppColour.primary, size: 20),
                   ),
                   Expanded(
-                    child: DropdownMenu(
+                    // 1. Specify the generic type <int> since your ID is an integer
+                    child: DropdownMenu<int>(
+                      onSelected: (selectedId) { // 2. This is the ID, not the index!
+                        if (selectedId != null) {
+                          // 3. Find the category by matching the ID
+                          selectedCategory = leafNodeCategories.firstWhere(
+                                (cat) => cat.id == selectedId,
+                            orElse: () => leafNodeCategories.first,
+                          );
+                        }
+                      },
                       width: double.infinity,
                       textStyle: simple_text_style(
                         fontWeight: FontWeight.w500,
@@ -1180,16 +1241,107 @@ class _AdminProductDetailScreenState extends State<AdminProductDetailScreen>
                         ),
                         elevation: WidgetStateProperty.all(8),
                       ),
-                      dropdownMenuEntries: categoryService.isLoading
-                          ? categoryService.categories
-                                .map(
-                                  (category) => DropdownMenuEntry(
-                                    value: category.id,
-                                    label: category.name!,
-                                  ),
-                                )
-                                .toList()
-                          : [],
+                      // 4. FIX: Pass the actual Category ID as the initial selection!
+                      initialSelection: c.id,
+                      dropdownMenuEntries: leafNodeCategories
+                          .map(
+                            (category) => DropdownMenuEntry<int>( // Specify type here too
+                          value: category.id!, // This is what gets passed to onSelected
+                          label: category.name!,
+                        ),
+                      )
+                          .toList(),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  Widget _buildStyledBrandDropdown({
+    required String hintText,
+    required IconData icon,
+    required String label,
+  }) {
+    return Consumer<BrandService>(
+      builder: (context, brandService, _) {
+        if (brandService.isLoading) {
+          return Center(
+              child: LinearProgressIndicator(color: AppColour.primary));
+        }
+
+        Brand? b = widget.product.brand ??
+            (brandService.brands.isNotEmpty ? brandService.brands.first : null);
+
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              label,
+              style: simple_text_style(
+                color: AppColour.primary,
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Container(
+              decoration: BoxDecoration(
+                color: Colors.grey.shade50,
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: Colors.grey.shade200),
+              ),
+              child: Row(
+                children: [
+                  Padding(
+                    padding: const EdgeInsets.all(16),
+                    child: Icon(icon, color: AppColour.primary, size: 20),
+                  ),
+                  Expanded(
+                    // 1. Specify the type <int> since your Brand ID is an integer
+                    child: DropdownMenu<int>(
+                      onSelected: (selectedId) { // 2. This is the Brand ID!
+                        if (selectedId != null) {
+                          // 3. Find the brand by matching the ID
+                          selectedBrand = brandService.brands.firstWhere(
+                                (brand) => brand.id == selectedId,
+                            orElse: () => brandService.brands.first,
+                          );
+                        }
+                      },
+                      width: double.infinity,
+                      textStyle: simple_text_style(
+                        fontWeight: FontWeight.w500,
+                        fontSize: 14,
+                      ),
+                      hintText: hintText,
+                      inputDecorationTheme: InputDecorationTheme(
+                        border: InputBorder.none,
+                        hintStyle: simple_text_style(
+                          color: AppColour.lightGrey,
+                        ),
+                        contentPadding: EdgeInsets.zero,
+                      ),
+                      menuStyle: MenuStyle(
+                        backgroundColor: WidgetStateProperty.all(
+                          AppColour.white,
+                        ),
+                        elevation: WidgetStateProperty.all(8),
+                      ),
+                      // 4. FIX: Pass the actual Brand ID for initial selection
+                      initialSelection: b?.id,
+                      dropdownMenuEntries: brandService.brands
+                          .map(
+                            (brand) => DropdownMenuEntry<int>( // Specify type here too
+                          value: brand.id!, // This is what gets passed to onSelected
+                          label: brand.name!,
+                        ),
+                      )
+                          .toList(),
                     ),
                   ),
                 ],
@@ -1202,25 +1354,18 @@ class _AdminProductDetailScreenState extends State<AdminProductDetailScreen>
   }
 
   Widget _buildMeasurementDropdown() {
-    // ✅ FIXED: Ensure unique values and handle case sensitivity
     final List<Map<String, String>> measurements = [
       {'value': 'KG', 'label': 'Kilogram (kg)'},
       {'value': 'GM', 'label': 'Gram (gm)'},
       {'value': 'LITER', 'label': 'Liter (l)'},
       {'value': 'ML', 'label': 'Milliliter (ml)'},
       {'value': 'PCS', 'label': 'Pieces (pcs)'},
-      {
-        'value': 'DAR',
-        'label': 'Dozen (12 pcs)',
-      }, // ✅ Changed from 'Dar' to 'DAR'
+      {'value': 'DAR', 'label': 'Dozen (12 pcs)'},
     ];
 
-    // ✅ CRITICAL: Normalize the current value to match dropdown values
     String? normalizedCurrentValue;
     if (measurementController.text.isNotEmpty) {
       final currentValue = measurementController.text.trim().toUpperCase();
-
-      // Handle different variations and normalize them
       switch (currentValue) {
         case 'KG':
         case 'KILOGRAM':
@@ -1252,7 +1397,6 @@ class _AdminProductDetailScreenState extends State<AdminProductDetailScreen>
           normalizedCurrentValue = 'DAR';
           break;
         default:
-          // ✅ If value doesn't match any known measurement, set to null
           normalizedCurrentValue = null;
           break;
       }
@@ -1277,7 +1421,6 @@ class _AdminProductDetailScreenState extends State<AdminProductDetailScreen>
             border: Border.all(color: Colors.grey.shade200),
           ),
           child: DropdownButtonFormField<String>(
-            // ✅ Use normalized value that matches dropdown items
             initialValue: normalizedCurrentValue,
             dropdownColor: AppColour.white,
             borderRadius: BorderRadius.circular(12),
@@ -1294,10 +1437,9 @@ class _AdminProductDetailScreenState extends State<AdminProductDetailScreen>
               'Select measurement',
               style: simple_text_style(color: AppColour.lightGrey),
             ),
-            // ✅ Generate unique dropdown items
             items: measurements.map<DropdownMenuItem<String>>((measurement) {
               return DropdownMenuItem<String>(
-                value: measurement['value']!, // Each value is unique
+                value: measurement['value']!,
                 child: Text(
                   measurement['label']!,
                   style: simple_text_style(fontSize: 14),
@@ -1306,16 +1448,13 @@ class _AdminProductDetailScreenState extends State<AdminProductDetailScreen>
             }).toList(),
             onChanged: (String? value) {
               if (value != null) {
-                // ✅ Update controller with the selected value
                 measurementController.text = value;
                 _onFieldChanged();
               }
             },
-            // ✅ Add validation
             validator: (value) {
-              if (value == null || value.isEmpty) {
+              if (value == null || value.isEmpty)
                 return 'Please select a measurement unit';
-              }
               return null;
             },
           ),
@@ -1440,5 +1579,21 @@ class _AdminProductDetailScreenState extends State<AdminProductDetailScreen>
         ],
       ),
     );
+  }
+
+  List<Category> _getAllLeafCategories(List<Category> categories) {
+    List<Category> leafNodes = [];
+
+    for (var cat in categories) {
+      if (cat.subCategories == null || cat.subCategories!.isEmpty) {
+        // It's a final leaf node, add it to the list!
+        leafNodes.add(cat);
+      } else {
+        // It has children, so recursively search inside them and add the results
+        leafNodes.addAll(_getAllLeafCategories(cat.subCategories!));
+      }
+    }
+
+    return leafNodes;
   }
 }

@@ -57,7 +57,7 @@ class _AdminReviewsScreenState extends State<AdminReviewsScreen>
         builder: (context, reviewService, _) {
           if (reviewService.isLoading && reviewService.adminReviews.isEmpty) {
             return _buildLoadingState();
-          } else if (reviewService.adminReviews.isNotEmpty) {
+          } else if (reviewService.error == null) {
             return _buildLoadedState(reviewService.adminReviews);
           } else if (reviewService.error != null) {
             return _buildErrorState(reviewService.error!);
@@ -374,10 +374,11 @@ class _AdminReviewsScreenState extends State<AdminReviewsScreen>
                           ),
                           const SizedBox(width: 16),
                           Expanded(
+                            flex: 3,
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                Text(userName, style: simple_text_style(fontSize: 18, fontWeight: FontWeight.bold)),
+                                Text(userName.substring(0,8), style: simple_text_style(fontSize: 18, fontWeight: FontWeight.bold)),
                                 const SizedBox(height: 4),
                                 Row(
                                   children: [
@@ -392,17 +393,19 @@ class _AdminReviewsScreenState extends State<AdminReviewsScreen>
                               ],
                             ),
                           ),
-                        ],
-                      ),
-                      const SizedBox(height: 16),
-                      Row(
-                        children: [
-                          if (serviceReview != null)
-                            Expanded(child: _buildRatingSection('Service', serviceReview.rating ?? 0, Icons.room_service, Colors.blue)),
-                          if (serviceReview != null && productReview != null)
-                            Container(width: 1, height: 40, color: Colors.grey.shade300),
-                          if (productReview != null)
-                            Expanded(child: _buildRatingSection('Product', productReview.rating ?? 0, Icons.shopping_basket, Colors.green)),
+                          Expanded(
+                            flex: 1,
+                            child: Row(
+                              children: [
+                                if (serviceReview != null)
+                                  Expanded(child: _buildRatingSection('Service', serviceReview.rating ?? 0, Icons.room_service, Colors.blue)),
+                                if (serviceReview != null && productReview != null)
+                                  Container(width: 1, height: 40, color: Colors.grey.shade300),
+                                if (productReview != null)
+                                  Expanded(child: _buildRatingSection('Product', productReview.rating ?? 0, Icons.shopping_basket, Colors.green)),
+                              ],
+                            ),
+                          ),
                         ],
                       ),
                     ],
@@ -434,14 +437,12 @@ class _AdminReviewsScreenState extends State<AdminReviewsScreen>
   Widget _buildRatingSection(String title, double rating, IconData icon, Color color) {
     return Column(
       children: [
-        Icon(icon, color: color, size: 20),
-        const SizedBox(height: 4),
         Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            const Icon(Icons.star, color: Colors.amber, size: 16),
-            const SizedBox(width: 4),
             Text(rating.toStringAsFixed(1), style: simple_text_style(fontSize: 18, fontWeight: FontWeight.bold, color: color)),
+            const SizedBox(width: 4),
+            const Icon(Icons.star, color: Colors.amber, size: 16),
           ],
         ),
         Text(title, style: simple_text_style(color: Colors.grey.shade600, fontSize: 12)),
@@ -469,7 +470,7 @@ class _AdminReviewsScreenState extends State<AdminReviewsScreen>
             borderRadius: BorderRadius.circular(8),
             border: Border.all(color: color.withOpacity(0.2)),
           ),
-          child: Text(content, style: simple_text_style(fontSize: 14, color: Colors.grey.shade800)),
+          child: Text(content, style: TextStyle(fontSize: 14, color: Colors.grey.shade800)),
         ),
       ],
     );

@@ -17,7 +17,7 @@ class SalesDashboardWidget extends StatelessWidget {
       builder: (context,analyticService, _) {
         if (analyticService.isLoading) {
           return SalesDashboardShimmer();
-        } else if (!analyticService.isLoading) {
+        } else if (!analyticService.isLoading && analyticService.analyticsData != null) {
           return _buildLoadedWidget(analyticService.analyticsData!, analyticService);
         } else if (analyticService.error != null) {
           return _buildErrorWidget(analyticService.error!);

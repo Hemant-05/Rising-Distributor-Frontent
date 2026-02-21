@@ -6,9 +6,12 @@ import 'package:raising_india/data/services/image_service.dart';
 import 'package:raising_india/error/exceptions.dart';
 import 'package:raising_india/models/dto/product_request.dart';
 import 'package:raising_india/models/model/product.dart';
+import 'package:raising_india/services/service_locator.dart';
 
 class ProductService extends ChangeNotifier {
   final ProductRepository _repo = ProductRepository();
+
+  final ImageService _imageService = getIt<ImageService>();
 
   List<Product> _products = [];
   List<Product> get products => _products;
@@ -129,22 +132,50 @@ class ProductService extends ChangeNotifier {
 
   Future<String?> updateProduct(Product product) async {
     _isLoading = true;
+    notifyListeners();
+
     try {
-      Product updatedProduct = await _repo.updateProduct(product);
+      // ✅ 1. Convert the heavy Product entity into a lightweight ProductRequest DTO
+      final requestPayload = ProductRequest(
+        name: product.name,
+        categoryId: product.category?.id, // Just send the ID! (e.g., 2)
+        brandId: product.brand?.id,       // Just send the ID! (e.g., 5)
+        price: product.price,
+        description: product.description,
+        quantity: product.quantity,
+        measurement: product.measurement,
+        mrp: product.mrp,
+        stockQuantity: product.stockQuantity,
+        lowStockQuantity: product.lowStockQuantity,
+        isAvailable: product.isAvailable ?? true,
+        isDiscountable: product.isDiscountable ?? true, // Fallback prevents null errors
+        photosList: product.photosList,
+        rating: product.rating,
+      );
+
+      // ✅ 2. Send the PID and the new payload to the repository
+      Product updatedProduct = await _repo.updateProduct(product.pid!, requestPayload);
+
+      // 3. Update local list so UI refreshes immediately
       int index = _products.indexWhere((p) => p.pid == product.pid);
       if (index != -1) {
         _products[index] = updatedProduct;
       }
+
       _isLoading = false;
       notifyListeners();
-      return null;
+      return null; // Success!
+
     } on AppError catch (e) {
       _error = e.message;
       _isLoading = false;
+      notifyListeners();
       return e.message;
     } catch (e) {
+      print("🚨 UPDATE ERROR: $e"); // Print the exact error if it fails
       _error = e.toString();
       _isLoading = false;
+      notifyListeners();
       return "Failed to update product.";
     }
   }

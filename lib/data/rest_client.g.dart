@@ -1915,13 +1915,13 @@ class _RestClient implements RestClient {
   @override
   Future<ApiResponse<Product>> updateProduct(
     String pid,
-    Product product,
+    ProductRequest request,
   ) async {
     final _extra = <String, dynamic>{};
     final queryParameters = <String, dynamic>{};
     final _headers = <String, dynamic>{};
     final _data = <String, dynamic>{};
-    _data.addAll(product.toJson());
+    _data.addAll(request.toJson());
     final _options = _setStreamType<ApiResponse<Product>>(
       Options(method: 'PUT', headers: _headers, extra: _extra)
           .compose(
