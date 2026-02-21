@@ -10,7 +10,7 @@ class DashboardResponse {
   final double? totalRevenue;
   final double? todayRevenue;
   final int? totalOrders;
-
+  final int? todayOrdersCount; // <-- ADD THIS NEW FIELD
   // 2. Order Breakdown (Map<String, Long> -> Map<String, int>)
   final Map<String, int>? orderStatusCounts;
 
@@ -29,6 +29,7 @@ class DashboardResponse {
     this.todayRevenue,
     this.totalOrders,
     this.orderStatusCounts,
+    this.todayOrdersCount,
     this.lowStockCount,
     this.lowStockProducts,
     this.totalUsers,

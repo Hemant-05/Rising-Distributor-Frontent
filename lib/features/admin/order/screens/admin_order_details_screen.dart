@@ -818,7 +818,7 @@ class _AdminOrderDetailScreenState extends State<AdminOrderDetailScreen> {
                   onPressed: () {
                     String reason = _cancelController.text.trim().toString();
                     if (reason.isNotEmpty) {
-                      /*context.read<AdminOrderDetailsCubit>().cancelOrder(
+                      /*context.read<AdminService>().cancelOrder(
                         order.id.toString(),
                         '$reason \nCancelled By : Rising India Corporation',
                         order.paymentStatus!,

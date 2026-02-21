@@ -73,7 +73,6 @@ class AuthInterceptor extends Interceptor {
 
   @override
   void onRequest(RequestOptions options, RequestInterceptorHandler handler) async {
-    // 1. Get Access Token from AuthService (which uses SharedPreferences internally)
     final authService = getIt<AuthService>();
     final token = await authService.getAccessToken();
 
@@ -86,7 +85,7 @@ class AuthInterceptor extends Interceptor {
 
   @override
   void onError(DioException err, ErrorInterceptorHandler handler) async {
-    // 2. Check if the error is 401 (Unauthorized)
+    // 1. Check if the error is 401 (Unauthorized)
     if (err.response?.statusCode == 401) {
       final authService = getIt<AuthService>();
       final refreshToken = await authService.getRefreshToken();
@@ -94,40 +93,43 @@ class AuthInterceptor extends Interceptor {
       // If we have a refresh token, try to refresh
       if (refreshToken != null) {
         try {
-          // 3. Call Refresh API using the separate _tokenDio
-          // Adjust the endpoint '/api/auth/refresh-token' to match your backend
+          // 2. Call Refresh API
           final response = await _tokenDio.post('/api/auth/refresh', data: {
             'refresh_token': refreshToken,
           });
-          // final response = await authService.tryRefreshToken();
 
-          print('=======================');
-          print(response.data);
-          if (response != null) {
-            // 4. Extract new tokens (Adjust parsing based on your API response)
-            final newAccessToken = response.data['access_token'];
-            final newRefreshToken = response.data['refresh_token']; // If backend rotates it
+          if (response.statusCode == 200 && response.data != null) {
 
-            // 5. Save new tokens
-            await authService.saveTokens(newAccessToken!, newRefreshToken);
+            // ✅ FIX: Parse from the nested 'data' object
+            final responseData = response.data['data'];
+            final newAccessToken = responseData['access_token'];
+            final newRefreshToken = responseData['refresh_token'];
 
-            // 6. Retry the original request with the NEW token
-            final opts = err.requestOptions;
-            opts.headers['Authorization'] = 'Bearer $newAccessToken';
+            if (newAccessToken != null && newRefreshToken != null) {
+              // 3. Save new tokens
+              await authService.saveTokens(newAccessToken, newRefreshToken);
 
-            // We use a basic Dio() fetch here to ensure we just retry the HTTP call
-            final cloneReq = await Dio().fetch(opts);
+              // 4. Retry the original request with the NEW token
+              final opts = err.requestOptions;
+              opts.headers['Authorization'] = 'Bearer $newAccessToken';
 
-            return handler.resolve(cloneReq);
+              // Fetch the original request again
+              final cloneReq = await Dio().fetch(opts);
+              return handler.resolve(cloneReq);
+            } else {
+              throw Exception("Tokens are null in the response");
+            }
           }
         } catch (e) {
-          // Refresh failed (Session truly expired) -> Log out user
+          // Refresh failed or parsing crashed -> Log out user
+          print('🚨 Refresh Token Error: $e'); // Added print to help you debug future crashes
           await authService.signOut();
+          return handler.next(err); // Reject the request so the UI knows it failed
         }
       }
     }
 
-    // If not 401 or refresh failed, pass the error along
+    // If not 401 or no refresh token, pass the error along
     return handler.next(err);
   }
 }

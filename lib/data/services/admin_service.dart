@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:raising_india/data/repositories/admin_repo.dart';
 import 'package:raising_india/error/exceptions.dart';
+import 'package:raising_india/features/admin/order/OrderFilterType.dart';
 import 'package:raising_india/models/dto/dashboard_response.dart';
 import 'package:raising_india/models/model/order.dart';
 import 'package:raising_india/models/model/product.dart';
@@ -27,6 +28,40 @@ class AdminService extends ChangeNotifier {
   bool _isLoading = false;
   bool get isLoading => _isLoading;
 
+  Future<void> loadOrdersByFilterType(OrderFilterType type) async {
+    _isLoading = true;
+    notifyListeners();
+
+    try {
+      // Assuming you added `getTodaysOrders` to your RestClient as discussed previously
+      switch (type) {
+        case OrderFilterType.today:
+          _filteredOrders = (await _repo.getTodaysOrders()) ?? []; // Map this to your RestClient's "today" endpoint
+          break;
+        case OrderFilterType.all:
+          _filteredOrders = (await _repo.getAllOrders()) ?? []; // Ensure _repo.getAllOrders returns ApiResponse
+          break;
+        case OrderFilterType.running:
+          _filteredOrders = (await _repo.fetchOrdersByStatus("RUNNING")) ?? [];
+          break;
+        case OrderFilterType.cancelled:
+          _filteredOrders = (await _repo.fetchOrdersByStatus("CANCELLED")) ?? [];
+          break;
+        case OrderFilterType.delivered:
+          _filteredOrders = (await _repo.fetchOrdersByStatus("DELIVERED")) ?? [];
+          break;
+        default :
+          _filteredOrders = [];
+      }
+    } catch (e) {
+      _error = e.toString();
+      print("Admin Fetch Filtered Orders Error: $e");
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
+
   Future<void> fetchAllProducts() async{
     _isLoading = true;
     notifyListeners();
@@ -41,33 +76,6 @@ class AdminService extends ChangeNotifier {
     }
   }
 
-  Future<void> fetchAllOrders() async {
-    _isLoading = true;
-    notifyListeners();
-    try {
-      _orders = await _repo.getAllOrders();
-    } catch (e) {
-      _error = e.toString();
-      print("Admin Orders Error: $e");
-    } finally {
-      _isLoading = false;
-      notifyListeners();
-    }
-  }
-
-  Future<void> fetchOrdersByStatus(String status) async {
-    _isLoading = true;
-    notifyListeners();
-    try {
-      _filteredOrders = await _repo.fetchOrdersByStatus(status);
-    } catch (e){
-      _error = e.toString();
-      print("Admin Orders Error: $e");
-    } finally {
-      _isLoading = false;
-      notifyListeners();
-    }
-  }
 
   Future<void> fetchDashboard() async {
     _isLoading = true;
@@ -86,7 +94,7 @@ class AdminService extends ChangeNotifier {
   Future<String?> updateOrderStatus(int orderId, String status) async {
     try {
       await _repo.updateOrderStatus(orderId, status);
-      await fetchAllOrders(); // Refresh list
+      await _repo.getAllOrders();
       return null;
     } on AppError catch (e) {
       _error = e.message;

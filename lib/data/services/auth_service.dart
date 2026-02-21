@@ -24,7 +24,7 @@ class AuthService extends ChangeNotifier {
   Admin? get admin => _admin;
 
   AuthService() {
-    _loadUserFromStorage();
+    loadUserFromStorage();
   }
 
   // --- 1. SIGN IN ---
@@ -171,7 +171,7 @@ class AuthService extends ChangeNotifier {
     notifyListeners();
   }
 
-  Future<void> _loadUserFromStorage() async {
+  Future<void> loadUserFromStorage() async {
     final prefs = await SharedPreferences.getInstance();
     final token = prefs.getString('access_token');
 

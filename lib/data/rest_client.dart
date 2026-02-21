@@ -209,7 +209,6 @@ abstract class RestClient {
   @GET("/admin/orders")
   Future<ApiResponse<List<Order>>> getAllAdminOrders();
 
-  /// Get Orders by Status (e.g., "PENDING", "SHIPPED", "DELIVERED", "CANCELLED")
   @GET("/admin/orders/status/{status}")
   Future<ApiResponse<List<Order>>> getOrdersByStatus(
       @Path("status") String status,

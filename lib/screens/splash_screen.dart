@@ -22,7 +22,7 @@ class _SplashScreenState extends State<SplashScreen> {
 
   Future<void> _checkAuth() async {
 
-    final authService = await context.read<AuthService>();
+    final authService = context.read<AuthService>();
 
     await Future.delayed(const Duration(seconds: 2));
 

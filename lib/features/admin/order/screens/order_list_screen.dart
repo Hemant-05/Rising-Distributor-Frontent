@@ -49,13 +49,6 @@ class _OrderListViewState extends State<OrderListView> {
     // _scrollController.addListener(_onScroll);
   }
 
-/*  void _onScroll() {
-    if (_scrollController.position.pixels >=
-        _scrollController.position.maxScrollExtent - 200) {
-      context.read<OrderListBloc>().add(LoadMoreOrders());
-    }
-  }*/
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -79,16 +72,16 @@ class _OrderListViewState extends State<OrderListView> {
               child: CircularProgressIndicator(color: AppColour.primary),
             );
           }
-          if (adminService.filteredOrders.isEmpty) {
+          if (adminService.error != null) {
             return Center(
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  // Text('Error: ${adminService.error}'),
+                  Text('Error: ${adminService.error}'),
                   ElevatedButton(
                     style: elevated_button_style(),
                     onPressed: () =>
-                        context.read<AdminService>().fetchOrdersByStatus(widget.orderType.name),
+                        context.read<AdminService>().loadOrdersByFilterType(widget.orderType),
                     child: Text(
                       'Retry',
                       style: simple_text_style(color: AppColour.white),
@@ -99,14 +92,14 @@ class _OrderListViewState extends State<OrderListView> {
             );
           }
 
-          if (adminService.orders.isEmpty) {
+          if (adminService.filteredOrders.isEmpty) {
             return Center(
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   Icon(Icons.inbox_outlined, size: 64, color: Colors.grey),
                   const SizedBox(height: 16),
-                  Text('No ${widget.title.toLowerCase()} found'),
+                  Text('No ${widget.title} Orders Found'),
                 ],
               ),
             );
@@ -116,7 +109,7 @@ class _OrderListViewState extends State<OrderListView> {
             color: AppColour.primary,
             backgroundColor: AppColour.white,
             onRefresh: () async {
-              context.read<AdminService>().fetchOrdersByStatus(widget.orderType.name);
+              context.read<AdminService>().loadOrdersByFilterType(widget.orderType);
             },
             child: ListView.separated(
               controller: _scrollController,

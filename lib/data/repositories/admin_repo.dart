@@ -25,6 +25,14 @@ class AdminRepository with RepoErrorHandler {
       throw handleError(e);
     }
   }
+  Future<List<Order>> getTodaysOrders() async {
+    try {
+      final response = await _client.getTodaysOrders();
+      return response.data ?? [];
+    } catch (e) {
+      throw handleError(e);
+    }
+  }
 
   // Example usage inside AdminService or OrderRepository
   Future<List<Order>> fetchOrdersByStatus(String status) async {

@@ -14,6 +14,7 @@ import 'package:raising_india/features/admin/order/OrderFilterType.dart';
 import 'package:raising_india/features/admin/order/screens/order_list_screen.dart';
 import 'package:raising_india/features/admin/stock_management/screens/low_stock_alert_screen.dart';
 import 'package:raising_india/models/dto/dashboard_response.dart';
+import 'package:shimmer/shimmer.dart';
 import '../../../../comman/simple_text_style.dart';
 
 class HomeScreenA extends StatefulWidget {
@@ -78,7 +79,7 @@ class _HomeScreenAState extends State<HomeScreenA>
 
   void navigateToOrderListScreen(String title, OrderFilterType orderType) {
 
-    context.read<AdminService>().fetchOrdersByStatus(orderType.name);
+    context.read<AdminService>().loadOrdersByFilterType(orderType);
     Navigator.push(
       context,
       MaterialPageRoute(
@@ -100,10 +101,11 @@ class _HomeScreenAState extends State<HomeScreenA>
             physics: const BouncingScrollPhysics(),
             child: Column(
               children: [
-                _buildLowStockAlertSection(),
-
                 // ✅ Order Statistics Section
                 _buildOrderStatsSection(),
+
+                // ✅ Low Stock Section
+                _buildLowStockAlertSection(),
 
                 // ✅ Sales Analytics Section
                 _buildSalesAnalyticsSection(),
@@ -318,11 +320,11 @@ class _HomeScreenAState extends State<HomeScreenA>
 
   Widget _buildOrderStatsSection() {
     return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 16,vertical: 16),
+      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Section Header
+          // --- Section Header ---
           Row(
             children: [
               Container(
@@ -350,25 +352,54 @@ class _HomeScreenAState extends State<HomeScreenA>
           ),
           const SizedBox(height: 16),
 
-          // Stats Cards
+          // --- Stats Cards ---
           Consumer<AdminService>(
             builder: (context, adminService, _) {
+              // 1. Show Shimmer while loading
               if (adminService.isLoading) {
-                return Center(child: CircularProgressIndicator(color: AppColour.primary,));
+                return _buildOrderStatsShimmer(); // Uses the helper we made earlier
               }
+
+              // 2. Error State
               if (adminService.dashboardStats == null) {
-                return Center(child: Text('Some Error.....'));
+                return const Center(
+                  child: Padding(
+                    padding: EdgeInsets.all(16.0),
+                    child: Text('Failed to load statistics'),
+                  ),
+                );
               }
+
               DashboardResponse data = adminService.dashboardStats!;
+
+              // 3. Logic: Calculate "Running Orders" and "Cancelled Orders"
+              int runningOrdersCount = 0;
+              int cancelledOrdersCount = 0;
+
+              if (data.orderStatusCounts != null) {
+                final counts = data.orderStatusCounts!;
+
+                // Adds up all active statuses (excluding Created/Pending, Delivered, and Cancelled)
+                runningOrdersCount = (counts['CONFIRMED'] ?? 0) +
+                    (counts['PREPARING'] ?? 0) +
+                    (counts['DISPATCHED'] ?? 0) +
+                    (counts['SHIPPED'] ?? 0);
+
+                cancelledOrdersCount = counts['CANCELLED'] ?? 0;
+              }
+
+              // Directly using the new backend field!
+              String todaysOrdersCount = (data.todayOrdersCount ?? 0).toString();
+
               return Column(
                 children: [
-                  // First Row - Running & Today's Orders
+                  // --- First Row: Running & Cancelled ---
                   Row(
                     children: [
                       Expanded(
                         child: _buildEnhancedStatsCard(
                           title: 'RUNNING',
-                          value: data.orderStatusCounts!['RUNNING'].toString() ?? '0' ,
+                          value: runningOrdersCount.toString(),
                           icon: Icons.local_shipping,
                           color: AppColour.primary,
                           onTap: () => navigateToOrderListScreen('Running', OrderFilterType.running),
@@ -377,32 +408,8 @@ class _HomeScreenAState extends State<HomeScreenA>
                       const SizedBox(width: 12),
                       Expanded(
                         child: _buildEnhancedStatsCard(
-                          title: 'TODAY\'S REVENUE',
-                          value: data.todayRevenue.toString(),
-                          icon: Icons.today,
-                          color: Colors.blue,
-                          onTap: () => navigateToOrderListScreen('Today', OrderFilterType.today),
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 12),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: _buildEnhancedStatsCard(
-                          title: 'RECENT ORDERS',
-                          value: data.recentOrders!.length.toString(),
-                          icon: Icons.check_circle,
-                          color: Colors.green,
-                          onTap: () => navigateToOrderListScreen('Delivered', OrderFilterType.delivered),
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: _buildEnhancedStatsCard(
                           title: 'CANCELLED',
-                          value: data.orderStatusCounts!['CANCELLED'].toString(),
+                          value: cancelledOrdersCount.toString(),
                           icon: Icons.cancel,
                           color: Colors.red,
                           onTap: () => navigateToOrderListScreen('Cancelled', OrderFilterType.cancelled),
@@ -412,13 +419,39 @@ class _HomeScreenAState extends State<HomeScreenA>
                   ),
                   const SizedBox(height: 12),
 
-                  // Third Row - Total Orders (Full Width)
+                  // --- Second Row: Today's Orders & Today's Revenue ---
+                  Row(
+                    children: [
+                      Expanded(
+                        child: _buildEnhancedStatsCard(
+                          title: 'TODAY\'S',
+                          value: todaysOrdersCount,
+                          icon: Icons.shopping_bag,
+                          color: Colors.orange,
+                          onTap: () => navigateToOrderListScreen('Today', OrderFilterType.today),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: _buildEnhancedStatsCard(
+                          title: 'ALL',
+                          value: '${data.totalOrders ?? 0.0}',
+                          icon: Icons.inventory_2,
+                          color: Colors.purple,
+                          onTap: () => navigateToOrderListScreen('All', OrderFilterType.all),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+
+                  // --- Third Row: All Orders (Full Width) ---
                   _buildEnhancedStatsCard(
-                    title: 'ALL ORDERS',
-                    value: data.totalOrders.toString(),
-                    icon: Icons.inventory_2,
-                    color: Colors.purple,
-                    onTap: () => navigateToOrderListScreen('All', OrderFilterType.all),
+                  title: 'TODAY\'S REVENUE',
+                    value: '₹${data.todayRevenue ?? 0}',
+                    icon: Icons.account_balance_wallet,
+                    color: Colors.green,
+                    onTap: () => (){},
                     isFullWidth: true,
                   ),
                 ],
@@ -430,6 +463,50 @@ class _HomeScreenAState extends State<HomeScreenA>
     );
   }
 
+// --- HELPER: Shimmer Skeleton Layout ---
+  Widget _buildOrderStatsShimmer() {
+    return Shimmer.fromColors(
+      baseColor: Colors.grey.shade300,
+      highlightColor: Colors.grey.shade100,
+      child: Column(
+        children: [
+          // First Row Skeleton
+          Row(
+            children: [
+              Expanded(child: _buildShimmerBox(height: 100)),
+              const SizedBox(width: 12),
+              Expanded(child: _buildShimmerBox(height: 100)),
+            ],
+          ),
+          const SizedBox(height: 12),
+
+          // Second Row Skeleton
+          Row(
+            children: [
+              Expanded(child: _buildShimmerBox(height: 100)),
+              const SizedBox(width: 12),
+              Expanded(child: _buildShimmerBox(height: 100)),
+            ],
+          ),
+          const SizedBox(height: 12),
+
+          // Third Row Skeleton (Full Width)
+          _buildShimmerBox(height: 100),
+        ],
+      ),
+    );
+  }
+
+// Small helper to draw the individual grey rounded rectangles
+  Widget _buildShimmerBox({required double height}) {
+    return Container(
+      height: height,
+      decoration: BoxDecoration(
+        color: Colors.white, // Color is required for Shimmer to paint over it
+        borderRadius: BorderRadius.circular(16),
+      ),
+    );
+  }
   Widget _buildEnhancedStatsCard({
     required String title,
     required String value,
@@ -516,7 +593,7 @@ class _HomeScreenAState extends State<HomeScreenA>
                 Icon(Icons.arrow_forward_ios, color: Colors.grey.shade400, size: 12),
               ],
             ),
-            const SizedBox(height: 12),
+            const SizedBox(height: 8),
             Text(
               value,
               style: simple_text_style(

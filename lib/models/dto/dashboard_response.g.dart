@@ -13,6 +13,7 @@ DashboardResponse _$DashboardResponseFromJson(Map<String, dynamic> json) =>
       totalOrders: (json['totalOrders'] as num?)?.toInt(),
       orderStatusCounts: (json['orderStatusCounts'] as Map<String, dynamic>?)
           ?.map((k, e) => MapEntry(k, (e as num).toInt())),
+      todayOrdersCount: (json['todayOrdersCount'] as num?)?.toInt(),
       lowStockCount: (json['lowStockCount'] as num?)?.toInt(),
       lowStockProducts: (json['lowStockProducts'] as List<dynamic>?)
           ?.map((e) => Product.fromJson(e as Map<String, dynamic>))
@@ -28,6 +29,7 @@ Map<String, dynamic> _$DashboardResponseToJson(DashboardResponse instance) =>
       'totalRevenue': instance.totalRevenue,
       'todayRevenue': instance.todayRevenue,
       'totalOrders': instance.totalOrders,
+      'todayOrdersCount': instance.todayOrdersCount,
       'orderStatusCounts': instance.orderStatusCounts,
       'lowStockCount': instance.lowStockCount,
       'lowStockProducts': instance.lowStockProducts
