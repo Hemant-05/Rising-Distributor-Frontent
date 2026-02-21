@@ -117,6 +117,7 @@ class CategoryService extends ChangeNotifier {
   Future<String?> addCategory({
     required String name,
     required File? imageFile,
+    required int? parentId,
     required ImageService imageService,
     // Add other fields if your Category model requires them (e.g. parentId)
   }) async {
@@ -142,7 +143,7 @@ class CategoryService extends ChangeNotifier {
 
       // 3. Save to Repo
       // Adjust parameters based on your Repo's specific addCategory signature
-      await _repo.createCategory(name, null); // Example: assuming createCategory takes name & parentId
+      await _repo.createCategory(name, parentId); // Example: assuming createCategory takes name & parentId
 
       // 4. Refresh List
       await loadCategories();

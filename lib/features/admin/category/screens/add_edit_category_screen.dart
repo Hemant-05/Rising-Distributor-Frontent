@@ -12,8 +12,9 @@ import 'package:raising_india/models/model/category.dart';
 
 class AddEditCategoryScreen extends StatefulWidget {
   final Category? category;
+  final int? parentId; // ✅ NEW: Used when adding a sub-category
 
-  const AddEditCategoryScreen({super.key, this.category});
+  const AddEditCategoryScreen({super.key, this.category, this.parentId});
 
   bool get isEdit => category != null;
 
@@ -24,7 +25,6 @@ class AddEditCategoryScreen extends StatefulWidget {
 class _AddEditCategoryScreenState extends State<AddEditCategoryScreen> {
   final _formKey = GlobalKey<FormState>();
   final _nameController = TextEditingController();
-  // Removed _valueController as it wasn't in your Category model
   final ImagePicker _picker = ImagePicker();
 
   File? _imageFile;
@@ -69,8 +69,6 @@ class _AddEditCategoryScreenState extends State<AddEditCategoryScreen> {
     String? error;
 
     if (widget.isEdit) {
-      // Update logic
-      // Assuming parentCategory and subCategories remain same if not edited here
       final updatedCategory = Category(
           id: widget.category!.id,
           name: name,
@@ -85,9 +83,10 @@ class _AddEditCategoryScreenState extends State<AddEditCategoryScreen> {
         imageService: imageService,
       );
     } else {
-      // Add logic
+      // ✅ Pass the parentId to the service when adding!
       error = await categoryService.addCategory(
         name: name,
+        parentId: widget.parentId,
         imageFile: _imageFile,
         imageService: imageService,
       );
@@ -97,10 +96,15 @@ class _AddEditCategoryScreenState extends State<AddEditCategoryScreen> {
       setState(() => _isLoading = false);
 
       if (error == null) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text("Category Saved!"), backgroundColor: Colors.green),
-        );
-        Navigator.pop(context, true);
+        // Force refresh the tree so the new subcategory appears
+        await context.read<CategoryService>().loadCategories();
+
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text("Category Saved!"), backgroundColor: Colors.green),
+          );
+          Navigator.pop(context, true);
+        }
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text(error), backgroundColor: Colors.red),
@@ -112,16 +116,16 @@ class _AddEditCategoryScreenState extends State<AddEditCategoryScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColour.white,
+      backgroundColor: Colors.grey.shade50,
       appBar: AppBar(
-        backgroundColor: AppColour.white,
+        backgroundColor: Colors.white,
+        elevation: 1,
         automaticallyImplyLeading: false,
         title: Row(
           children: [
             back_button(),
             const SizedBox(width: 8),
-            Text(widget.isEdit ? 'Edit Category' : 'Add Category', style: simple_text_style()),
-            const Spacer(),
+            Text(widget.isEdit ? 'Edit Category' : 'Add Category', style: simple_text_style(fontSize: 20, fontWeight: FontWeight.bold)),
           ],
         ),
       ),
@@ -132,6 +136,19 @@ class _AddEditCategoryScreenState extends State<AddEditCategoryScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              if (widget.parentId != null && !widget.isEdit)
+                Container(
+                  margin: const EdgeInsets.only(bottom: 16),
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(color: Colors.blue.shade50, borderRadius: BorderRadius.circular(8)),
+                  child: Row(
+                    children: [
+                      const Icon(Icons.info_outline, color: Colors.blue),
+                      const SizedBox(width: 8),
+                      Text("Adding as a sub-category", style: simple_text_style(color: Colors.blue.shade700)),
+                    ],
+                  ),
+                ),
               _buildImageSection(),
               const SizedBox(height: 24),
               _buildFormSection(),
@@ -145,111 +162,75 @@ class _AddEditCategoryScreenState extends State<AddEditCategoryScreen> {
   }
 
   Widget _buildImageSection() {
-    return Card(
-      elevation: 2,
-      color: AppColour.white,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      child: Padding(
-        padding: const EdgeInsets.all(12),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Icon(Icons.image_outlined, color: AppColour.primary),
-                const SizedBox(width: 8),
-                Text('Category Image', style: simple_text_style(fontSize: 18, fontWeight: FontWeight.w600)),
-              ],
-            ),
-            const SizedBox(height: 16),
-            Center(
-              child: GestureDetector(
-                onTap: _pickImage,
-                child: Container(
-                  width: 200,
-                  height: 150,
-                  decoration: BoxDecoration(
-                    border: Border.all(color: Colors.grey.shade300),
-                    borderRadius: BorderRadius.circular(12),
-                    color: Colors.grey.shade50,
-                  ),
-                  child: _buildImageWidget(),
+    return Container(
+      decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(16), boxShadow: [BoxShadow(color: Colors.grey.shade200, blurRadius: 10)]),
+      padding: const EdgeInsets.all(20),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(Icons.image_outlined, color: AppColour.primary),
+              const SizedBox(width: 8),
+              Text('Category Image', style: simple_text_style(fontSize: 18, fontWeight: FontWeight.bold)),
+            ],
+          ),
+          const SizedBox(height: 16),
+          Center(
+            child: GestureDetector(
+              onTap: _pickImage,
+              child: Container(
+                width: 150,
+                height: 150,
+                decoration: BoxDecoration(
+                  border: Border.all(color: Colors.grey.shade300, width: 2),
+                  borderRadius: BorderRadius.circular(16),
+                  color: Colors.grey.shade50,
                 ),
+                child: _buildImageWidget(),
               ),
             ),
-            const SizedBox(height: 12),
-            Center(
-              child: TextButton.icon(
-                onPressed: _pickImage,
-                icon: const Icon(Icons.camera_alt_outlined),
-                label: Text(
-                  _imageFile != null || (widget.isEdit && widget.category!.imageUrl != null && widget.category!.imageUrl!.isNotEmpty)
-                      ? 'Change Image'
-                      : 'Select Image',
-                  style: simple_text_style(),
-                ),
-                style: TextButton.styleFrom(foregroundColor: Colors.orange.shade600),
-              ),
-            ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
 
   Widget _buildImageWidget() {
     if (_imageFile != null) {
-      return ClipRRect(
-        borderRadius: BorderRadius.circular(12),
-        child: Image.file(_imageFile!, fit: BoxFit.cover, width: double.infinity, height: double.infinity),
-      );
-    } else if (widget.isEdit && widget.category!.imageUrl != null && widget.category!.imageUrl!.isNotEmpty) {
-      return ClipRRect(
-        borderRadius: BorderRadius.circular(12),
-        child: Image.network(
-          widget.category!.imageUrl!,
-          fit: BoxFit.cover,
-          width: double.infinity,
-          height: double.infinity,
-          errorBuilder: (_, __, ___) => _buildImagePlaceholder(),
-        ),
-      );
-    } else {
-      return _buildImagePlaceholder();
+      return ClipRRect(borderRadius: BorderRadius.circular(14), child: Image.file(_imageFile!, fit: BoxFit.cover));
+    } else if (widget.isEdit && widget.category?.imageUrl != null) {
+      return ClipRRect(borderRadius: BorderRadius.circular(14), child: Image.network(widget.category!.imageUrl!, fit: BoxFit.cover, errorBuilder: (_,__,___) => _buildImagePlaceholder()));
     }
+    return _buildImagePlaceholder();
   }
 
   Widget _buildImagePlaceholder() {
     return Column(
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
-        Icon(Icons.add_photo_alternate_outlined, size: 48, color: Colors.grey.shade400),
+        Icon(Icons.add_photo_alternate_outlined, size: 40, color: Colors.grey.shade400),
         const SizedBox(height: 8),
-        Text('Select Image', style: simple_text_style(color: AppColour.lightGrey, fontSize: 14)),
+        Text('Tap to select', style: simple_text_style(color: Colors.grey.shade500, fontSize: 12)),
       ],
     );
   }
 
   Widget _buildFormSection() {
-    return Card(
-      elevation: 2,
-      color: AppColour.white,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          children: [
-            TextFormField(
-              controller: _nameController,
-              decoration: InputDecoration(
-                hintText: 'e.g., Dairy Products',
-                prefixIcon: const Icon(Icons.category_outlined),
-                border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
-              ),
-              validator: (val) => val == null || val.trim().isEmpty ? 'Please enter name' : null,
-            ),
-          ],
+    return Container(
+      decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(16), boxShadow: [BoxShadow(color: Colors.grey.shade200, blurRadius: 10)]),
+      padding: const EdgeInsets.all(20),
+      child: TextFormField(
+        controller: _nameController,
+        decoration: InputDecoration(
+          labelText: 'Category Name',
+          labelStyle: simple_text_style(color: AppColour.primary),
+          hintText: 'e.g., Smart Phones',
+          prefixIcon: Icon(Icons.category_outlined, color: AppColour.primary),
+          border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+          focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: AppColour.primary, width: 2)),
         ),
+        validator: (val) => val == null || val.trim().isEmpty ? 'Please enter a name' : null,
       ),
     );
   }
@@ -257,22 +238,20 @@ class _AddEditCategoryScreenState extends State<AddEditCategoryScreen> {
   Widget _buildSubmitButton() {
     return SizedBox(
       width: double.infinity,
+      height: 55,
       child: ElevatedButton(
         onPressed: _isLoading ? null : _submitForm,
-        style: elevated_button_style(),
+        style: ElevatedButton.styleFrom(
+          backgroundColor: AppColour.primary,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        ),
         child: _isLoading
-            ? const SizedBox(height: 20, width: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
+            ? const SizedBox(height: 24, width: 24, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
             : Text(
-          widget.isEdit ? 'Update Category' : 'Add Category',
-          style: simple_text_style(fontSize: 16, color: AppColour.white, fontWeight: FontWeight.w600),
+          widget.isEdit ? 'Save Changes' : 'Create Category',
+          style: simple_text_style(fontSize: 18, color: Colors.white, fontWeight: FontWeight.bold),
         ),
       ),
     );
-  }
-
-  @override
-  void dispose() {
-    _nameController.dispose();
-    super.dispose();
   }
 }

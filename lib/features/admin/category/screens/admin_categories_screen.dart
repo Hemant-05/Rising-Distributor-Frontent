@@ -9,7 +9,9 @@ import 'package:raising_india/features/admin/category/screens/category_products_
 import 'package:raising_india/models/model/category.dart';
 
 class AdminCategoriesScreen extends StatefulWidget {
-  const AdminCategoriesScreen({super.key});
+  final Category? parentCategory; // ✅ Pass this to view sub-categories
+
+  const AdminCategoriesScreen({super.key, this.parentCategory});
 
   @override
   State<AdminCategoriesScreen> createState() => _AdminCategoriesScreenState();
@@ -19,161 +21,146 @@ class _AdminCategoriesScreenState extends State<AdminCategoriesScreen> {
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      context.read<CategoryService>().loadCategories();
-    });
+    // Only fetch from network if we are at the root level
+    if (widget.parentCategory == null) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        context.read<CategoryService>().loadCategories();
+      });
+    }
   }
 
   @override
   Widget build(BuildContext context) {
+    // If parent is null, we are at Root. Otherwise, we are inside a folder.
+    final isRoot = widget.parentCategory == null;
+    final title = isRoot ? 'Categories' : widget.parentCategory!.name ?? 'Sub-Categories';
+
     return Scaffold(
-      backgroundColor: AppColour.white,
+      backgroundColor: Colors.grey.shade50,
       appBar: AppBar(
-        backgroundColor: AppColour.white,
+        backgroundColor: Colors.white,
+        elevation: 1,
         automaticallyImplyLeading: false,
         title: Row(
           children: [
             back_button(),
             const SizedBox(width: 8),
-            Text('Categories', style: simple_text_style(fontSize: 20)),
+            Expanded(
+              child: Text(
+                title,
+                style: simple_text_style(fontSize: 20, fontWeight: FontWeight.bold),
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
           ],
         ),
         actions: [
-          InkWell(
-            onTap: () => _navigateToAddCategory(context),
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16.0),
-              child: Center(
-                child: Text(
-                  'Add Category',
-                  style: simple_text_style(
-                    fontWeight: FontWeight.bold,
-                    color: AppColour.primary,
-                  ),
-                ),
-              ),
-            ),
+          IconButton(
+            onPressed: () => _navigateToAddCategory(context),
+            icon: Icon(Icons.add_circle, color: AppColour.primary, size: 28),
+            tooltip: 'Add Category',
           ),
         ],
       ),
       body: Consumer<CategoryService>(
         builder: (context, categoryService, child) {
-          if (categoryService.isLoading && categoryService.categories.isEmpty) {
-            return Center(
-              child: CircularProgressIndicator(color: AppColour.primary),
-            );
+          if (categoryService.isLoading && isRoot) {
+            return const Center(child: CircularProgressIndicator());
           }
 
-          final categories = categoryService.categories;
+          // Decide which list to show
+          List<Category> displayList = isRoot
+              ? categoryService.categories // Top level
+              : widget.parentCategory!.subCategories ?? []; // Nested level
 
-          if (categories.isEmpty) {
+          if (displayList.isEmpty) {
             return _buildEmptyState(context);
           }
 
-          return Stack(
-            children: [
-              Padding(
-                padding: const EdgeInsets.all(12),
-                child: GridView.builder(
-                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                    crossAxisCount: 2,
-                    childAspectRatio: 0.88,
-                    crossAxisSpacing: 8,
-                    mainAxisSpacing: 8,
-                  ),
-                  itemCount: categories.length,
-                  itemBuilder: (context, index) {
-                    final category = categories[index];
-                    return _buildCategoryCard(context, category);
-                  },
-                ),
-              ),
-              if (categoryService.isLoading && categories.isNotEmpty)
-                Container(
-                  color: Colors.black.withOpacity(0.1),
-                  child: const Center(child: CircularProgressIndicator()),
-                ),
-            ],
+          return ListView.separated(
+            padding: const EdgeInsets.all(16),
+            itemCount: displayList.length,
+            separatorBuilder: (context, index) => const SizedBox(height: 12),
+            itemBuilder: (context, index) {
+              return _buildCategoryTile(context, displayList[index]);
+            },
           );
         },
       ),
     );
   }
 
-  Widget _buildCategoryCard(BuildContext context, Category category) {
-    return Card(
-      elevation: 2,
-      color: AppColour.white,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-      child: InkWell(
-        onTap: () => _navigateToCategoryProducts(context, category),
-        borderRadius: BorderRadius.circular(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Container(
-              height: 120,
-              width: double.infinity,
-              padding: const EdgeInsets.all(4),
-              decoration: BoxDecoration(
-                borderRadius: const BorderRadius.vertical(
-                  top: Radius.circular(16),
-                ),
-                color: AppColour.lightGrey,
-              ),
-              child: ClipRRect(
-                borderRadius: const BorderRadius.vertical(
-                  top: Radius.circular(12),
-                ),
-                child:
-                    (category.imageUrl != null && category.imageUrl!.isNotEmpty)
-                    ? Image.network(
-                        category.imageUrl!,
-                        fit: BoxFit.cover,
-                        errorBuilder: (_, __, ___) => Icon(
-                          Icons.category_outlined,
-                          size: 50,
-                          color: AppColour.primary,
-                        ),
-                      )
-                    : Icon(
-                        Icons.category_outlined,
-                        size: 50,
-                        color: AppColour.primary,
-                      ),
-              ),
+  Widget _buildCategoryTile(BuildContext context, Category category) {
+    // Check if this category has children
+    final hasChildren = category.subCategories != null && category.subCategories!.isNotEmpty;
+
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        boxShadow: [
+          BoxShadow(color: Colors.grey.shade200, blurRadius: 6, offset: const Offset(0, 3)),
+        ],
+      ),
+      child: ListTile(
+        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        leading: Container(
+          width: 50,
+          height: 50,
+          decoration: BoxDecoration(
+            color: AppColour.primary.withOpacity(0.1),
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(8),
+            child: (category.imageUrl != null && category.imageUrl!.isNotEmpty)
+                ? Image.network(category.imageUrl!, fit: BoxFit.cover)
+                : Icon(
+              hasChildren ? Icons.folder : Icons.category, // ✅ Visual cue
+              color: AppColour.primary,
             ),
-            Expanded(
-              child: Padding(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 12,
-                  vertical: 8,
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      category.name ?? "Unnamed",
-                      style: simple_text_style(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w600,
-                      ),
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      'ID: ${category.id}',
-                      style: simple_text_style(
-                        fontSize: 12,
-                        color: AppColour.grey,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
+          ),
+        ),
+        title: Text(
+          category.name ?? "Unnamed",
+          style: simple_text_style(fontSize: 16, fontWeight: FontWeight.bold),
+        ),
+        subtitle: Text(
+          hasChildren ? '${category.subCategories!.length} Sub-categories' : 'No Sub-categories',
+          style: simple_text_style(color: Colors.grey.shade600, fontSize: 12),
+        ),
+        trailing: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            IconButton(
+              icon: const Icon(Icons.edit, color: Colors.blue, size: 20),
+              onPressed: () => _navigateToEditCategory(context, category),
+            ),
+            Icon(
+              hasChildren ? Icons.chevron_right : Icons.arrow_forward,
+              color: Colors.grey.shade400,
             ),
           ],
         ),
+        onTap: () {
+          if (hasChildren) {
+            // Drill down into sub-categories!
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (_) => AdminCategoriesScreen(parentCategory: category),
+              ),
+            );
+          } else {
+            // It's a leaf node, show products!
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (_) => CategoryProductsScreen(category: category),
+              ),
+            );
+          }
+        },
       ),
     );
   }
@@ -183,36 +170,16 @@ class _AdminCategoriesScreenState extends State<AdminCategoriesScreen> {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(Icons.category_outlined, size: 80, color: AppColour.lightGrey),
+          Icon(Icons.folder_open, size: 80, color: Colors.grey.shade300),
           const SizedBox(height: 16),
           Text(
-            'No categories found',
-            style: simple_text_style(
-              fontSize: 18,
-              color: AppColour.lightGrey,
-              fontWeight: FontWeight.w500,
-            ),
+            widget.parentCategory == null ? 'No Root Categories' : 'No Sub-Categories',
+            style: simple_text_style(fontSize: 18, color: Colors.grey.shade600, fontWeight: FontWeight.bold),
           ),
           const SizedBox(height: 8),
           Text(
-            'Add your first category to get started',
-            style: simple_text_style(color: AppColour.lightGrey),
-          ),
-          const SizedBox(height: 24),
-          ElevatedButton(
-            onPressed: () => _navigateToAddCategory(context),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.orange,
-              foregroundColor: Colors.white,
-              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-            ),
-            child: Text(
-              'Add Category',
-              style: simple_text_style(
-                color: AppColour.white,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
+            'Tap the + button to add one.',
+            style: simple_text_style(color: Colors.grey.shade500),
           ),
         ],
       ),
@@ -222,15 +189,19 @@ class _AdminCategoriesScreenState extends State<AdminCategoriesScreen> {
   void _navigateToAddCategory(BuildContext context) {
     Navigator.push(
       context,
-      MaterialPageRoute(builder: (_) => const AddEditCategoryScreen()),
+      MaterialPageRoute(
+        builder: (_) => AddEditCategoryScreen(
+          parentId: widget.parentCategory?.id, // ✅ Pass parent ID if we are inside a folder
+        ),
+      ),
     );
   }
 
-  void _navigateToCategoryProducts(BuildContext context, Category category) {
+  void _navigateToEditCategory(BuildContext context, Category category) {
     Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (_) => CategoryProductsScreen(category: category),
+        builder: (_) => AddEditCategoryScreen(category: category),
       ),
     );
   }
