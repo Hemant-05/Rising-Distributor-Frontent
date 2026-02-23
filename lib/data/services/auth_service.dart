@@ -32,6 +32,62 @@ class AuthService extends ChangeNotifier {
     loadUserFromStorage();
   }
 
+  Future<String?> updateAdminProfile(String name, String email) async {
+    if (_admin == null || _admin!.uid == null) return "Admin not found.";
+
+    _isLoading = true;
+    notifyListeners();
+
+    try {
+      // 1. Call the repository
+      final updatedAdmin = await _repo.updateAdminProfile(_admin!.uid!, name, email);
+
+      // 2. Update the local admin state so the app UI refreshes immediately!
+      _admin = Admin(
+        uid: updatedAdmin.uid,
+        name: updatedAdmin.name,
+        email: updatedAdmin.email,
+        role: updatedAdmin.role,
+      );
+
+      return null; // Success!
+
+    } on AppError catch (e) {
+      return e.message;
+    } catch (e) {
+      return "Failed to update profile. Please try again.";
+    } finally{
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
+
+  Future<String?> updateCustomerProfile(String name, String email) async {
+    if (_customer == null || _customer!.uid == null) return "Customer not found.";
+
+    _isLoading = true;
+    notifyListeners();
+
+    try {
+      final updateCustomer = await _repo.updateCustomerProfile(_customer!.uid!, name, email);
+      _customer = Customer(
+        uid: updateCustomer.uid,
+        name: updateCustomer.name,
+        email: updateCustomer.email,
+        mobileNumber: updateCustomer.mobileNumber,
+        isMobileVerified: updateCustomer.isMobileVerified,
+      );
+      return null;
+    } on AppError catch (e) {
+      return e.message;
+    } catch (e) {
+      return "Failed to update profile. Please try again.";
+    } finally{
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
+
   Future<void> loadUserFromStorage() async {
     // ✅ FIX 2: Removed "isLoading = true" and "notifyListeners" from here.
     // We are already loading by default.

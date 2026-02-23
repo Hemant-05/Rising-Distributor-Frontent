@@ -13,6 +13,9 @@ class ProductService extends ChangeNotifier {
 
   final ImageService _imageService = getIt<ImageService>();
 
+  List<Product> _archivedProducts = [];
+  List<Product> get archivedProducts => _archivedProducts;
+
   List<Product> _products = [];
   List<Product> get products => _products;
 
@@ -196,6 +199,46 @@ class ProductService extends ChangeNotifier {
       _error = e.toString();
       _isLoading = false;
       return "Failed to delete product.";
+    }
+  }
+  // Fetch Archived
+  Future<void> fetchArchivedProducts() async {
+    _isLoading = true;
+    notifyListeners();
+    try {
+      _archivedProducts = await _repo.getArchivedProducts();
+    } catch (e) {
+      print("Archived Fetch Error: $e");
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
+
+  // Restore Product
+  Future<String?> restoreProduct(String pid) async {
+    _isLoading = true;
+    notifyListeners();
+    try {
+      Product restored = await _repo.restoreProduct(pid);
+
+      // Remove from archived list
+      _archivedProducts.removeWhere((p) => p.pid == pid);
+
+      // Add back to active list so it shows up instantly
+      _products.insert(0, restored);
+
+      _isLoading = false;
+      notifyListeners();
+      return null;
+    } on AppError catch (e) {
+      _isLoading = false;
+      notifyListeners();
+      return e.message;
+    } catch (e) {
+      _isLoading = false;
+      notifyListeners();
+      return "Failed to restore product.";
     }
   }
 }

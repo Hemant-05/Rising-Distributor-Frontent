@@ -12,12 +12,14 @@ import 'package:raising_india/models/dto/review_request_dto.dart';
 import 'package:raising_india/models/dto/token_password_dtos.dart';
 import 'package:raising_india/models/dto/user_profile_response.dart';
 import 'package:raising_india/models/model/address.dart';
+import 'package:raising_india/models/model/admin.dart';
 import 'package:raising_india/models/model/analytics_response.dart';
 import 'package:raising_india/models/model/banner.dart';
 import 'package:raising_india/models/model/brand.dart';
 import 'package:raising_india/models/model/cart.dart';
 import 'package:raising_india/models/model/category.dart';
 import 'package:raising_india/models/model/coupon.dart';
+import 'package:raising_india/models/model/customer.dart';
 import 'package:raising_india/models/model/order.dart';
 import 'package:raising_india/models/model/product.dart';
 import 'package:raising_india/models/model/product_review.dart';
@@ -34,11 +36,15 @@ abstract class RestClient {
   // ===========================================================================
   // 1. Register User (Returns Customer + Tokens)
   @POST("/auth/register/user")
-  Future<ApiResponse<Map<String, dynamic>>> registerUser(@Body() RegistrationRequest request);
+  Future<ApiResponse<Map<String, dynamic>>> registerUser(
+    @Body() RegistrationRequest request,
+  );
 
   // 2. Register Admin (Returns Admin + Tokens)
   @POST("/auth/register/admin")
-  Future<ApiResponse<Map<String, dynamic>>> registerAdmin(@Body() RegistrationRequest request);
+  Future<ApiResponse<Map<String, dynamic>>> registerAdmin(
+    @Body() RegistrationRequest request,
+  );
 
   // 3. Login
   @POST("/auth/login")
@@ -46,7 +52,9 @@ abstract class RestClient {
 
   // 4. Refresh Token
   @POST("/auth/refresh")
-  Future<ApiResponse<AuthResponse>> refreshToken(@Body() RefreshTokenRequest request);
+  Future<ApiResponse<AuthResponse>> refreshToken(
+    @Body() RefreshTokenRequest request,
+  );
 
   // 5. Forgot Password
   @POST("/auth/forgot-password")
@@ -66,7 +74,10 @@ abstract class RestClient {
   Future<ApiResponse<Address>> addAddress(@Body() Address address);
 
   @PUT("/addresses/update/{id}")
-  Future<ApiResponse<Address>> updateAddress(@Path("id") int id, @Body() Address request);
+  Future<ApiResponse<Address>> updateAddress(
+    @Path("id") int id,
+    @Body() Address request,
+  );
 
   @PUT("/addresses/set-primary/{id}")
   Future<ApiResponse<bool>> setPrimaryAddress(@Path("id") int id);
@@ -97,7 +108,9 @@ abstract class RestClient {
 
   // New endpoint from your controller
   @GET("/cart/status/{productId}")
-  Future<ApiResponse<Map<String, dynamic>>> getCartStatus(@Path("productId") String productId);
+  Future<ApiResponse<Map<String, dynamic>>> getCartStatus(
+    @Path("productId") String productId,
+  );
 
   // ===========================================================================
   // 4. CATEGORY CONTROLLER
@@ -111,15 +124,15 @@ abstract class RestClient {
   // --- Admin Endpoints ---
   @POST("/categories/create")
   Future<ApiResponse<Category>> createCategory(
-      @Query("name") String name,
-      @Query("parentId") int? parentId
-      );
+    @Query("name") String name,
+    @Query("parentId") int? parentId,
+  );
 
   @PUT("/categories/{id}/update")
   Future<ApiResponse<Category>> updateCategory(
-      @Path("id") int id,
-      @Body() Category category
-      );
+    @Path("id") int id,
+    @Body() Category category,
+  );
 
   @DELETE("/categories/{id}/delete")
   Future<ApiResponse<bool>> deleteCategory(@Path("id") int id);
@@ -137,9 +150,9 @@ abstract class RestClient {
 
   @POST("/admin/banners/add")
   Future<ApiResponse<Banner>> addBanner(
-      @Query("imageUrl") String imageUrl,
-      @Query("redirectRoute") String? redirectRoute,
-      );
+    @Query("imageUrl") String imageUrl,
+    @Query("redirectRoute") String? redirectRoute,
+  );
 
   @DELETE("/admin/banners/{id}")
   Future<ApiResponse<String>> deleteBanner(@Path("id") int id);
@@ -164,17 +177,17 @@ abstract class RestClient {
   // 4. Get Products by Brand ID
   @GET("/brands/{brandId}/products")
   Future<ApiResponse<List<Product>>> getProductsByBrand(
-      @Path("brandId") int brandId, // Java Long -> Dart int
-      );
+    @Path("brandId") int brandId, // Java Long -> Dart int
+  );
   // ===========================================================================
   // 7. COUPON CONTROLLER
   // ===========================================================================
   // User Endpoints
   @POST("/coupons/apply")
   Future<ApiResponse<Cart>> applyCoupon(
-      @Query("userId") String userId,
-      @Query("code") String code
-      );
+    @Query("userId") String userId,
+    @Query("code") String code,
+  );
 
   @POST("/coupons/remove")
   Future<ApiResponse<Cart>> removeCoupon(@Query("userId") String userId);
@@ -203,6 +216,12 @@ abstract class RestClient {
   // 9. ADMIN CONTROLLER
   // ===========================================================================
 
+  @PUT("/admin/profile/{uid}")
+  Future<ApiResponse<Admin>> updateAdminProfile(
+    @Path("uid") String uid,
+    @Body() Map<String, dynamic> body,
+  );
+
   @GET("/admin/products")
   Future<ApiResponse<List<Product>>> getAllProducts();
 
@@ -211,16 +230,16 @@ abstract class RestClient {
 
   @GET("/admin/orders/status/{status}")
   Future<ApiResponse<List<Order>>> getOrdersByStatus(
-      @Path("status") String status,
-      );
+    @Path("status") String status,
+  );
   @GET("/admin/orders/today")
   Future<ApiResponse<List<Order>>> getTodaysOrders();
 
   @PUT("/admin/orders/{orderId}")
   Future<ApiResponse<Order>> updateAdminOrderStatus(
-      @Path("orderId") int orderId,
-      @Query("status") String status
-      );
+    @Path("orderId") int orderId,
+    @Query("status") String status,
+  );
 
   @GET("/admin/stats/revenue")
   Future<ApiResponse<double>> getTotalRevenue();
@@ -233,21 +252,23 @@ abstract class RestClient {
   // ===========================================================================
   @POST("/admin/notifications/broadcast")
   Future<ApiResponse<String>> sendBroadcast(
-      @Query("title") String title,
-      @Query("body") String body
-      );
+    @Query("title") String title,
+    @Query("body") String body,
+  );
 
   // ===========================================================================
   // 11. ORDER CONTROLLER
   // ===========================================================================
   @POST("/orders/place")
   Future<ApiResponse<Order>> placeOrder(
-      @Query("addressId") int addressId,
-      @Query("paymentMethod") String paymentMethod,
-      );
+    @Query("addressId") int addressId,
+    @Query("paymentMethod") String paymentMethod,
+  );
 
   @POST("/orders/confirm-payment")
-  Future<ApiResponse<Order>> confirmPayment(@Body() Map<String, dynamic> payload);
+  Future<ApiResponse<Order>> confirmPayment(
+    @Body() Map<String, dynamic> payload,
+  );
 
   // (Ensure you already have these from previous steps)
   @GET("/orders/{id}")
@@ -276,7 +297,9 @@ abstract class RestClient {
 
   // 3. Get Products by Category
   @GET("/products/category/{category}")
-  Future<ApiResponse<List<Product>>> getProductsByCategory(@Path("category") String category);
+  Future<ApiResponse<List<Product>>> getProductsByCategory(
+    @Path("category") String category,
+  );
 
   // 4. Get Single Product
   @GET("/products/{pid}")
@@ -289,9 +312,9 @@ abstract class RestClient {
   // 6. Update Product (Admin)
   @PUT("/products/{pid}")
   Future<ApiResponse<Product>> updateProduct(
-      @Path("pid") String pid,
-      @Body() ProductRequest request
-      );
+    @Path("pid") String pid,
+    @Body() ProductRequest request,
+  );
 
   // 7. Delete Product (Admin)
   @DELETE("/products/{pid}")
@@ -300,23 +323,29 @@ abstract class RestClient {
   // 8. Restock Product (Admin)
   @PUT("/products/restock/{productId}")
   Future<ApiResponse<Product>> restockProduct(
-      @Path("productId") String productId,
-      @Query("qty") int qty
-      );
+    @Path("productId") String productId,
+    @Query("qty") int qty,
+  );
 
   // 9. Search & Filter
   // Note: Returns Map<String, dynamic> because Spring 'Page' object structure is complex.
   // You can access the list via response.data['content']
   @GET("/products/search")
   Future<ApiResponse<Map<String, dynamic>>> searchProducts(
-      @Query("query") String? query,
-      @Query("category") String? category,
-      @Query("minPrice") double? minPrice,
-      @Query("maxPrice") double? maxPrice,
-      @Query("sort") String sort, // 'asc' or 'desc'
-      @Query("page") int page,
-      @Query("size") int size,
-      );
+    @Query("query") String? query,
+    @Query("category") String? category,
+    @Query("minPrice") double? minPrice,
+    @Query("maxPrice") double? maxPrice,
+    @Query("sort") String sort, // 'asc' or 'desc'
+    @Query("page") int page,
+    @Query("size") int size,
+  );
+
+  @GET("/products/archived")
+  Future<ApiResponse<List<Product>>> getArchivedProducts();
+
+  @PUT("/products/{pid}/restore")
+  Future<ApiResponse<Product>> restoreProduct(@Path("pid") String pid);
 
   // ===========================================================================
   // 13. REVIEW CONTROLLER
@@ -325,32 +354,43 @@ abstract class RestClient {
   Future<ApiResponse<String>> submitReview(@Body() ReviewRequestDto request);
 
   @GET("/reviews/product/{productId}")
-  Future<ApiResponse<List<ProductReview>>> getProductReviews(@Path("productId") int productId);
+  Future<ApiResponse<List<ProductReview>>> getProductReviews(
+    @Path("productId") int productId,
+  );
 
   @GET("/reviews/product/{productId}/average")
-  Future<ApiResponse<double>> getProductAverageRating(@Path("productId") int productId);
+  Future<ApiResponse<double>> getProductAverageRating(
+    @Path("productId") int productId,
+  );
 
   // --- Reviews (Admin) ---
 
   @GET("/reviews/order/{orderId}")
   Future<ApiResponse<AdminOrderReviewDto>> getReviewByOrder(
-      @Path("orderId") int orderId,
-      );
+    @Path("orderId") int orderId,
+  );
 
   // Note: Ensure you have a Dart model for 'Page<T>' that matches Spring's Page structure
   // (fields: content, totalPages, totalElements, etc.)
   @GET("/reviews/all")
   Future<ApiResponse<Page<AdminOrderReviewDto>>> getAllReviews(
-      @Query("page") int page,
-      @Query("size") int size,
-      @Query("keyword") String? keyword,
-      @Query("rating") double? rating,
-      @Query("sort") String? sort,
-      );
+    @Query("page") int page,
+    @Query("size") int size,
+    @Query("keyword") String? keyword,
+    @Query("rating") double? rating,
+    @Query("sort") String? sort,
+  );
 
   // ===========================================================================
   // 14. USER CONTROLLER
   // ===========================================================================
+
+  @PUT("/users/profile/{uid}")
+  Future<ApiResponse<Customer>> updateUserProfile(
+    @Path("uid") String uid,
+    @Body() Map<String, dynamic> body,
+  );
+
   @GET("/users/me")
   Future<ApiResponse<UserProfileResponse>> getCurrentUserProfile();
 
@@ -358,7 +398,9 @@ abstract class RestClient {
   Future<ApiResponse<void>> saveMobileNumber(@Body() MobileRequest request);
 
   @POST("/users/mobile/verify")
-  Future<ApiResponse<void>> verifyMobile(@Body() OtpVerificationRequest request);
+  Future<ApiResponse<void>> verifyMobile(
+    @Body() OtpVerificationRequest request,
+  );
 
   @POST("/users/update-fcm-token")
   Future<ApiResponse<String>> updateFcmToken(@Query("token") String token);
@@ -368,24 +410,26 @@ abstract class RestClient {
   // ===========================================================================
   @POST("/wishlist/add")
   Future<ApiResponse<String>> addToWishlist(
-      @Query("userId") String userId,
-      @Query("productPid") String productPid
-      );
+    @Query("userId") String userId,
+    @Query("productPid") String productPid,
+  );
 
   @DELETE("/wishlist/remove")
   Future<ApiResponse<String>> removeFromWishlist(
-      @Query("userId") String userId,
-      @Query("productPid") String productPid
-      );
+    @Query("userId") String userId,
+    @Query("productPid") String productPid,
+  );
 
   @GET("/wishlist/{userId}")
-  Future<ApiResponse<List<Wishlist>>> getWishlist(@Path("userId") String userId);
+  Future<ApiResponse<List<Wishlist>>> getWishlist(
+    @Path("userId") String userId,
+  );
 
   // --- Admin Analytics ---
   /// Get Sales Analytics Data
   /// [filter] options: 'DAILY', 'WEEKLY', 'MONTHLY', 'ALL_TIME'
   @GET("/admin/analytics")
   Future<ApiResponse<AnalyticsResponse>> getSalesAnalytics(
-      @Query("filter") String filter,
-      );
+    @Query("filter") String filter,
+  );
 }

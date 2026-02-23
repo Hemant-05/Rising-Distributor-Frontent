@@ -13,6 +13,7 @@ import 'package:raising_india/features/auth/screens/login_screen.dart';
 
 // Screens
 import 'package:raising_india/features/auth/screens/signup_screen.dart';
+import 'package:raising_india/features/on_boarding/screens/welcome_screen.dart';
 import 'package:raising_india/features/user/coupon/screens/coupons_screen.dart';
 import 'package:raising_india/features/user/address/screens/select_address_screen.dart';
 import 'package:raising_india/features/user/order/screens/order_screen.dart';
@@ -161,7 +162,7 @@ class ProfileScreen extends StatelessWidget {
                         const SnackBar(content: Text('Logged out...')),
                       );
                       Navigator.of(context, rootNavigator: true).pushAndRemoveUntil(
-                        MaterialPageRoute(builder: (_) => const LoginScreen()),
+                        MaterialPageRoute(builder: (_) => const WelcomeScreen()),
                             (route) => false,
                       );
                     }

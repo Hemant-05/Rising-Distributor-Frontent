@@ -1,4 +1,6 @@
 import 'package:raising_india/error/exceptions.dart';
+import 'package:raising_india/models/model/admin.dart';
+import 'package:raising_india/models/model/customer.dart';
 
 import '../../../data/rest_client.dart';
 import '../../../services/service_locator.dart';
@@ -9,6 +11,31 @@ import '../../../models/dto/user_profile_response.dart';
 
 class AuthRepository with RepoErrorHandler {
   final RestClient _client = getIt<RestClient>();
+
+  Future<Admin> updateAdminProfile(String uid, String name, String email) async {
+    try {
+      final response = await _client.updateAdminProfile(uid, {
+        "name": name,
+        "email": email,
+      });
+      return response.data!; // Returns the newly updated Admin object
+    } catch (e) {
+      throw handleError(e); // Assuming you have your RepoErrorHandler mixin here
+    }
+  }
+
+  Future<Customer> updateCustomerProfile(String uid, String name, String email) async {
+    try {
+      final response = await _client.updateUserProfile(uid, {
+        "name": name,
+        "email": email,
+      });
+      return response.data!; // Returns the newly updated Customer object
+    } catch (e) {
+      throw handleError(e); // Assuming you have your RepoErrorHandler mixin here
+    }
+  }
+
 
   // --- 1. LOGIN ---
   Future<AuthResponse> login(String email, String password) async {

@@ -90,4 +90,22 @@ class ProductRepository with RepoErrorHandler {
       throw handleError(e);
     }
   }
+
+  Future<List<Product>> getArchivedProducts() async {
+    try {
+      final response = await _client.getArchivedProducts();
+      return response.data ?? [];
+    } catch (e) {
+      throw handleError(e);
+    }
+  }
+
+  Future<Product> restoreProduct(String pid) async {
+    try {
+      final response = await _client.restoreProduct(pid);
+      return response.data!;
+    } catch (e) {
+      throw handleError(e);
+    }
+  }
 }

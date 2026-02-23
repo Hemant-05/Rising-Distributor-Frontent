@@ -182,37 +182,6 @@ class _ProfileManageScreenState extends State<ProfileManageScreen> {
                       ),
                     ),
                     SizedBox(height: 10),
-                    CusContainer(
-                      Consumer<AuthService>(
-                        builder: (context, authService,_) {
-                          return optionsListTileWidget(
-                            () {
-                              context.read<AuthService>().signOut();
-                              if (authService.admin != null) {
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  SnackBar(
-                                    content: Text(
-                                      'Logged out : ${authService.admin!.name}',
-                                    ),
-                                  ),
-                                );
-                                Navigator.of(context, rootNavigator: true).pushAndRemoveUntil(
-                                  MaterialPageRoute(builder: (_) => const LoginScreen()),
-                                      (route) => false,
-                                );
-                              }
-                            },
-                            logout_svg,
-                            'Logout',
-                            Icon(
-                              Icons.arrow_forward_ios_rounded,
-                              color: AppColour.grey,
-                              size: 16,
-                            ),
-                          );
-                        },
-                      ),
-                    ),
                   ],
                 ),
               ),
