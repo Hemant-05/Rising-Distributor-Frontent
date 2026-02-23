@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:raising_india/comman/simple_text_style.dart';
 import 'package:raising_india/data/services/auth_service.dart';
 import 'package:raising_india/features/admin/pagination/main_screen_a.dart';
 import 'package:raising_india/features/on_boarding/screens/welcome_screen.dart';
@@ -17,47 +18,40 @@ class _SplashScreenState extends State<SplashScreen> {
   @override
   void initState() {
     super.initState();
-    _checkAuth();
-  }
-
-  Future<void> _checkAuth() async {
-
-    final authService = context.read<AuthService>();
-
-    await Future.delayed(const Duration(seconds: 2));
-
-    if (!mounted) return;
-
-    if (authService.isAdmin) {
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (_) => const MainScreenA()), // Admin Home
-      );
-    } else if (authService.isCustomer) {
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (_) => const MainScreenU()), // User Home
-      );
-    } else {
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (_) => const WelcomeScreen()), // Login/Welcome
-      );
-    }
+    WidgetsBinding.instance.addPostFrameCallback((_) {context.read<AuthService>();});
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Image.asset(appLogo, width: 100, height: 100),
-            const SizedBox(height: 20),
-            const Text('Loading...'),
-          ],
-        ),
+      body: Consumer<AuthService>(
+        builder: (context, authService, _) {
+
+          // 1. If loading, return the Splash UI
+          if (authService.isLoading) {
+            return Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Image.asset(appLogo, width: 120, height: 120),
+                  const SizedBox(height: 20),
+                  Text('Loading...',style: simple_text_style(),),
+                ],
+              ),
+            );
+          }
+
+          // 2. If finished loading, RETURN the correct screen directly!
+          else {
+            if (authService.isAdmin) {
+              return const MainScreenA(); // Admin Home
+            } else if (authService.isCustomer) {
+              return const MainScreenU(); // User Home
+            } else {
+              return const WelcomeScreen(); // Login/Welcome
+            }
+          }
+        },
       ),
     );
   }

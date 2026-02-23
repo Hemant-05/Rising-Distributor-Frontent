@@ -19,6 +19,10 @@ class BrandService extends ChangeNotifier {
   bool _isLoading = false;
   bool get isLoading => _isLoading;
 
+  String _error = "";
+  String get error => _error;
+
+
   // --- 1. Fetch All Brands ---
   Future<void> fetchBrands() async {
     // Avoid refreshing if we already have data (optional optimization)
@@ -30,6 +34,7 @@ class BrandService extends ChangeNotifier {
       _brands = await _repo.getAllBrands();
 
     } catch (e) {
+      _error = "Failed to load brands. ${e.toString()}";
       print("Brand Fetch Error: $e");
     } finally {
       _isLoading = false;
@@ -46,8 +51,10 @@ class BrandService extends ChangeNotifier {
       await fetchBrands();
       return null; // Success
     } on AppError catch (e) {
+      _error = e.toString();
       return e.message;
     } catch (e) {
+      _error = "Failed to add brand. ${e.toString()}";
       return "Failed to add brand.";
     }
   }
@@ -61,8 +68,10 @@ class BrandService extends ChangeNotifier {
       _brandProducts = await _repo.getProductsByBrand(brandId);
       return null;
     } on AppError catch (e) {
+      _error = e.toString();
       return e.message;
     } catch (e) {
+      _error = "Failed to load products for this brand. ${e.toString()}";
       return "Failed to load products for this brand.";
     } finally {
       _isLoading = false;

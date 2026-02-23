@@ -6,8 +6,6 @@ import 'package:raising_india/comman/back_button.dart';
 import 'package:raising_india/comman/simple_text_style.dart';
 import 'package:raising_india/constant/AppColour.dart';
 import 'package:raising_india/features/admin/sales_analytics/widget/sales_chart_widget.dart';
-import 'package:raising_india/models/sales_time_period.dart';
-
 class SalesAnalyticsScreen extends StatefulWidget {
   const SalesAnalyticsScreen({super.key});
 

@@ -115,6 +115,23 @@ class _AddNewItemScreenState extends State<AddNewItemScreen>
     });
   }
 
+  // ✅ Recursive function to extract all leaf nodes
+  List<Category> _getAllLeafCategories(List<Category> categories) {
+    List<Category> leafNodes = [];
+
+    for (var cat in categories) {
+      if (cat.subCategories == null || cat.subCategories!.isEmpty) {
+        // It's a final leaf node (no children), add it!
+        leafNodes.add(cat);
+      } else {
+        // It has children, recursively search inside them
+        leafNodes.addAll(_getAllLeafCategories(cat.subCategories!));
+      }
+    }
+
+    return leafNodes;
+  }
+
   @override
   void dispose() {
     _fadeAnimationController.dispose();
@@ -337,28 +354,43 @@ class _AddNewItemScreenState extends State<AddNewItemScreen>
                     ),
                     Expanded(
                       child: DropdownButtonHideUnderline(
-                        child: DropdownButton<Category>(
-                          hint: Text(
-                            "Select Category",
-                            style: simple_text_style(
-                              color: AppColour.lightGrey,
-                            ),
-                          ),
-                          value: selectedCategory,
-                          items: catService.categories.map((Category cat) {
-                            return DropdownMenuItem<Category>(
-                              value: cat,
-                              child: Text(
-                                cat.name ?? "Unnamed",
-                                style: simple_text_style(),
-                              ),
-                            );
-                          }).toList(),
-                          onChanged: (Category? newValue) {
-                            setState(() {
-                              selectedCategory = newValue;
-                            });
-                          },
+                        child: Builder(
+                            builder: (context) {
+                              // ✅ 1. Filter the categories to ONLY include leaf nodes
+                              final leafCategories = _getAllLeafCategories(catService.categories);
+
+                              // ✅ 2. Safety check: Ensure selectedCategory exists in the new filtered list.
+                              // If it doesn't (e.g., if it was a parent category), set it to null to prevent a Flutter crash.
+                              if (selectedCategory != null && !leafCategories.contains(selectedCategory)) {
+                                selectedCategory = null;
+                              }
+
+                              return DropdownButton<Category>(
+                                isExpanded: true, // Good practice to prevent text overflow
+                                hint: Text(
+                                  "Select Category",
+                                  style: simple_text_style(
+                                    color: AppColour.lightGrey,
+                                  ),
+                                ),
+                                value: selectedCategory,
+                                // ✅ 3. Map the filtered leaf categories to the dropdown items
+                                items: leafCategories.map((Category cat) {
+                                  return DropdownMenuItem<Category>(
+                                    value: cat,
+                                    child: Text(
+                                      cat.name ?? "Unnamed",
+                                      style: simple_text_style(),
+                                    ),
+                                  );
+                                }).toList(),
+                                onChanged: (Category? newValue) {
+                                  setState(() {
+                                    selectedCategory = newValue;
+                                  });
+                                },
+                              );
+                            }
                         ),
                       ),
                     ),

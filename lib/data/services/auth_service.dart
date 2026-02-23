@@ -10,13 +10,18 @@ import 'package:flutter/material.dart';
 
 class AuthService extends ChangeNotifier {
   final AuthRepository _repo = AuthRepository();
-  final Dio _dio = getIt<Dio>(); // For updating headers
+  final Dio _dio = getIt<Dio>();
 
   Customer? _customer;
   Admin? _admin;
 
   bool get isCustomer => _customer != null;
   bool get isAdmin => _admin != null;
+
+  // ✅ FIX 1: Default to TRUE.
+  // The app starts in a "checking" state. No need to notify listeners to start loading.
+  bool _isLoading = true;
+  bool get isLoading => _isLoading;
 
   // Helpers
   String? get currentUid => _customer?.uid ?? _admin?.uid;
@@ -27,35 +32,59 @@ class AuthService extends ChangeNotifier {
     loadUserFromStorage();
   }
 
+  Future<void> loadUserFromStorage() async {
+    // ✅ FIX 2: Removed "isLoading = true" and "notifyListeners" from here.
+    // We are already loading by default.
+
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final token = prefs.getString('access_token');
+
+      if (token != null) {
+        _dio.options.headers['Authorization'] = 'Bearer $token';
+        // This will verify the token and set the user roles
+        await _fetchAndSetUser();
+      }
+    } catch (e) {
+      // If anything fails during startup check, clear everything
+      await signOut();
+    } finally {
+      // ✅ FIX 3: Only notify ONCE when the check is totally finished.
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
+
   // --- 1. SIGN IN ---
   Future<String?> signIn(String email, String password) async {
+    _isLoading = true;
+    notifyListeners();
     try {
-      // 1. Get Tokens
       final authResponse = await _repo.login(email, password);
-
-      // 2. Save & Set Headers
       await _persistTokens(authResponse.accessToken, authResponse.refreshToken);
-
-      // 3. Fetch Profile
       await _fetchAndSetUser();
 
-      return null; // Success
+      return null;
     } on AppError catch (e) {
       return e.message;
     } catch (e) {
       return "Login failed. Please try again.";
+    } finally {
+      _isLoading = false;
+      notifyListeners();
     }
   }
 
-  // --- 2. SIGN UP (Auto-Login included) ---
+  // --- 2. SIGN UP ---
   Future<String?> signUp({
     required String name,
     required String email,
     required String password,
     required String mobileNumber,
   }) async {
+    _isLoading = true;
+    notifyListeners();
     try {
-      // 1. Call Register
       final data = await _repo.registerUser(
         name: name,
         email: email,
@@ -63,31 +92,32 @@ class AuthService extends ChangeNotifier {
         mobileNumber: mobileNumber,
       );
 
-      // 2. Extract Tokens (Backend returns them in "tokens" key)
-      // Structure: { "customer": {...}, "tokens": { "access_token": "...", "refresh_token": "..." } }
       if (data.containsKey('tokens')) {
         final tokenMap = data['tokens'] as Map<String, dynamic>;
-        // Map manually or use AuthResponse.fromJson if structure matches
         final accessToken = tokenMap['access_token'] ?? tokenMap['accessToken'];
         final refreshToken = tokenMap['refresh_token'] ?? tokenMap['refreshToken'];
 
-        // 3. Auto-Login logic
         if (accessToken != null) {
           await _persistTokens(accessToken, refreshToken);
           await _fetchAndSetUser();
         }
       }
-
-      return null; // Success
+      return null;
     } on AppError catch (e) {
       return e.message;
     } catch (e) {
       return "Registration failed.";
+    } finally {
+      _isLoading = false;
+      notifyListeners();
     }
   }
 
   // --- 3. REFRESH TOKEN ---
   Future<AuthResponse?> tryRefreshToken() async {
+    // No change needed here, logic is fine
+    _isLoading = true;
+    notifyListeners();
     try {
       final prefs = await SharedPreferences.getInstance();
       final refreshToken = prefs.getString('refresh_token');
@@ -99,86 +129,60 @@ class AuthService extends ChangeNotifier {
 
       final newTokens = await _repo.refreshToken(refreshToken);
       await _persistTokens(newTokens.accessToken, newTokens.refreshToken);
+      await _fetchAndSetUser();
+
       return newTokens;
     } catch (e) {
-      // If refresh fails, force logout
       await signOut();
       return null;
+    } finally {
+      _isLoading = false;
+      notifyListeners();
     }
   }
 
   // --- 4. PROFILE & ROLE LOGIC ---
   Future<void> _fetchAndSetUser() async {
-    try {
-      final profile = await _repo.getUserProfile();
+    // This logic is solid.
+    final profile = await _repo.getUserProfile();
 
-      _customer = null;
-      _admin = null;
+    _customer = null;
+    _admin = null;
 
-      if (profile.role == "USER") {
-        _customer = Customer(
-          uid: profile.uid,
-          name: profile.name,
-          email: profile.email,
-          mobileNumber: profile.mobileNumber,
-          isMobileVerified: profile.isMobileVerified,
-        );
-      } else {
-        _admin = Admin(
-          uid: profile.uid,
-          name: profile.name,
-          email: profile.email,
-          role: profile.role,
-        );
-      }
-      notifyListeners();
-    } catch (e) {
-      // If fetching profile fails (e.g. 401), try refreshing token once
-      if (e is AuthenticationException) {
-        // Logic to try refresh token could go here, for now we sign out
-        await signOut();
-      }
+    if (profile.role == "USER") {
+      _customer = Customer(
+        uid: profile.uid,
+        name: profile.name,
+        email: profile.email,
+        mobileNumber: profile.mobileNumber,
+        isMobileVerified: profile.isMobileVerified,
+      );
+    } else {
+      _admin = Admin(
+        uid: profile.uid,
+        name: profile.name,
+        email: profile.email,
+        role: profile.role,
+      );
     }
-  }
-
-  // --- 5. FORGOT PASSWORD ---
-  Future<String> sendVerificationCode(String email) async {
-    try {
-      await _repo.forgotPassword(email);
-      return 'ok';
-    } on AppError catch (e) {
-      return e.message;
-    } catch (e) {
-      return 'Failed to send OTP.';
-    }
-  }
-
-  Future<String> resetPassword(String email, String otp, String newPass) async {
-    try {
-      await _repo.resetPassword(email, otp, newPass);
-      return 'success';
-    } catch (e) {
-      return 'fail';
-    }
+    // Note: We don't notifyListeners here anymore for loadUserFromStorage,
+    // because loadUserFromStorage handles the final notification.
+    // But for login/signup flows, the finally block handles it.
   }
 
   // --- 6. SESSION ---
   Future<void> signOut() async {
+    _isLoading = true;
+    notifyListeners();
+
     final prefs = await SharedPreferences.getInstance();
     await prefs.clear();
     _customer = null;
     _admin = null;
+    _dio.options.headers.remove('Authorization'); // Clear header too
+
+    _isLoading = false;
     notifyListeners();
-  }
-
-  Future<void> loadUserFromStorage() async {
-    final prefs = await SharedPreferences.getInstance();
-    final token = prefs.getString('access_token');
-
-    if (token != null) {
-      _dio.options.headers['Authorization'] = 'Bearer $token';
-      await _fetchAndSetUser();
-    }
   }
 
   Future<void> _persistTokens(String? access, String? refresh) async {
@@ -189,6 +193,39 @@ class AuthService extends ChangeNotifier {
     }
     if (refresh != null) {
       await prefs.setString('refresh_token', refresh);
+    }
+  }
+
+  // --- 5. FORGOT PASSWORD ---
+  Future<String> sendVerificationCode(String email) async {
+    _isLoading = true;
+    notifyListeners();
+    try {
+      await _repo.forgotPassword(email);
+      _isLoading = false;
+      notifyListeners();
+      return 'ok';
+    } on AppError catch (e) {
+      return e.message;
+    } catch (e) {
+      return 'Failed to send OTP.';
+    }finally{
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
+
+  Future<String> resetPassword(String email, String otp, String newPass) async {
+    _isLoading = true;
+    notifyListeners();
+    try {
+      await _repo.resetPassword(email, otp, newPass);
+      return 'success';
+    } catch (e) {
+      return 'fail';
+    }finally{
+      _isLoading = false;
+      notifyListeners();
     }
   }
 
