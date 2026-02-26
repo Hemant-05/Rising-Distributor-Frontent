@@ -30,8 +30,9 @@ class ServerDownScreen extends StatelessWidget {
               ),
               const SizedBox(height: 16),
               Text(
-                'Because we use a free server, it goes to sleep when inactive. Please wait 1 to 2 minutes for it to boot up, then try again.',
-                style: simple_text_style(
+                'Because we have in initial stage, it goes to sleep when inactive. Please wait 1 to 2 minutes for it to boot up, then try again.',
+                style: TextStyle(
+                  fontFamily: 'Sen',
                   fontSize: 16,
                   color: Colors.grey.shade600,
                 ),

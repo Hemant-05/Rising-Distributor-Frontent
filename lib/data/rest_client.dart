@@ -20,6 +20,7 @@ import 'package:raising_india/models/model/cart.dart';
 import 'package:raising_india/models/model/category.dart';
 import 'package:raising_india/models/model/coupon.dart';
 import 'package:raising_india/models/model/customer.dart';
+import 'package:raising_india/models/model/notification.dart';
 import 'package:raising_india/models/model/order.dart';
 import 'package:raising_india/models/model/product.dart';
 import 'package:raising_india/models/model/product_review.dart';
@@ -255,6 +256,12 @@ abstract class RestClient {
     @Query("title") String title,
     @Query("body") String body,
   );
+
+  @GET("/admin/notifications")
+  Future<ApiResponse<List<NotificationModel>>> getAdminNotifications();
+
+  @PUT("/admin/notifications/{id}/read")
+  Future<ApiResponse<void>> markNotificationRead(@Path("id") String id);
 
   // ===========================================================================
   // 11. ORDER CONTROLLER
