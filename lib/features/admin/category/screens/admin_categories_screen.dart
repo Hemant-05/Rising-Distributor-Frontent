@@ -65,7 +65,7 @@ class _AdminCategoriesScreenState extends State<AdminCategoriesScreen> {
       body: Consumer<CategoryService>(
         builder: (context, categoryService, child) {
           if (categoryService.isLoading && isRoot) {
-            return const Center(child: CircularProgressIndicator());
+            return Center(child: CircularProgressIndicator(color: AppColour.primary,));
           }
 
           // Decide which list to show

@@ -1,11 +1,13 @@
-/*
-// lib/screens/admin/sales_analytics_screen.dart
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:provider/provider.dart';
 import 'package:raising_india/comman/back_button.dart';
 import 'package:raising_india/comman/simple_text_style.dart';
 import 'package:raising_india/constant/AppColour.dart';
+import 'package:raising_india/data/services/analytics_service.dart';
 import 'package:raising_india/features/admin/sales_analytics/widget/sales_chart_widget.dart';
+import 'package:raising_india/models/model/analytics_response.dart';
+
+
 class SalesAnalyticsScreen extends StatefulWidget {
   const SalesAnalyticsScreen({super.key});
 
@@ -18,20 +20,33 @@ class _SalesAnalyticsScreenState extends State<SalesAnalyticsScreen>
 
   late TabController _tabController;
   bool _isBarChart = false;
+  AnalyticsFilter _currentFilter = AnalyticsFilter.DAILY;
 
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 3, vsync: this);
+    _tabController = TabController(length: 4, vsync: this);
+
+    // Fetch initial data
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      context.read<AnalyticsService>().fetchAnalytics(_currentFilter);
+    });
+
+    // Listen to tab changes to fetch new data
     _tabController.addListener(() {
       if (!_tabController.indexIsChanging) {
-        final period = [
-          SalesTimePeriod.day,
-          SalesTimePeriod.week,
-          SalesTimePeriod.month
+        final filter = [
+          AnalyticsFilter.DAILY,
+          AnalyticsFilter.WEEKLY,
+          AnalyticsFilter.MONTHLY,
+          AnalyticsFilter.ALL_TIME
         ][_tabController.index];
 
-        context.read<SalesAnalyticsBloc>().add(ChangeSalesTimePeriod(period));
+        setState(() {
+          _currentFilter = filter;
+        });
+
+        context.read<AnalyticsService>().fetchAnalytics(_currentFilter);
       }
     });
   }
@@ -41,26 +56,22 @@ class _SalesAnalyticsScreenState extends State<SalesAnalyticsScreen>
     return Scaffold(
       backgroundColor: Colors.grey.shade50,
       appBar: _buildAppBar(),
-      body: BlocConsumer<SalesAnalyticsBloc, SalesAnalyticsState>(
-        listener: (context, state) {
-          if (state is SalesAnalyticsError) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text(state.message),
-                backgroundColor: Colors.red,
-              ),
-            );
-          }
-        },
-        builder: (context, state) {
-          if (state is SalesAnalyticsLoading) {
+      body: Consumer<AnalyticsService>(
+        builder: (context, analyticsService, _) {
+
+          if (analyticsService.isLoading) {
             return _buildLoadingState();
-          } else if (state is SalesAnalyticsLoaded) {
-            return _buildLoadedState(state);
-          } else if (state is SalesAnalyticsError) {
-            return _buildErrorState(state.message);
           }
-          return Container();
+
+          if (analyticsService.error != null && analyticsService.analyticsData == null) {
+            return _buildErrorState(analyticsService.error!);
+          }
+
+          if (analyticsService.analyticsData != null) {
+            return _buildLoadedState(analyticsService.analyticsData!);
+          }
+
+          return const SizedBox.shrink();
         },
       ),
     );
@@ -76,7 +87,7 @@ class _SalesAnalyticsScreenState extends State<SalesAnalyticsScreen>
         children: [
           back_button(),
           const SizedBox(width: 8),
-          Text('Sales Analytics',style: simple_text_style(fontSize: 20),),
+          Text('Sales Analytics', style: simple_text_style(fontSize: 20)),
         ],
       ),
       actions: [
@@ -100,6 +111,7 @@ class _SalesAnalyticsScreenState extends State<SalesAnalyticsScreen>
           Tab(text: 'Daily'),
           Tab(text: 'Weekly'),
           Tab(text: 'Monthly'),
+          Tab(text: 'ALL TIME',)
         ],
       ),
     );
@@ -151,7 +163,7 @@ class _SalesAnalyticsScreenState extends State<SalesAnalyticsScreen>
           const SizedBox(height: 24),
           ElevatedButton(
             onPressed: () {
-              context.read<SalesAnalyticsBloc>().add(LoadSalesAnalytics());
+              context.read<AnalyticsService>().fetchAnalytics(_currentFilter);
             },
             style: ElevatedButton.styleFrom(
               backgroundColor: AppColour.primary,
@@ -163,50 +175,52 @@ class _SalesAnalyticsScreenState extends State<SalesAnalyticsScreen>
     );
   }
 
-  Widget _buildLoadedState(SalesAnalyticsLoaded state) {
+  Widget _buildLoadedState(AnalyticsResponse data) {
     return RefreshIndicator(
-      backgroundColor: AppColour.white,
+      backgroundColor: Colors.white,
       color: AppColour.primary,
       onRefresh: () async {
-        context.read<SalesAnalyticsBloc>().add(RefreshSalesData());
+        await context.read<AnalyticsService>().fetchAnalytics(_currentFilter);
       },
       child: SingleChildScrollView(
-        physics: const BouncingScrollPhysics(),
+        physics: const AlwaysScrollableScrollPhysics(parent: BouncingScrollPhysics()),
         padding: const EdgeInsets.all(16),
         child: Column(
           children: [
             // Analytics Summary Cards
-            _buildSummaryCards(state.currentPeriodStats),
+            _buildSummaryCards(data),
             const SizedBox(height: 24),
 
             // Main Chart
             SalesChartWidget(
-              salesData: state.currentPeriodData,
-              period: state.currentPeriod,
+              chartData: data.chartData ?? [],
+              filter: _currentFilter,
               isBarChart: _isBarChart,
             ),
             const SizedBox(height: 24),
 
             // Insights Section
-            _buildInsightsSection(state),
+            _buildInsightsSection(data),
             const SizedBox(height: 24),
 
             // Performance Metrics
-            _buildPerformanceMetrics(state.currentPeriodStats),
+            _buildPerformanceMetrics(data),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildSummaryCards(PeriodStatsModel periodStats) {
+  Widget _buildSummaryCards(AnalyticsResponse data) {
+    final growth = data.revenueGrowthPercentage ?? 0.0;
+
     return Row(
       children: [
         Expanded(
           child: _buildSummaryCard(
             title: 'Total Revenue',
-            value: '₹${_formatNumber(periodStats.totalRevenue)}',
-            subtitle: periodStats.periodLabel,
+            value: '₹${_formatNumber(data.totalRevenue ?? 0)}',
+            subtitle: _getPeriodLabel(),
             icon: Icons.attach_money,
             color: Colors.green,
           ),
@@ -215,14 +229,10 @@ class _SalesAnalyticsScreenState extends State<SalesAnalyticsScreen>
         Expanded(
           child: _buildSummaryCard(
             title: 'Growth Rate',
-            value: '${periodStats.growthPercentage.toStringAsFixed(1)}%',
+            value: '${growth.toStringAsFixed(1)}%',
             subtitle: 'vs previous period',
-            icon: periodStats.growthPercentage >= 0
-                ? Icons.trending_up
-                : Icons.trending_down,
-            color: periodStats.growthPercentage >= 0
-                ? Colors.green
-                : Colors.red,
+            icon: growth >= 0 ? Icons.trending_up : Icons.trending_down,
+            color: growth >= 0 ? Colors.green : Colors.red,
           ),
         ),
       ],
@@ -262,7 +272,6 @@ class _SalesAnalyticsScreenState extends State<SalesAnalyticsScreen>
                 ),
                 child: Icon(icon, color: color, size: 20),
               ),
-              const Spacer(),
             ],
           ),
           const SizedBox(height: 16),
@@ -294,7 +303,11 @@ class _SalesAnalyticsScreenState extends State<SalesAnalyticsScreen>
     );
   }
 
-  Widget _buildInsightsSection(SalesAnalyticsLoaded state) {
+  Widget _buildInsightsSection(AnalyticsResponse data) {
+    final insights = _generateInsights(data);
+
+    if (insights.isEmpty) return const SizedBox.shrink();
+
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(20),
@@ -327,7 +340,7 @@ class _SalesAnalyticsScreenState extends State<SalesAnalyticsScreen>
           ),
           const SizedBox(height: 16),
 
-          ..._generateInsights(state).map((insight) => Padding(
+          ...insights.map((insight) => Padding(
             padding: const EdgeInsets.only(bottom: 8),
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -359,7 +372,7 @@ class _SalesAnalyticsScreenState extends State<SalesAnalyticsScreen>
     );
   }
 
-  Widget _buildPerformanceMetrics(PeriodStatsModel periodStats) {
+  Widget _buildPerformanceMetrics(AnalyticsResponse data) {
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(20),
@@ -394,7 +407,7 @@ class _SalesAnalyticsScreenState extends State<SalesAnalyticsScreen>
                   borderRadius: BorderRadius.circular(20),
                 ),
                 child: Text(
-                  periodStats.periodLabel, // ✅ Show selected period
+                  _getPeriodLabel(),
                   style: simple_text_style(
                     color: AppColour.primary,
                     fontSize: 12,
@@ -411,7 +424,7 @@ class _SalesAnalyticsScreenState extends State<SalesAnalyticsScreen>
               Expanded(
                 child: _buildMetricItem(
                   'Total Orders',
-                  periodStats.totalOrders.toString(),
+                  '${data.totalOrders ?? 0}',
                   Icons.shopping_cart_outlined,
                   Colors.blue,
                 ),
@@ -419,7 +432,7 @@ class _SalesAnalyticsScreenState extends State<SalesAnalyticsScreen>
               Expanded(
                 child: _buildMetricItem(
                   'Avg Order Value',
-                  '₹${_formatNumber(periodStats.averageOrderValue)}',
+                  '₹${_formatNumber(data.averageOrderValue ?? 0)}',
                   Icons.account_balance_wallet_outlined,
                   Colors.green,
                 ),
@@ -465,45 +478,60 @@ class _SalesAnalyticsScreenState extends State<SalesAnalyticsScreen>
     );
   }
 
-  List<String> _generateInsights(SalesAnalyticsLoaded state) {
+  List<String> _generateInsights(AnalyticsResponse data) {
     final insights = <String>[];
-    final periodStats = state.currentPeriodStats; // ✅ Use period-specific stats
+    final growth = data.revenueGrowthPercentage ?? 0.0;
+    final periodName = _getPeriodName();
 
-    if (periodStats.growthPercentage > 0) {
-      insights.add('Sales are growing by ${periodStats.growthPercentage.toStringAsFixed(1)}% compared to the previous ${_getPeriodName(state.currentPeriod)}');
-    } else {
-      insights.add('Sales decreased by ${periodStats.growthPercentage.abs().toStringAsFixed(1)}% compared to the previous ${_getPeriodName(state.currentPeriod)}');
+    if (growth > 0) {
+      insights.add('Sales are growing by ${growth.toStringAsFixed(1)}% compared to the previous $periodName');
+    } else if (growth < 0) {
+      insights.add('Sales decreased by ${growth.abs().toStringAsFixed(1)}% compared to the previous $periodName');
     }
 
-    if (periodStats.averageOrderValue > 500) {
-      insights.add('High average order value indicates strong customer spending for this ${_getPeriodName(state.currentPeriod)}');
+    if ((data.averageOrderValue ?? 0) > 500) {
+      insights.add('High average order value indicates strong customer spending for this $periodName');
     }
 
-    final bestPerformance = state.currentPeriodData.isNotEmpty
-        ? state.currentPeriodData.reduce((a, b) => a.amount > b.amount ? a : b)
-        : null;
-
-    if (bestPerformance != null) {
-      insights.add('Best performing ${_getPeriodName(state.currentPeriod)} had ₹${_formatNumber(bestPerformance.amount)} in sales');
+    if (data.chartData != null && data.chartData!.isNotEmpty) {
+      final bestPerformance = data.chartData!.reduce((a, b) => (a.revenue ?? 0) > (b.revenue ?? 0) ? a : b);
+      insights.add('Best performing $periodName was ${bestPerformance.label} with ₹${_formatNumber(bestPerformance.revenue ?? 0)} in sales');
     }
 
     return insights;
   }
 
-  String _getPeriodName(SalesTimePeriod period) {
-    switch (period) {
-      case SalesTimePeriod.day:
-        return 'period';
-      case SalesTimePeriod.week:
+  String _getPeriodLabel() {
+    switch (_currentFilter) {
+      case AnalyticsFilter.DAILY:
+        return 'Last 7 Days';
+      case AnalyticsFilter.WEEKLY:
+        return 'Last 4 Weeks';
+      case AnalyticsFilter.MONTHLY:
+        return 'Last 12 Months';
+      case AnalyticsFilter.ALL_TIME:
+        return 'All Time';
+    }
+  }
+
+  String _getPeriodName() {
+    switch (_currentFilter) {
+      case AnalyticsFilter.DAILY:
+        return 'day';
+      case AnalyticsFilter.WEEKLY:
         return 'week';
-      case SalesTimePeriod.month:
+      case AnalyticsFilter.MONTHLY:
         return 'month';
+      case AnalyticsFilter.ALL_TIME:
+        return 'period';
     }
   }
 
   String _formatNumber(double value) {
-    if (value >= 1000000) {
-      return '${(value / 1000000).toStringAsFixed(1)}M';
+    if (value >= 10000000) {
+      return '${(value / 10000000).toStringAsFixed(1)}Cr';
+    } else if (value >= 100000) {
+      return '${(value / 100000).toStringAsFixed(1)}L';
     } else if (value >= 1000) {
       return '${(value / 1000).toStringAsFixed(1)}K';
     }
@@ -516,4 +544,3 @@ class _SalesAnalyticsScreenState extends State<SalesAnalyticsScreen>
     super.dispose();
   }
 }
-*/

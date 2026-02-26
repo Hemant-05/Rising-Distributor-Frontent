@@ -34,8 +34,10 @@ class _LowStockAlertScreenState extends State<LowStockAlertScreen>
         curve: Curves.easeInOut,
       ),
     );
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _loadLowStockProducts();
+    });
 
-    _loadLowStockProducts();
     _fadeAnimationController.forward();
   }
 
@@ -67,7 +69,7 @@ class _LowStockAlertScreenState extends State<LowStockAlertScreen>
           ),
           floatingActionButton: FloatingActionButton.extended(
             onPressed: _loadLowStockProducts,
-            backgroundColor: AppColour.primary,
+            backgroundColor: AppColour.red.withOpacity(0.8),
             icon: Icon(Icons.refresh, color: Colors.white),
             label: Text(
               'Refresh',
@@ -319,7 +321,7 @@ class _LowStockAlertScreenState extends State<LowStockAlertScreen>
           title,
           style: simple_text_style(
             color: Colors.white.withOpacity(0.9),
-            fontSize: 10,
+            fontSize: 14,
           ),
           textAlign: TextAlign.center,
         ),

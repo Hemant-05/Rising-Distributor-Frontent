@@ -7,7 +7,6 @@ import 'package:shimmer/shimmer.dart'; // ✅ Added Shimmer package
 import 'package:raising_india/comman/simple_text_style.dart';
 import 'package:raising_india/constant/AppColour.dart';
 import 'package:raising_india/data/services/admin_service.dart';
-import 'package:raising_india/data/services/product_service.dart';
 import 'package:raising_india/features/admin/product/screens/admin_product_details_screen.dart';
 import 'package:raising_india/models/model/product.dart';
 

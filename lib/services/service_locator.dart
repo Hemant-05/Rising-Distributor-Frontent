@@ -1,8 +1,10 @@
 import 'package:dio/dio.dart';
+import 'package:flutter/material.dart';
 import 'package:get_it/get_it.dart';
 import 'package:raising_india/data/rest_client.dart';
 import 'package:raising_india/data/services/auth_service.dart';
 import 'package:raising_india/features/admin/services/admin_image_service.dart';
+import 'package:raising_india/screens/server_down_screen.dart';
 import '../constant/ConString.dart' as ConString;
 import '../data/services/address_service.dart';
 import '../data/services/admin_service.dart';
@@ -19,8 +21,10 @@ import '../data/services/product_service.dart';
 import '../data/services/review_service.dart';
 import '../data/services/user_service.dart';
 import '../data/services/wishlist_service.dart';
+import '../main.dart';
 
 final getIt = GetIt.instance;
+bool _isServerDownScreenShowing = false;
 
 void setupServiceLocator() {
   // 1. Register Dio (The Engine)
@@ -35,6 +39,30 @@ void setupServiceLocator() {
   // Note: Order matters. AuthInterceptor should often be first to add headers.
   dio.interceptors.add(AuthInterceptor());
   dio.interceptors.add(LoggingInterceptor());
+  dio.interceptors.add(
+    InterceptorsWrapper(
+      onError: (DioException e, handler) {
+        // Check if the error is a Timeout or Connection issue
+        if (e.type == DioExceptionType.connectionTimeout ||
+            e.type == DioExceptionType.receiveTimeout ||
+            e.type == DioExceptionType.connectionError) {
+
+          // If the screen isn't already showing, show it!
+          if (!_isServerDownScreenShowing && navigatorKey.currentState != null) {
+            _isServerDownScreenShowing = true;
+
+            navigatorKey.currentState?.push(
+              MaterialPageRoute(builder: (_) => const ServerDownScreen()),
+            ).then((_) {
+              // When the user taps "Try Again" and the screen pops, reset the flag
+              _isServerDownScreenShowing = false;
+            });
+          }
+        }
+        return handler.next(e);
+      },
+    ),
+  );
 
   getIt.registerLazySingleton<Dio>(() => dio);
   getIt.registerLazySingleton<RestClient>(() => RestClient(getIt<Dio>()));

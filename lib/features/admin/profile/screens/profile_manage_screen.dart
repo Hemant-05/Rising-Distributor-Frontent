@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:provider/provider.dart';
+import 'package:raising_india/comman/simple_text_style.dart';
 import 'package:raising_india/constant/AppColour.dart';
 import 'package:raising_india/constant/ConPath.dart';
 import 'package:raising_india/data/services/auth_service.dart';
@@ -28,9 +29,10 @@ class _ProfileManageScreenState extends State<ProfileManageScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      appBar: _buildStunningAppBar(),
       body: Column(
         children: [
-          upper_widget(50), // Example balance, replace with actual data
+          // upper_widget(50), // Example balance, replace with actual data
           Expanded(
             flex: 3,
             child: Container(
@@ -63,12 +65,12 @@ class _ProfileManageScreenState extends State<ProfileManageScreen> {
                           ),
                           optionsListTileWidget(
                             () {
-                             /*Navigator.push(
+                             Navigator.push(
                                 context,
                                 MaterialPageRoute(
                                   builder: (_) => const SalesAnalyticsScreen(),
                                 ),
-                              );*/
+                              );
                             },
                             receipt_svg,
                             'Sale Analytics',
@@ -185,6 +187,50 @@ class _ProfileManageScreenState extends State<ProfileManageScreen> {
                   ],
                 ),
               ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  PreferredSizeWidget _buildStunningAppBar() {
+    return AppBar(
+      elevation: 0,
+      backgroundColor: Colors.transparent,
+      flexibleSpace: Container(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            colors: [AppColour.primary, AppColour.primary.withOpacity(0.8)],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+        ),
+      ),
+      title: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: Colors.white.withOpacity(0.2),
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: const Icon(Icons.person, color: Colors.white, size: 24),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Profile Management',
+                  style: simple_text_style(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold),
+                ),
+                Text(
+                  'Manage your profile & entire system',
+                  style: simple_text_style(color: Colors.white.withOpacity(0.9), fontSize: 12),
+                ),
+              ],
             ),
           ),
         ],
