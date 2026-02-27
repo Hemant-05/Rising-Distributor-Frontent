@@ -17,6 +17,7 @@ import 'package:raising_india/features/on_boarding/screens/welcome_screen.dart';
 import 'package:raising_india/features/user/coupon/screens/coupons_screen.dart';
 import 'package:raising_india/features/user/address/screens/select_address_screen.dart';
 import 'package:raising_india/features/user/order/screens/order_screen.dart';
+import 'package:raising_india/features/user/profile/screens/personal_info_screen.dart';
 import 'package:raising_india/screens/policy_screen.dart';
 
 class ProfileScreen extends StatelessWidget {
@@ -47,57 +48,62 @@ class ProfileScreen extends StatelessWidget {
             child: Column(
               children: [
                 // --- PROFILE HEADER ---
-                SizedBox(
-                  height: 150,
-                  width: double.infinity,
-                  child: user == null
-                      ? const Center(child: CircularProgressIndicator())
-                      : Row(
-                    crossAxisAlignment: CrossAxisAlignment.center,
-                    children: [
-                      Container(
-                        height: 100,
-                        width: 100,
-                        decoration: BoxDecoration(
-                          color: AppColour.primary,
-                          borderRadius: BorderRadius.circular(100),
+                InkWell(
+                  onTap: (){
+                    Navigator.push(context, MaterialPageRoute(builder: (context) => PersonalInfoScreen(),));
+                  },
+                  child: SizedBox(
+                    height: 150,
+                    width: double.infinity,
+                    child: user == null
+                        ? const Center(child: CircularProgressIndicator())
+                        : Row(
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      children: [
+                        Container(
+                          height: 100,
+                          width: 100,
+                          decoration: BoxDecoration(
+                            color: AppColour.primary,
+                            borderRadius: BorderRadius.circular(100),
+                          ),
+                          child: Icon(
+                            Icons.person_outline,
+                            color: AppColour.white,
+                            size: 50,
+                          ),
                         ),
-                        child: Icon(
-                          Icons.person_outline,
-                          color: AppColour.white,
-                          size: 50,
+                        const SizedBox(width: 15),
+                        Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              user.name ?? "User",
+                              style: simple_text_style(
+                                fontSize: 24,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            const SizedBox(height: 10),
+                            Text(
+                              user.email ?? "",
+                              style: simple_text_style(
+                                fontSize: 14,
+                                color: AppColour.lightGrey,
+                              ),
+                            ),
+                            const SizedBox(height: 10),
+                            Text(
+                              user.mobileNumber ?? "No Number",
+                              style: simple_text_style(
+                                color: AppColour.lightGrey,
+                              ),
+                            ),
+                          ],
                         ),
-                      ),
-                      const SizedBox(width: 15),
-                      Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            user.name ?? "User",
-                            style: simple_text_style(
-                              fontSize: 24,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                          const SizedBox(height: 10),
-                          Text(
-                            user.email ?? "",
-                            style: simple_text_style(
-                              fontSize: 14,
-                              color: AppColour.lightGrey,
-                            ),
-                          ),
-                          const SizedBox(height: 10),
-                          Text(
-                            user.mobileNumber ?? "No Number",
-                            style: simple_text_style(
-                              color: AppColour.lightGrey,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
                 ),
                 const SizedBox(height: 8),

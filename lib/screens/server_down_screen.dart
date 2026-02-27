@@ -50,8 +50,6 @@ class ServerDownScreen extends StatelessWidget {
                     ),
                   ),
                   onPressed: () {
-                    // Just pop the screen. If the user does an action and it fails again,
-                    // the interceptor will automatically bring this screen back.
                     Navigator.pop(context);
                   },
                   child: Text(
