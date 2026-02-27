@@ -13,15 +13,18 @@ class FillAddressDetailsScreen extends StatefulWidget {
   final Map<String, dynamic> data;
 
   @override
-  State<FillAddressDetailsScreen> createState() => _FillAddressDetailsScreenState();
+  State<FillAddressDetailsScreen> createState() =>
+      _FillAddressDetailsScreenState();
 }
 
 class _FillAddressDetailsScreenState extends State<FillAddressDetailsScreen> {
   final TextEditingController titleController = TextEditingController();
   final TextEditingController recipientNameController = TextEditingController();
-  final TextEditingController recipientPhoneController = TextEditingController();
+  final TextEditingController recipientPhoneController =
+      TextEditingController();
 
   bool _isLoading = false;
+  bool _isPrimary = false;
 
   void _onAddAddress() async {
     String title = titleController.text.trim();
@@ -55,6 +58,7 @@ class _FillAddressDetailsScreenState extends State<FillAddressDetailsScreen> {
       city: widget.data['city'],
       state: widget.data['state'],
       zipCode: widget.data['zipCode'],
+      primary: _isPrimary,
     );
 
     // Call Service
@@ -72,7 +76,10 @@ class _FillAddressDetailsScreenState extends State<FillAddressDetailsScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           backgroundColor: AppColour.red,
-          content: Text(error, style: simple_text_style(color: AppColour.white)),
+          content: Text(
+            error,
+            style: simple_text_style(color: AppColour.white),
+          ),
         ),
       );
     }
@@ -105,24 +112,96 @@ class _FillAddressDetailsScreenState extends State<FillAddressDetailsScreen> {
               const SizedBox(height: 10),
               _buildTextField(recipientPhoneController, 'Number'),
               const SizedBox(height: 10),
+              GestureDetector(
+                onTap: () {
+                  setState(() => _isPrimary = !_isPrimary);
+                },
+                child: AnimatedContainer(
+                  duration: const Duration(milliseconds: 250),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 12,
+                  ),
+                  decoration: BoxDecoration(
+                    // Soft background tint when active
+                    color: _isPrimary
+                        ? AppColour.primary.withOpacity(0.08)
+                        : AppColour.white,
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                      // Dynamic border color
+                      color: _isPrimary
+                          ? AppColour.primary
+                          : Colors.grey.shade300,
+                      width: 1.5,
+                    ),
+                    boxShadow: [
+                      if (!_isPrimary)
+                        BoxShadow(
+                          color: Colors.grey.withOpacity(0.1),
+                          blurRadius: 8,
+                          offset: const Offset(0, 3),
+                        ),
+                    ],
+                  ),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Set as Primary',
+                              style: simple_text_style(
+                                fontSize: 16,
+                                fontWeight: FontWeight.bold,
+                                color: _isPrimary
+                                    ? AppColour.primary
+                                    : Colors.black87,
+                              ),
+                            ),
+                            const SizedBox(height: 2),
+                            Text(
+                              'Make this your default delivery address',
+                              style: simple_text_style(
+                                fontSize: 12,
+                                isEllipsisAble: false,
+                                color: Colors.grey.shade600,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
 
+                      Switch.adaptive(
+                        value: _isPrimary,
+                        activeColor: AppColour.primary,
+                        inactiveTrackColor: Colors.grey.shade200,
+                        onChanged: (value) {
+                          setState(() => _isPrimary = value);
+                        },
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              const SizedBox(height: 20),
               ElevatedButton(
                 style: elevated_button_style(width: 200),
                 onPressed: _isLoading ? null : _onAddAddress,
                 child: _isLoading
                     ? Center(
-                  child: CircularProgressIndicator(
-                    color: AppColour.white,
-                    constraints: const BoxConstraints(maxWidth: 30, maxHeight: 30),
-                  ),
-                )
+                        child: CircularProgressIndicator(
+                          color: AppColour.white,
+                        ),
+                      )
                     : Text(
-                  "ADD ADDRESS",
-                  style: simple_text_style(
-                    color: AppColour.white,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
+                        "ADD ADDRESS",
+                        style: simple_text_style(
+                          color: AppColour.white,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
               ),
             ],
           ),

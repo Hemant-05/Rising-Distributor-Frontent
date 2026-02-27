@@ -4,6 +4,7 @@ import 'package:path_provider/path_provider.dart';
 import 'package:raising_india/data/repositories/order_repo.dart';
 import 'package:raising_india/error/exceptions.dart';
 import 'package:raising_india/models/model/order.dart';
+import 'package:retrofit/dio.dart';
 // import 'package:open_filex/open_filex.dart'; // Add this if you want to auto-open PDF
 
 
@@ -69,9 +70,9 @@ class OrderService extends ChangeNotifier {
   }
 
   // --- 4. Cancel Order ---
-  Future<String?> cancelOrder(int orderId) async {
+  Future<String?> cancelOrder(int orderId, String reason) async {
     try {
-      await _repo.cancelOrder(orderId);
+      await _repo.cancelOrder(orderId, reason);
       await fetchMyOrders(); // Refresh UI
       return null;
     } on AppError catch (e) {

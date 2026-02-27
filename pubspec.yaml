@@ -70,6 +70,8 @@ dependencies:
   retrofit: ^4.9.2
   json_annotation: ^4.10.0
   shimmer: ^3.0.0
+  latlong2: ^0.9.1
+  flutter_map: ^8.2.2
 
 
 dev_dependencies:

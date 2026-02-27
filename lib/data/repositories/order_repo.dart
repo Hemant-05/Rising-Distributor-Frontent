@@ -1,5 +1,6 @@
 import 'dart:typed_data';
 import 'package:raising_india/error/exceptions.dart';
+import 'package:raising_india/models/dto/cancel_request.dart';
 import 'package:raising_india/models/model/order.dart';
 
 import '../../../data/rest_client.dart';
@@ -60,9 +61,10 @@ class OrderRepository with RepoErrorHandler {
   }
 
   // 5. Cancel Order
-  Future<Order> cancelOrder(int orderId) async {
+  Future<Order> cancelOrder(int orderId, String reason) async {
     try {
-      final response = await _client.cancelOrder(orderId);
+      final requestBody = CancelRequest(reason: reason);
+      final response = await _client.cancelOrder(orderId, requestBody);
       return response.data!;
     } catch (e) {
       throw handleError(e);

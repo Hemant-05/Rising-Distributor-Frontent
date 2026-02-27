@@ -15,7 +15,7 @@ class Address {
   final double? latitude;
   final double? longitude;
   final String? zipCode;
-  final bool? isPrimary;
+  final bool? primary;
 
   Address({
     this.id,
@@ -29,7 +29,7 @@ class Address {
     this.latitude,
     this.longitude,
     this.zipCode,
-    this.isPrimary,
+    this.primary,
   });
 
   factory Address.fromJson(Map<String, dynamic> json) => _$AddressFromJson(json);

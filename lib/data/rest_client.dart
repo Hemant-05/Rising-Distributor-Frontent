@@ -25,7 +25,8 @@ import 'package:raising_india/models/model/order.dart';
 import 'package:raising_india/models/model/product.dart';
 import 'package:raising_india/models/model/product_review.dart';
 import 'package:raising_india/models/model/wishlist.dart';
-import 'package:retrofit/retrofit.dart';
+import 'package:retrofit/retrofit.dart' hide CancelRequest;
+import 'package:raising_india/models/dto/cancel_request.dart';
 part 'rest_client.g.dart';
 
 @RestApi(baseUrl: "https://rising-distributor.onrender.com/api")
@@ -285,7 +286,10 @@ abstract class RestClient {
   Future<ApiResponse<List<Order>>> getMyOrders();
 
   @POST("/orders/cancel/{orderId}")
-  Future<ApiResponse<Order>> cancelOrder(@Path("orderId") int orderId);
+  Future<ApiResponse<Order>> cancelOrder(
+      @Path("orderId") int orderId,
+      @Body() CancelRequest request,
+      );
 
   @GET("/orders/{id}/invoice")
   @DioResponseType(ResponseType.bytes)

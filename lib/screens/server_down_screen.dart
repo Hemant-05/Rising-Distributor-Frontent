@@ -20,7 +20,7 @@ class ServerDownScreen extends StatelessWidget {
               Icon(Icons.cloud_off_rounded, size: 100, color: Colors.orange.shade300),
               const SizedBox(height: 24),
               Text(
-                'Server is Waking Up ☕',
+                'Server is Down 😴',
                 style: simple_text_style(
                   fontSize: 24,
                   fontWeight: FontWeight.bold,
@@ -30,9 +30,9 @@ class ServerDownScreen extends StatelessWidget {
               ),
               const SizedBox(height: 16),
               Text(
-                'Because we have in initial stage, it goes to sleep when inactive. Please wait 1 to 2 minutes for it to boot up, then try again.',
-                style: TextStyle(
-                  fontFamily: 'Sen',
+                'Because we have in initial stage,\nSo we are working on our server.\nPlease wait for some time and then try again.',
+                style: simple_text_style(
+                  isEllipsisAble: false,
                   fontSize: 16,
                   color: Colors.grey.shade600,
                 ),
@@ -52,7 +52,7 @@ class ServerDownScreen extends StatelessWidget {
                   onPressed: () {
                     // Just pop the screen. If the user does an action and it fails again,
                     // the interceptor will automatically bring this screen back.
-                    Navigator.of(context).pop();
+                    Navigator.pop(context);
                   },
                   child: Text(
                     'I\'ve waited, Try Again',

@@ -38,7 +38,7 @@ Map<String, dynamic> _$ProductRequestToJson(ProductRequest instance) =>
       'mrp': instance.mrp,
       'stockQuantity': instance.stockQuantity,
       'lowStockQuantity': instance.lowStockQuantity,
-      'available': instance.isAvailable,
+      'isAvailable': instance.isAvailable,
       'isDiscountable': instance.isDiscountable,
       'photosList': instance.photosList,
       'rating': instance.rating,

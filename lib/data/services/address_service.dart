@@ -16,7 +16,16 @@ class AddressService extends ChangeNotifier {
     _isLoading = true;
     notifyListeners();
     try {
-      _addresses = await _repo.getAllAddresses();
+      final fetchedList = await _repo.getAllAddresses();
+
+      // ✅ Sort the list so the primary address is always at the top!
+      fetchedList.sort((a, b) {
+        if (a.primary == true && b.primary != true) return -1;
+        if (a.primary != true && b.primary == true) return 1;
+        return 0;
+      });
+
+      _addresses = fetchedList;
       return null;
     } on AppError catch (e) {
       return e.message;

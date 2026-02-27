@@ -104,7 +104,7 @@ Widget onGoingWidget(List<Order> list) {
                             ),
                             _verticalDivider(),
                             Text(
-                              '${items.length} Items',
+                              '${items.length} ${(items.length > 1) ? 'Items' : 'Item'}',
                               style: simple_text_style(color: AppColour.lightGrey, fontSize: 12),
                             ),
                             _verticalDivider(),
@@ -136,7 +136,7 @@ Widget onGoingWidget(List<Order> list) {
                       onPressed: () {
                         showCancelOrderDialog(context, (reason) async {
                           // Call Service to Cancel
-                          final error = await context.read<OrderService>().cancelOrder(order.id!);
+                          final error = await context.read<OrderService>().cancelOrder(order.id!, reason);
                           if (error == null) {
                             ScaffoldMessenger.of(context).showSnackBar(
                               const SnackBar(content: Text("Order Cancelled")),
@@ -150,7 +150,7 @@ Widget onGoingWidget(List<Order> list) {
                       },
                       child: Text(
                         'Cancel',
-                        style: simple_text_style(color: Colors.red, fontWeight: FontWeight.bold),
+                        style: simple_text_style(color: AppColour.white, fontWeight: FontWeight.bold),
                       ),
                     ),
                   ),

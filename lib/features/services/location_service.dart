@@ -1,12 +1,13 @@
 import 'package:geolocator/geolocator.dart';
 import 'package:geocoding/geocoding.dart';
-import 'package:google_maps_flutter/google_maps_flutter.dart';
+import 'package:latlong2/latlong.dart'; // ✅ Swapped to latlong2
 
 class LocationService {
-  // Check and request location permissions
+
   static Future<bool> checkPermissions() async {
     bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
     if (!serviceEnabled) {
+      await Geolocator.openLocationSettings();
       return false;
     }
 
@@ -19,6 +20,7 @@ class LocationService {
     }
 
     if (permission == LocationPermission.deniedForever) {
+      await Geolocator.openAppSettings();
       return false;
     }
     return true;
@@ -33,14 +35,15 @@ class LocationService {
 
       if (placemarks.isNotEmpty) {
         final placemark = placemarks.first;
-
-        // Filter out numeric name or subThoroughfare if needed
-        String city = placemark.locality ?? "";
+        String street = placemark.street ?? "";
+        String city = placemark.locality ?? placemark.subLocality ?? "";
         String state = placemark.administrativeArea ?? "";
         String postalCode = placemark.postalCode ?? "";
-        String country = placemark.country ?? "";
 
-        return "$city, $state, $postalCode, $country";
+        // ✅ Smarter formatting: Only joins non-empty parts
+        List<String> parts = [street, city, state, postalCode];
+        parts.removeWhere((element) => element.isEmpty);
+        return parts.join(", ");
       } else {
         return "Location not found";
       }
@@ -50,7 +53,6 @@ class LocationService {
     }
   }
 
-  // Get current position
   static Future<Position?> getCurrentPosition() async {
     if (!await checkPermissions()) return null;
 

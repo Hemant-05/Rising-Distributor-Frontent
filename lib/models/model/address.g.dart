@@ -18,7 +18,7 @@ Address _$AddressFromJson(Map<String, dynamic> json) => Address(
   latitude: (json['latitude'] as num?)?.toDouble(),
   longitude: (json['longitude'] as num?)?.toDouble(),
   zipCode: json['zipCode'] as String?,
-  isPrimary: json['isPrimary'] as bool?,
+  primary: json['primary'] as bool?,
 );
 
 Map<String, dynamic> _$AddressToJson(Address instance) => <String, dynamic>{
@@ -33,5 +33,5 @@ Map<String, dynamic> _$AddressToJson(Address instance) => <String, dynamic>{
   'latitude': instance.latitude,
   'longitude': instance.longitude,
   'zipCode': instance.zipCode,
-  'isPrimary': instance.isPrimary,
+  'primary': instance.primary,
 };

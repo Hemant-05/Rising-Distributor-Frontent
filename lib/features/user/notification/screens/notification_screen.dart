@@ -26,6 +26,13 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
     _loadMore();
   }
 
+  /*
+  * my notification service is also not working like i implemented this notification service previously,
+  *  when any user place an order admin get notification of new order,
+  *  and user get the notification at every stage of order status updation, but now it is not working,
+  * i gave you all the file related to the notification system frontend and backend both.
+  * */
+
   void getId() async {
     // TODO: Get userId from your custom authentication system or UserBloc
     userId = widget.userId.isEmpty ? "dummy_user_id" : widget.userId;

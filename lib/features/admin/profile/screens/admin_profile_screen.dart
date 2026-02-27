@@ -95,7 +95,7 @@ class _AdminProfileScreenState extends State<AdminProfileScreen> {
             Text('Logout', style: simple_text_style(fontWeight: FontWeight.bold)),
           ],
         ),
-        content: Text('Are you sure you want to log out?', style: simple_text_style()),
+        content: Text('Are you sure you want to log out?', style: simple_text_style(isEllipsisAble: false)),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx),
@@ -107,6 +107,7 @@ class _AdminProfileScreenState extends State<AdminProfileScreen> {
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
             ),
             onPressed: () async {
+              Navigator.pop(ctx);
               await context.read<AuthService>().signOut();
               if (authService.admin != null) {
                 ScaffoldMessenger.of(context).showSnackBar(
