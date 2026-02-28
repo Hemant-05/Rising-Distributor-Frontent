@@ -20,13 +20,14 @@ class Product {
   final int? quantity;
   final String? measurement;
 
-  final bool? isDiscountable;
+  final bool? discountable;
   final double? mrp;
   final int? stockQuantity;
   final int? lowStockQuantity;
 
   final DateTime? lastStockUpdate;
-  final bool? isAvailable;
+  final bool? available;
+  final bool? deleted;
 
   final List<String>? photosList;
 
@@ -42,12 +43,13 @@ class Product {
     this.price,
     this.quantity,
     this.measurement,
-    this.isDiscountable,
+    this.discountable,
     this.mrp,
     this.stockQuantity,
     this.lowStockQuantity,
     this.lastStockUpdate,
-    this.isAvailable,
+    this.available,
+    this.deleted,
     this.photosList,
   });
 

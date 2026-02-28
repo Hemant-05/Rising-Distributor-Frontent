@@ -35,7 +35,7 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> {
     final double price = widget.product.price ?? 0;
     final double mrp = widget.product.mrp ?? (price + 5);
     final bool isOutOfStock = (widget.product.stockQuantity ?? 0) <= 0;
-    final bool isAvailable = widget.product.isAvailable ?? true; // Assuming this flag exists or default true
+    final bool isAvailable = widget.product.available ?? true; // Assuming this flag exists or default true
 
     return Scaffold(
       backgroundColor: AppColour.white,

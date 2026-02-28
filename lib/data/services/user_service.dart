@@ -40,4 +40,15 @@ class UserService extends ChangeNotifier {
       return "Failed to verify OTP.";
     }
   }
+
+  Future<String?> updateFCM(String token)async{
+    try{
+      String? res = await _repo.updateFcm(token);
+      return res;
+    } on AppError catch(e){
+      return e.message;
+    } catch(e){
+      return e.toString();
+    }
+  }
 }

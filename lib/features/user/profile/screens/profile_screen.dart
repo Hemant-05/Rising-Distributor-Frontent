@@ -45,136 +45,138 @@ class ProfileScreen extends StatelessWidget {
 
           return Padding(
             padding: const EdgeInsets.all(18),
-            child: Column(
-              children: [
-                // --- PROFILE HEADER ---
-                InkWell(
-                  onTap: (){
-                    Navigator.push(context, MaterialPageRoute(builder: (context) => PersonalInfoScreen(),));
-                  },
-                  child: SizedBox(
-                    height: 150,
-                    width: double.infinity,
-                    child: user == null
-                        ? const Center(child: CircularProgressIndicator())
-                        : Row(
-                      crossAxisAlignment: CrossAxisAlignment.center,
+            child: SingleChildScrollView(
+              child: Column(
+                children: [
+                  // --- PROFILE HEADER ---
+                  InkWell(
+                    onTap: (){
+                      Navigator.push(context, MaterialPageRoute(builder: (context) => PersonalInfoScreen(),));
+                    },
+                    child: SizedBox(
+                      height: 150,
+                      width: double.infinity,
+                      child: user == null
+                          ? const Center(child: CircularProgressIndicator())
+                          : Row(
+                        crossAxisAlignment: CrossAxisAlignment.center,
+                        children: [
+                          Container(
+                            height: 100,
+                            width: 100,
+                            decoration: BoxDecoration(
+                              color: AppColour.primary,
+                              borderRadius: BorderRadius.circular(100),
+                            ),
+                            child: Icon(
+                              Icons.person_outline,
+                              color: AppColour.white,
+                              size: 50,
+                            ),
+                          ),
+                          const SizedBox(width: 15),
+                          Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                user.name ?? "User",
+                                style: simple_text_style(
+                                  fontSize: 24,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                              const SizedBox(height: 10),
+                              Text(
+                                user.email ?? "",
+                                style: simple_text_style(
+                                  fontSize: 14,
+                                  color: AppColour.lightGrey,
+                                ),
+                              ),
+                              const SizedBox(height: 10),
+                              Text(
+                                user.mobileNumber ?? "No Number",
+                                style: simple_text_style(
+                                  color: AppColour.lightGrey,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+
+                  // --- OPTIONS SECTION 1 ---
+                  customContainer(
+                    Column(
                       children: [
-                        Container(
-                          height: 100,
-                          width: 100,
-                          decoration: BoxDecoration(
-                            color: AppColour.primary,
-                            borderRadius: BorderRadius.circular(100),
-                          ),
-                          child: Icon(
-                            Icons.person_outline,
-                            color: AppColour.white,
-                            size: 50,
-                          ),
-                        ),
-                        const SizedBox(width: 15),
-                        Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              user.name ?? "User",
-                              style: simple_text_style(
-                                fontSize: 24,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                            const SizedBox(height: 10),
-                            Text(
-                              user.email ?? "",
-                              style: simple_text_style(
-                                fontSize: 14,
-                                color: AppColour.lightGrey,
-                              ),
-                            ),
-                            const SizedBox(height: 10),
-                            Text(
-                              user.mobileNumber ?? "No Number",
-                              style: simple_text_style(
-                                color: AppColour.lightGrey,
-                              ),
-                            ),
-                          ],
-                        ),
+                        optionListTile(map_svg, 'Addresses', () {
+                          PersistentNavBarNavigator.pushNewScreen(
+                            context,
+                            screen: const SelectAddressScreen(isFromProfile: true),
+                            withNavBar: false,
+                            pageTransitionAnimation: PageTransitionAnimation.cupertino,
+                          );
+                        }),
+                        optionListTile(coupon_svg, 'Coupons & Cashback\'s', () {
+                          // Load coupons before navigating
+                          context.read<CouponService>().fetchAllCoupons(); // Assuming you have this specific method
+                          PersistentNavBarNavigator.pushNewScreen(
+                            context,
+                            screen: const CouponsScreen(isSelectionMode: false),
+                            withNavBar: false,
+                            pageTransitionAnimation: PageTransitionAnimation.cupertino,
+                          );
+                        }),
                       ],
                     ),
                   ),
-                ),
-                const SizedBox(height: 8),
 
-                // --- OPTIONS SECTION 1 ---
-                customContainer(
-                  Column(
-                    children: [
-                      optionListTile(map_svg, 'Addresses', () {
-                        PersistentNavBarNavigator.pushNewScreen(
-                          context,
-                          screen: const SelectAddressScreen(isFromProfile: true),
-                          withNavBar: false,
-                          pageTransitionAnimation: PageTransitionAnimation.cupertino,
-                        );
-                      }),
-                      optionListTile(coupon_svg, 'Coupons & Cashback\'s', () {
-                        // Load coupons before navigating
-                        context.read<CouponService>().fetchAllCoupons(); // Assuming you have this specific method
-                        PersistentNavBarNavigator.pushNewScreen(
-                          context,
-                          screen: const CouponsScreen(isSelectionMode: false),
-                          withNavBar: false,
-                          pageTransitionAnimation: PageTransitionAnimation.cupertino,
-                        );
-                      }),
-                    ],
+                  // --- OPTIONS SECTION 2 ---
+                  customContainer(
+                    Column(
+                      children: [
+                        optionListTile(receipt_svg, 'My Orders', () {
+                          PersistentNavBarNavigator.pushNewScreen(
+                            context,
+                            screen: const OrderScreen(),
+                            withNavBar: false,
+                            pageTransitionAnimation: PageTransitionAnimation.cupertino,
+                          );
+                        }),
+                        optionListTile(policy_svg, 'Term & Conditions', () {
+                          PersistentNavBarNavigator.pushNewScreen(
+                            context,
+                            screen: const PolicyScreen(),
+                            withNavBar: false,
+                            pageTransitionAnimation: PageTransitionAnimation.cupertino,
+                          );
+                        }),
+                      ],
+                    ),
                   ),
-                ),
 
-                // --- OPTIONS SECTION 2 ---
-                customContainer(
-                  Column(
-                    children: [
-                      optionListTile(receipt_svg, 'My Orders', () {
-                        PersistentNavBarNavigator.pushNewScreen(
-                          context,
-                          screen: const OrderScreen(),
-                          withNavBar: false,
-                          pageTransitionAnimation: PageTransitionAnimation.cupertino,
+                  // --- LOGOUT ---
+                  customContainer(
+                    optionListTile(logout_svg, 'Log Out', () async {
+                      await context.read<AuthService>().signOut();
+
+                      if (context.mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(content: Text('Logged out...')),
                         );
-                      }),
-                      optionListTile(policy_svg, 'Term & Conditions', () {
-                        PersistentNavBarNavigator.pushNewScreen(
-                          context,
-                          screen: const PolicyScreen(),
-                          withNavBar: false,
-                          pageTransitionAnimation: PageTransitionAnimation.cupertino,
+                        Navigator.of(context, rootNavigator: true).pushAndRemoveUntil(
+                          MaterialPageRoute(builder: (_) => const WelcomeScreen()),
+                              (route) => false,
                         );
-                      }),
-                    ],
+                      }
+                    }),
                   ),
-                ),
-
-                // --- LOGOUT ---
-                customContainer(
-                  optionListTile(logout_svg, 'Log Out', () async {
-                    await context.read<AuthService>().signOut();
-
-                    if (context.mounted) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text('Logged out...')),
-                      );
-                      Navigator.of(context, rootNavigator: true).pushAndRemoveUntil(
-                        MaterialPageRoute(builder: (_) => const WelcomeScreen()),
-                            (route) => false,
-                      );
-                    }
-                  }),
-                ),
-              ],
+                ],
+              ),
             ),
           );
         },

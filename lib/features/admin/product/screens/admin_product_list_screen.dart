@@ -72,7 +72,6 @@ class _AdminProductListScreenState extends State<AdminProductListScreen>
       appBar: _buildStunningAppBar(),
       body: Consumer<AdminService>(
         builder: (context, adminService, _) {
-          // ✅ Show Shimmer instead of CircularProgressIndicator
           if (adminService.isLoading && adminService.products.isEmpty) {
             return _buildShimmerLoadingState();
           } else if (adminService.error != null) {
@@ -81,6 +80,7 @@ class _AdminProductListScreenState extends State<AdminProductListScreen>
             final filteredProducts = _getFilteredProducts(adminService.products);
             return RefreshIndicator(
               onRefresh: _onRefresh,
+              backgroundColor: AppColour.white,
               color: AppColour.primary,
               child: CustomScrollView(
                 slivers: [
@@ -238,9 +238,9 @@ class _AdminProductListScreenState extends State<AdminProductListScreen>
 
       bool matchesFilter = true;
       if (_selectedFilter == 'available') {
-        matchesFilter = product.isAvailable ?? false;
+        matchesFilter = product.available ?? false;
       } else if (_selectedFilter == 'unavailable') {
-        matchesFilter = !(product.isAvailable ?? false);
+        matchesFilter = !(product.available ?? false);
       } else if (_selectedFilter == 'low_stock') {
         matchesFilter = (product.stockQuantity ?? 0) <= (product.lowStockQuantity ?? 10);
       }
@@ -366,7 +366,7 @@ class _AdminProductListScreenState extends State<AdminProductListScreen>
   }
 
   Widget _buildProductStatus(Product product) {
-    final isAvail = product.isAvailable ?? false;
+    final isAvail = product.available ?? false;
     return Container(
       padding: const EdgeInsets.all(6),
       decoration: BoxDecoration(

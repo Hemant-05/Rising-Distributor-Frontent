@@ -150,8 +150,8 @@ class ProductService extends ChangeNotifier {
         mrp: product.mrp,
         stockQuantity: product.stockQuantity,
         lowStockQuantity: product.lowStockQuantity,
-        isAvailable: product.isAvailable ?? true,
-        isDiscountable: product.isDiscountable ?? true, // Fallback prevents null errors
+        available: product.available ?? true,
+        discountable: product.discountable ?? true, // Fallback prevents null errors
         photosList: product.photosList,
         rating: product.rating,
       );

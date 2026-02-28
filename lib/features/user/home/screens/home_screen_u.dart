@@ -55,9 +55,9 @@ class _HomeScreenUState extends State<HomeScreenU> {
     final categoryService = context.read<CategoryService>();
 
     await Future.wait([
+      bannerService.loadHomeBanners(),
       productService.fetchAvailableProducts(),
       productService.fetchBestSelling(),
-      bannerService.loadHomeBanners(),
       categoryService.loadCategories(),
       if (context.read<AuthService>().isCustomer)
         orderService.fetchMyOrders(),
@@ -76,8 +76,6 @@ class _HomeScreenUState extends State<HomeScreenU> {
 
     if (user != null) {
       nameDisplay = user.name?.split(' ').first ?? 'User';
-      // Assuming user.addressList is available in your User model,
-      // otherwise fetch from AddressService
     }
 
     return Scaffold(

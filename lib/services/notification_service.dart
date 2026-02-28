@@ -4,6 +4,7 @@ import 'dart:developer';
 
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:raising_india/data/services/auth_service.dart';
+import 'package:raising_india/data/services/user_service.dart';
 import 'package:raising_india/services/service_locator.dart';
 
 // Top-level function for background handling
@@ -62,7 +63,6 @@ class NotificationBackgroundService {
     // NOTE: We do NOT update the database token here.
     // We simply print the token. The actual update happens silently.
     String? token = await _firebaseMessaging.getToken();
-    log("FCM Token: $token");
 
     // Trigger token sync in background (fire and forget)
     syncTokenInBackground(token!);
@@ -139,13 +139,9 @@ class NotificationBackgroundService {
   static Future<void> syncTokenInBackground(String token) async {
     try {
       // Use getIt inside the method to ensure ServiceLocator is ready
-      final authService = getIt<AuthService>();
-
-      // We assume the user might not be logged in yet.
-      // Add a check or wrap in try-catch so it doesn't crash the app.
-      // await authService.updateFCMToken(token);
-      //
-      log("FCM Token synced with server successfully.");
+      final userService = getIt<UserService>();
+      String? res = await userService.updateFCM(token);
+      log("Token sync result: $res");
     } catch (e) {
       log("Skipping token sync (User might be logged out or server error): $e");
     }

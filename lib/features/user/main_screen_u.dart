@@ -25,7 +25,7 @@ class _MainScreenUState extends State<MainScreenU> {
   List<Widget> pages = [
     const HomeScreenU(),
     const CartScreen(),
-    const NotificationsScreen(userId: ''),
+    const NotificationsScreen(),
     const ProfileScreen(),
   ];
   final NavBarStyle _navBarStyle = NavBarStyle.style12;

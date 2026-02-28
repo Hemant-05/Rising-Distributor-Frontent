@@ -122,7 +122,7 @@ class AuthInterceptor extends Interceptor {
       if (refreshToken != null) {
         try {
           // 2. Call Refresh API
-          final response = await _tokenDio.post('/api/auth/refresh', data: {
+          final response = await _tokenDio.post('/auth/refresh', data: {
             'refresh_token': refreshToken,
           });
 

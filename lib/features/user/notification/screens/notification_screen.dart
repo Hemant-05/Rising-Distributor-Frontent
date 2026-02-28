@@ -1,143 +1,68 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'package:raising_india/comman/simple_text_style.dart';
 import 'package:raising_india/constant/AppColour.dart';
-import 'dart:async';
+import 'package:raising_india/data/services/auth_service.dart';
+import 'package:raising_india/data/services/notification_service.dart';
 
 class NotificationsScreen extends StatefulWidget {
-  final String userId;
-  const NotificationsScreen({super.key, required this.userId});
+  const NotificationsScreen({super.key});
+
   @override
   State<NotificationsScreen> createState() => _NotificationsScreenState();
 }
 
 class _NotificationsScreenState extends State<NotificationsScreen> {
-  final _pageSize = 20;
-  // TODO: Replace with a mechanism to store the last fetched item for pagination from your backend
-  dynamic _last;
-  bool _loading = false;
-  bool _done = false;
-  String userId = '';
-  final List<Map<String, dynamic>> _docs = []; // Changed to a generic list of maps
-
   @override
   void initState() {
     super.initState();
-    getId();
-    _loadMore();
+    // ✅ Safely fetch the user ID without crashing if the user is null
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final customer = context.read<AuthService>().customer;
+      if (customer != null && customer.uid != null) {
+        context.read<NotificationService>().fetchUserNotifications(customer.uid!);
+      }
+    });
   }
 
-  /*
-  * my notification service is also not working like i implemented this notification service previously,
-  *  when any user place an order admin get notification of new order,
-  *  and user get the notification at every stage of order status updation, but now it is not working,
-  * i gave you all the file related to the notification system frontend and backend both.
-  * */
-
-  void getId() async {
-    // TODO: Get userId from your custom authentication system or UserBloc
-    userId = widget.userId.isEmpty ? "dummy_user_id" : widget.userId;
-  }
-
-  Future<void> _loadMore() async {
-    if (_loading || _done) return;
-    setState(() => _loading = true);
-
-    // TODO: Implement fetching notifications from your custom backend
-    // This is a placeholder for your backend API call
-    await Future.delayed(const Duration(seconds: 1)); // Simulate network delay
-
-    final List<Map<String, dynamic>> fetchedNotifications = [
-      // Example dummy notification data
-      {
-        'title': 'Order Delivered',
-        'body': 'Your order #12345 has been delivered.',
-        'createdAt': DateTime.now().subtract(Duration(days: 1)).toIso8601String(),
-        'data': {'type': 'order_delivered'},
-      },
-      {
-        'title': 'Payment Successful',
-        'body': 'Your payment for order #12346 was successful.',
-        'createdAt': DateTime.now().subtract(Duration(hours: 5)).toIso8601String(),
-        'data': {'type': 'payment_success'},
-      },
-    ];
-
-    if (fetchedNotifications.isNotEmpty) {
-      // TODO: Update _last based on your backend's pagination strategy
-      _docs.addAll(fetchedNotifications);
-    }
-    if (fetchedNotifications.length < _pageSize) _done = true;
-
-    setState(() => _loading = false);
-  }
-
-  Color _colorFor(Map<String, dynamic> data) {
-    final t = (data['type'] ?? data['data']?['type'] ?? '').toString();
-    switch (t) {
-      case 'order_placed':
-      case 'new_order_admin':
-        return AppColour.primary;
-      case 'order_confirmed':
-      case 'order_preparing':
-        return Colors.orange;
-      case 'out_for_delivery':
-        return Colors.blue;
-      case 'order_delivered':
-        return AppColour.green;
-      case 'order_cancelled':
-      case 'order_cancelled_admin':
-        return Colors.red;
-      case 'payment_success':
-      case 'payment_refund':
-        return Colors.green;
-      case 'payment_failed':
-        return Colors.red;
-      case 'low_stock_alert':
-        return Colors.amber;
-      default:
-        return AppColour.lightGrey;
+  IconData _iconFor(String? type) {
+    switch (type) {
+      case 'order_placed': return Icons.shopping_bag_outlined;
+      case 'order_confirmed': return Icons.thumb_up_outlined;
+      case 'out_for_delivery': return Icons.local_shipping_outlined;
+      case 'order_delivered': return Icons.check_circle_outlined;
+      case 'order_cancelled': return Icons.cancel_outlined;
+      case 'payment_success': return Icons.payments_outlined;
+      case 'BROADCAST': return Icons.campaign_outlined;
+      default: return Icons.notifications_none_outlined;
     }
   }
 
-  IconData _iconFor(Map<String, dynamic> data) {
-    final t = (data['type'] ?? data['data']?['type'] ?? '').toString();
-    switch (t) {
-      case 'order_placed':
-        return Icons.shopping_bag_outlined;
-      case 'order_confirmed':
-      case 'order_preparing':
-        return Icons.local_dining_outlined;
-      case 'out_for_delivery':
-        return Icons.local_shipping_outlined;
-      case 'order_delivered':
-        return Icons.check_circle_outlined;
-      case 'order_cancelled':
-      case 'order_cancelled_admin':
-        return Icons.cancel_outlined;
-      case 'payment_success':
-        return Icons.payments_outlined;
-      case 'payment_failed':
-        return Icons.report_gmailerrorred_outlined;
-      case 'payment_refund':
-        return Icons.autorenew_outlined;
-      case 'new_order_admin':
-        return Icons.admin_panel_settings_outlined;
-      case 'low_stock_alert':
-        return Icons.inventory_2_outlined;
-      default:
-        return Icons.notifications_none_outlined;
+  Color _colorFor(String? type) {
+    switch (type) {
+      case 'order_placed': return AppColour.primary;
+      case 'out_for_delivery': return Colors.blue;
+      case 'order_delivered': return Colors.green;
+      case 'order_cancelled': return Colors.red;
+      case 'payment_success': return Colors.green.shade700;
+      case 'BROADCAST': return Colors.orange;
+      default: return AppColour.primary;
     }
   }
 
   String _formatTime(String? isoString) {
-    if (isoString == null) return '';
-    final dt = DateTime.parse(isoString);
-    final now = DateTime.now();
-    final diff = now.difference(dt);
-    if (diff.inMinutes < 1) return 'Just now';
-    if (diff.inMinutes < 60) return '${diff.inMinutes}m';
-    if (diff.inHours < 24) return '${diff.inHours}h';
-    return '${dt.day}/${dt.month} ${dt.hour.toString().padLeft(1, '0')}:${dt.minute.toString().padLeft(2, '0')}';
+    if (isoString == null || isoString.isEmpty) return '';
+    try {
+      final dt = DateTime.parse(isoString);
+      final diff = DateTime.now().difference(dt);
+      if (diff.inMinutes < 1) return 'Just now';
+      if (diff.inMinutes < 60) return '${diff.inMinutes}m ago';
+      if (diff.inHours < 24) return '${diff.inHours}h ago';
+      if (diff.inDays < 7) return '${diff.inDays}d ago';
+      return '${dt.day}/${dt.month}/${dt.year}';
+    } catch (e) {
+      return '';
+    }
   }
 
   @override
@@ -146,244 +71,154 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
       backgroundColor: AppColour.white,
       appBar: AppBar(
         automaticallyImplyLeading: false,
-        title: Text(
-          'Notifications',
-          style: simple_text_style(
-            fontSize: 20,
-            fontWeight: FontWeight.w600,
-            color: AppColour.black,
-          ),
-        ),
+        title: Text('Notifications', style: simple_text_style(fontSize: 20, fontWeight: FontWeight.bold)),
         backgroundColor: AppColour.white,
         elevation: 0,
-        shadowColor: AppColour.black.withOpacity(0.05),
       ),
-      body: RefreshIndicator(
-        onRefresh: () async {
-          setState(() {
-            _docs.clear();
-            _last = null;
-            _done = false;
-          });
-          await _loadMore();
-        },
-        color: AppColour.primary,
-        child: _docs.isEmpty && !_loading
-            ? _EmptyState(onBrowse: _loadMore)
-            : NotificationListener<ScrollNotification>(
-          onNotification: (n) {
-            if (n.metrics.pixels >= n.metrics.maxScrollExtent - 200) _loadMore();
-            return false;
-          },
-          child: ListView.separated(
-            padding: const EdgeInsets.all(16),
-            itemCount: _docs.length + (_loading ? 1 : 0),
-            separatorBuilder: (_, __) => const SizedBox(height: 12),
-            itemBuilder: (context, index) {
-              if (index >= _docs.length) {
-                return Center(
-                  child: Padding(
-                    padding: EdgeInsets.all(20),
-                    child: CircularProgressIndicator(
-                      color: AppColour.primary,
-                      strokeWidth: 2,
-                    ),
-                  ),
-                );
-              }
-              final data = _docs[index];
-              final createdAt = data['createdAt'] as String?;
-              final isAdmin = data['isAdminNotification'] == true;
-              final title = (data['title'] ?? '').toString();
-              final body = (data['body'] ?? '').toString();
-              final iconColor = _colorFor(data['data'] is Map ? Map<String, dynamic>.from(data['data']) : data);
+      body: Consumer<NotificationService>(
+        builder: (context, notifService, _) {
 
-              return Card(
-                elevation: 2,
-                color: AppColour.white,
-                shadowColor: iconColor.withOpacity(0.1),
-                shape: RoundedRectangleBorder(
-                  side: BorderSide(color: AppColour.primary.withOpacity(0.4),width: 1),
-                  borderRadius: BorderRadius.circular(16),
+          if (notifService.isLoading && notifService.notifications.isEmpty) {
+            return Center(child: CircularProgressIndicator(color: AppColour.primary));
+          }
+
+          if (notifService.notifications.isEmpty) {
+            return Center(
+              child: Padding(
+                padding: const EdgeInsets.all(24.0),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(24),
+                      decoration: BoxDecoration(
+                        color: Colors.grey.shade50,
+                        shape: BoxShape.circle,
+                      ),
+                      child: Icon(Icons.notifications_off_outlined, size: 80, color: Colors.grey.shade300),
+                    ),
+                    const SizedBox(height: 16),
+                    Text(
+                        "You're all caught up!",
+                        style: simple_text_style(fontSize: 18, color: Colors.black87, fontWeight: FontWeight.bold)
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      "Updates about your orders and special offers will appear here.",
+                      textAlign: TextAlign.center,
+                      style: simple_text_style(color: Colors.grey.shade500, fontSize: 14),
+                    ),
+                  ],
                 ),
-                child: InkWell(
-                  borderRadius: BorderRadius.circular(16),
-                  onTap: () {}, // Placeholder for future interactivity; no functionality added
-                  child: Padding(
-                    padding: const EdgeInsets.all(16),
+              ),
+            );
+          }
+
+          return RefreshIndicator(
+            backgroundColor: AppColour.white,
+            color: AppColour.primary,
+            // ✅ Fetch the user ID directly from AuthService on pull-to-refresh
+            onRefresh: () async {
+              final customer = context.read<AuthService>().customer;
+              if (customer != null && customer.uid != null) {
+                await notifService.fetchUserNotifications(customer.uid!);
+              }
+            },
+            child: ListView.separated(
+              physics: const AlwaysScrollableScrollPhysics(parent: BouncingScrollPhysics()),
+              itemCount: notifService.notifications.length,
+              separatorBuilder: (_, __) => Divider(height: 1, color: Colors.grey.shade200, indent: 80),
+              itemBuilder: (context, index) {
+                final notif = notifService.notifications[index];
+                final iconColor = _colorFor(notif.type);
+                final bool isUnread = !notif.read;
+
+                return InkWell(
+                  onTap: () {
+                    if (isUnread) {
+                      notifService.markAsRead(notif.id!);
+                    }
+                  },
+                  child: Container(
+                    color: isUnread ? Colors.blue.withOpacity(0.05) : Colors.transparent,
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
                     child: Row(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
+                        // 1. Icon Bubble
                         Container(
                           width: 48,
                           height: 48,
                           decoration: BoxDecoration(
-                            gradient: LinearGradient(
-                              colors: [
-                                iconColor.withOpacity(0.2),
-                                iconColor.withOpacity(0.1),
-                              ],
-                              begin: Alignment.topLeft,
-                              end: Alignment.bottomRight,
-                            ),
+                            color: iconColor.withOpacity(0.1),
                             shape: BoxShape.circle,
-                            border: Border.all(
-                              color: iconColor.withOpacity(0.3),
-                              width: 1,
-                            ),
                           ),
-                          child: Icon(
-                            _iconFor(data['data'] is Map ? Map<String, dynamic>.from(data['data']) : data),
-                            color: iconColor,
-                            size: 24,
-                          ),
+                          child: Icon(_iconFor(notif.type), color: iconColor),
                         ),
                         const SizedBox(width: 16),
+
+                        // 2. Text Content
                         Expanded(
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Row(
+                                crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
                                   Expanded(
                                     child: Text(
-                                      title.isEmpty ? 'Notification' : title,
-                                      style: simple_text_style(
-                                        fontSize: 16,
-                                        fontWeight: FontWeight.w600,
-                                        color: AppColour.black,
-                                      ),
-                                      maxLines: 1,
-                                      overflow: TextOverflow.ellipsis,
+                                        notif.title ?? '',
+                                        style: simple_text_style(
+                                          fontWeight: isUnread ? FontWeight.bold : FontWeight.w600,
+                                          fontSize: 15,
+                                          color: isUnread ? Colors.black : Colors.black87,
+                                        )
                                     ),
                                   ),
-                                  Container(
-                                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                                    decoration: BoxDecoration(
-                                      color: iconColor.withOpacity(0.1),
-                                      borderRadius: BorderRadius.circular(12),
-                                    ),
-                                    child: Text(
-                                      _formatTime(createdAt),
-                                      style: TextStyle(
+                                  const SizedBox(width: 8),
+                                  Text(
+                                      _formatTime(notif.createdAt),
+                                      style: simple_text_style(
                                         fontSize: 12,
-                                        fontWeight: FontWeight.w500,
-                                        color: iconColor,
-                                      ),
-                                    ),
+                                        color: isUnread ? AppColour.primary : Colors.grey.shade500,
+                                        fontWeight: isUnread ? FontWeight.bold : FontWeight.normal,
+                                      )
                                   ),
                                 ],
                               ),
-                              const SizedBox(height: 6),
+                              const SizedBox(height: 4),
                               Text(
-                                body,
-                                style: TextStyle(
-                                  fontSize: 14,
-                                  color: AppColour.lightGrey,
-                                  height: 1.4,
-                                ),
-                                maxLines: 3,
-                                overflow: TextOverflow.ellipsis,
+                                  notif.message ?? '',
+                                  style: simple_text_style(
+                                    color: isUnread ? Colors.black87 : Colors.grey.shade600,
+                                    fontSize: 13,
+                                  )
                               ),
-                              if (isAdmin)
-                                Padding(
-                                  padding: const EdgeInsets.only(top: 8),
-                                  child: Container(
-                                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                                    decoration: BoxDecoration(
-                                      color: Colors.blue.withOpacity(0.1),
-                                      borderRadius: BorderRadius.circular(8),
-                                    ),
-                                    child: Text(
-                                      'Admin Update',
-                                      style: TextStyle(
-                                        fontSize: 12,
-                                        color: Colors.blue,
-                                        fontWeight: FontWeight.w500,
-                                      ),
-                                    ),
-                                  ),
-                                ),
                             ],
                           ),
                         ),
+
+                        // 3. Unread Indicator Dot
+                        if (isUnread) ...[
+                          const SizedBox(width: 12),
+                          Container(
+                            margin: const EdgeInsets.only(top: 6),
+                            width: 10,
+                            height: 10,
+                            decoration: BoxDecoration(
+                              color: AppColour.primary,
+                              shape: BoxShape.circle,
+                            ),
+                          ),
+                        ],
                       ],
                     ),
                   ),
-                ),
-              );
-            },
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _EmptyState extends StatelessWidget {
-  final VoidCallback onBrowse;
-  const _EmptyState({required this.onBrowse});
-
-  @override
-  Widget build(BuildContext context) {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(32),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Container(
-              width: 80,
-              height: 80,
-              decoration: BoxDecoration(
-                color: AppColour.primary.withOpacity(0.1),
-                shape: BoxShape.circle,
-              ),
-              child: Icon(
-                Icons.notifications_none_outlined,
-                size: 48,
-                color: AppColour.primary,
-              ),
+                );
+              },
             ),
-            const SizedBox(height: 20),
-            Text(
-              'No notifications yet',
-              style: simple_text_style(
-                fontSize: 20,
-                fontWeight: FontWeight.w600,
-                color: AppColour.black,
-              ),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              'Orders, payments and alerts will show up here.',
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                fontSize: 16,
-                color: AppColour.lightGrey,
-                height: 1.4,
-              ),
-            ),
-            const SizedBox(height: 24),
-            SizedBox(
-              width: double.infinity,
-              child: ElevatedButton.icon(
-                onPressed: onBrowse,
-                icon: const Icon(Icons.storefront_outlined, size: 20),
-                label: const Text('Refresh Notification'),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColour.primary,
-                  foregroundColor: AppColour.white,
-                  padding: const EdgeInsets.symmetric(vertical: 12),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  elevation: 2,
-                ),
-              ),
-            ),
-          ],
-        ),
+          );
+        },
       ),
     );
   }

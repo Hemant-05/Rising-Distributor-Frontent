@@ -1,3 +1,4 @@
+import 'package:raising_india/constant/ConString.dart';
 import 'package:raising_india/error/exceptions.dart';
 import 'package:raising_india/models/model/notification.dart';
 import '../../../data/rest_client.dart';
@@ -29,6 +30,17 @@ class NotificationRepository with RepoErrorHandler {
   Future<void> markAsRead(String id) async {
     try {
       await _client.markNotificationRead(id);
+    } catch (e) {
+      throw handleError(e);
+    }
+  }
+
+  // ✅ ADD THIS: Fetch User Notifications
+  Future<List<NotificationModel>> getUserNotifications(String userId) async {
+    try {
+      print('----------------- $userId');
+      final response = await _client.getUserNotifications(userId);
+      return response.data ?? [];
     } catch (e) {
       throw handleError(e);
     }

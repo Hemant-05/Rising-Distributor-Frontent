@@ -13,7 +13,7 @@ class NotificationService extends ChangeNotifier {
   bool get isLoading => _isLoading;
 
   // Useful for showing a Red Dot on the Bell Icon
-  int get unreadCount => _notifications.where((n) => !n.isRead).length;
+  int get unreadCount => _notifications.where((n) => !n.read).length;
 
   // 1. Fetch Admin Notifications
   Future<void> fetchAdminNotifications() async {
@@ -31,13 +31,11 @@ class NotificationService extends ChangeNotifier {
 
   // 2. Mark as Read
   Future<void> markAsRead(String id) async {
-    // Optimistic Update: Update UI immediately before waiting for server
     final index = _notifications.indexWhere((n) => n.id == id);
     if (index != -1) {
-      _notifications[index].isRead = true;
+      _notifications[index].read = true;
       notifyListeners();
     }
-
     try {
       await _repo.markAsRead(id);
     } catch (e) {
@@ -67,5 +65,19 @@ class NotificationService extends ChangeNotifier {
   void addLiveNotification(NotificationModel notif) {
     _notifications.insert(0, notif);
     notifyListeners();
+  }
+
+  Future<void> fetchUserNotifications(String userId) async {
+    _isLoading = true;
+    notifyListeners();
+    try {
+      // Calls the new repository method we just made
+      _notifications = await _repo.getUserNotifications(userId);
+    } catch (e) {
+      print("User Notification Fetch Error: $e");
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
   }
 }

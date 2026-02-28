@@ -9,6 +9,7 @@ import 'package:raising_india/data/services/banner_service.dart';
 import 'package:raising_india/features/admin/banner/screen/all_banner_screen.dart';
 import 'package:raising_india/features/admin/brand/admin_brand_screen.dart';
 import 'package:raising_india/features/admin/category/screens/admin_categories_screen.dart';
+import 'package:raising_india/features/admin/notification/screens/admin_broadcast_screen.dart';
 import 'package:raising_india/features/admin/profile/screens/admin_profile_screen.dart';
 import 'package:raising_india/features/admin/profile/widgets/option_list_tile_widget.dart';
 import 'package:raising_india/features/admin/profile/widgets/upper_widget.dart';
@@ -157,6 +158,21 @@ class _ProfileManageScreenState extends State<ProfileManageScreen> {
                             },
                             banner_svg,
                             'Ad Banner',
+                            Icon(
+                              Icons.arrow_forward_ios_rounded,
+                              color: AppColour.grey,
+                              size: 16,
+                            ),
+                          ),
+                          optionsListTileWidget(
+                                () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(builder: (context) => const AdminBroadcastScreen()),
+                              );
+                            },
+                            notification_svg,
+                            'Broadcast Notification',
                             Icon(
                               Icons.arrow_forward_ios_rounded,
                               color: AppColour.grey,

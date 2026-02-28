@@ -1,5 +1,6 @@
 import 'dart:io';
 import 'package:dio/dio.dart';
+import '../constant/ConString.dart' as ConString;
 import 'package:raising_india/models/dto/admin_order_review_dto.dart';
 import 'package:raising_india/models/dto/api_response.dart';
 import 'package:raising_india/models/dto/auth_dtos.dart';
@@ -30,6 +31,7 @@ import 'package:raising_india/models/dto/cancel_request.dart';
 part 'rest_client.g.dart';
 
 @RestApi(baseUrl: "https://rising-distributor.onrender.com/api")
+// @RestApi(baseUrl: ConString.baseUrl)
 abstract class RestClient {
   factory RestClient(Dio dio, {String baseUrl}) = _RestClient;
 
@@ -252,17 +254,28 @@ abstract class RestClient {
   // ===========================================================================
   // 10. NOTIFICATION CONTROLLER (Admin)
   // ===========================================================================
-  @POST("/admin/notifications/broadcast")
+// 1. Admin Broadcast
+  @POST("/notifications/admin/broadcast")
   Future<ApiResponse<String>> sendBroadcast(
-    @Query("title") String title,
-    @Query("body") String body,
-  );
+      @Query("title") String title,
+      @Query("body") String body
+      );
 
-  @GET("/admin/notifications")
+  // 2. Get Admin Notifications
+  @GET("/notifications/admin/history")
   Future<ApiResponse<List<NotificationModel>>> getAdminNotifications();
 
-  @PUT("/admin/notifications/{id}/read")
-  Future<ApiResponse<void>> markNotificationRead(@Path("id") String id);
+  // 3. Get User Notifications
+  @GET("/notifications/user/{userId}")
+  Future<ApiResponse<List<NotificationModel>>> getUserNotifications(
+      @Path("userId") String userId
+      );
+
+  // 4. Mark Notification as Read (Shared)
+  @PUT("/notifications/{id}/read")
+  Future<ApiResponse<void>> markNotificationRead(
+      @Path("id") String id
+      );
 
   // ===========================================================================
   // 11. ORDER CONTROLLER

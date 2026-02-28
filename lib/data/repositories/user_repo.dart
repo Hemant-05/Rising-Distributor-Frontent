@@ -33,11 +33,12 @@ class UserRepository with RepoErrorHandler {
     }
   }
 
-  Future<void> updateFcm(String token) async {
+  Future<String?> updateFcm(String token) async {
     try {
-      await _client.updateFcmToken(token);
+      final res = await _client.updateFcmToken(token);
+      return res.message;
     } catch (e) {
-      // suppress error
+      return e.toString();
     }
   }
 }

@@ -14,8 +14,8 @@ class ProductRequest {
   final double? mrp;     // Java BigDecimal maps to Dart double
   final int? stockQuantity;
   final int? lowStockQuantity;
-  final bool? isAvailable;
-  final bool? isDiscountable;
+  final bool? available;
+  final bool? discountable;
   final List<String>? photosList;
   final double? rating;
 
@@ -30,8 +30,8 @@ class ProductRequest {
     this.mrp,
     this.stockQuantity,
     this.lowStockQuantity,
-    this.isAvailable,
-    this.isDiscountable,
+    this.available,
+    this.discountable,
     this.photosList,
     this.rating,
   });

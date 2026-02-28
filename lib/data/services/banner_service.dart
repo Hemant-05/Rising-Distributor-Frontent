@@ -24,8 +24,6 @@ class BannerService extends ChangeNotifier {
 
   // --- 1. Customer: Load Active Banners ---
   Future<void> loadHomeBanners() async {
-    if (_homeBanners.isNotEmpty) return;
-
     _isLoading = true;
     notifyListeners();
     try {

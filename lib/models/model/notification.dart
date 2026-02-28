@@ -8,7 +8,7 @@ class NotificationModel {
   final String? title;
   final String? message;
   final String? type;
-  bool isRead;
+  bool read;
   final String? createdAt;
 
   NotificationModel({
@@ -16,7 +16,7 @@ class NotificationModel {
     this.title,
     this.message,
     this.type,
-    this.isRead = false,
+    this.read = false,
     this.createdAt,
   });
 

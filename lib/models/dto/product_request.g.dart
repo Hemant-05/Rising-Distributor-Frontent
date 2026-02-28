@@ -18,8 +18,8 @@ ProductRequest _$ProductRequestFromJson(Map<String, dynamic> json) =>
       mrp: (json['mrp'] as num?)?.toDouble(),
       stockQuantity: (json['stockQuantity'] as num?)?.toInt(),
       lowStockQuantity: (json['lowStockQuantity'] as num?)?.toInt(),
-      isAvailable: json['isAvailable'] as bool?,
-      isDiscountable: json['isDiscountable'] as bool?,
+      available: json['available'] as bool?,
+      discountable: json['discountable'] as bool?,
       photosList: (json['photosList'] as List<dynamic>?)
           ?.map((e) => e as String)
           .toList(),
@@ -38,8 +38,8 @@ Map<String, dynamic> _$ProductRequestToJson(ProductRequest instance) =>
       'mrp': instance.mrp,
       'stockQuantity': instance.stockQuantity,
       'lowStockQuantity': instance.lowStockQuantity,
-      'isAvailable': instance.isAvailable,
-      'isDiscountable': instance.isDiscountable,
+      'available': instance.available,
+      'discountable': instance.discountable,
       'photosList': instance.photosList,
       'rating': instance.rating,
     };

@@ -89,6 +89,12 @@ class _HomeScreenAState extends State<HomeScreenA>
     );
   }
 
+  Future<void> _onRefresh() async {
+    context.read<ReviewService>().loadAdminReviews();
+    context.read<AnalyticsService>().fetchAnalytics();
+    context.read<AdminService>().fetchDashboard();
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -98,24 +104,29 @@ class _HomeScreenAState extends State<HomeScreenA>
         opacity: _fadeAnimation,
         child: SlideTransition(
           position: _slideAnimation,
-          child: SingleChildScrollView(
-            physics: const BouncingScrollPhysics(),
-            child: Column(
-              children: [
-                // ✅ Order Statistics Section
-                _buildOrderStatsSection(),
+          child: RefreshIndicator(
+            backgroundColor: AppColour.white,
+            color: AppColour.primary,
+            onRefresh: _onRefresh,
+            child: SingleChildScrollView(
+              physics: const BouncingScrollPhysics(),
+              child: Column(
+                children: [
+                  // ✅ Order Statistics Section
+                  _buildOrderStatsSection(),
 
-                // ✅ Low Stock Section
-                _buildLowStockAlertSection(),
+                  // ✅ Low Stock Section
+                  _buildLowStockAlertSection(),
 
-                // ✅ Sales Analytics Section
-                _buildSalesAnalyticsSection(),
-                const SizedBox(height: 20),
+                  // ✅ Sales Analytics Section
+                  _buildSalesAnalyticsSection(),
+                  const SizedBox(height: 20),
 
-                // ✅ Review Analytics Section
-                _buildReviewAnalyticsSection(),
-                const SizedBox(height: 20),
-              ],
+                  // ✅ Review Analytics Section
+                  _buildReviewAnalyticsSection(),
+                  const SizedBox(height: 20),
+                ],
+              ),
             ),
           ),
         ),

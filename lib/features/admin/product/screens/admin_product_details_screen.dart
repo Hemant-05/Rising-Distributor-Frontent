@@ -42,7 +42,7 @@ class _AdminProductDetailScreenState extends State<AdminProductDetailScreen>
   late ImageService imageService;
   late AdminImageService adminImageService;
 
-  bool isAvailable = false;
+  bool available = false;
   bool loading = false;
   String loadingText = ''; // ✅ Dynamic loading text
   bool _hasUnsavedChanges = false;
@@ -87,7 +87,7 @@ class _AdminProductDetailScreenState extends State<AdminProductDetailScreen>
     );
     selectedCategory = widget.product.category!;
     selectedBrand = widget.product.brand;
-    isAvailable = widget.product.isAvailable!;
+    available = widget.product.available ?? false;
 
     _fadeAnimationController = AnimationController(
       duration: const Duration(milliseconds: 800),
@@ -202,12 +202,12 @@ class _AdminProductDetailScreenState extends State<AdminProductDetailScreen>
             double.tryParse(ratingController.text.trim()) ??
             widget.product.rating,
         category: selectedCategory,
-        isAvailable: isAvailable,
+        available: available,
         photosList: photos_list,
         brand: selectedBrand,
         nameLower: nameController.text.trim().toLowerCase(),
         lastStockUpdate: DateTime.now(),
-        isDiscountable: widget.product.isDiscountable ?? false,
+        discountable: widget.product.discountable ?? false,
       );
 
       final error = await context.read<ProductService>().updateProduct(product);
@@ -1001,10 +1001,10 @@ class _AdminProductDetailScreenState extends State<AdminProductDetailScreen>
       child: Container(
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: isAvailable ? Colors.green.shade50 : Colors.red.shade50,
+          color: available ? Colors.green.shade50 : Colors.red.shade50,
           borderRadius: BorderRadius.circular(12),
           border: Border.all(
-            color: isAvailable ? Colors.green.shade200 : Colors.red.shade200,
+            color: available ? Colors.green.shade200 : Colors.red.shade200,
           ),
         ),
         child: Row(
@@ -1012,14 +1012,14 @@ class _AdminProductDetailScreenState extends State<AdminProductDetailScreen>
             Container(
               padding: const EdgeInsets.all(8),
               decoration: BoxDecoration(
-                color: isAvailable
+                color: available
                     ? Colors.green.shade100
                     : Colors.red.shade100,
                 borderRadius: BorderRadius.circular(10),
               ),
               child: Icon(
-                isAvailable ? Icons.check_circle : Icons.cancel,
-                color: isAvailable
+                available ? Icons.check_circle : Icons.cancel,
+                color: available
                     ? Colors.green.shade600
                     : Colors.red.shade600,
                 size: 20,
@@ -1038,7 +1038,7 @@ class _AdminProductDetailScreenState extends State<AdminProductDetailScreen>
                     ),
                   ),
                   Text(
-                    isAvailable
+                    available
                         ? 'Available for sale'
                         : 'Currently unavailable',
                     style: simple_text_style(
@@ -1051,10 +1051,10 @@ class _AdminProductDetailScreenState extends State<AdminProductDetailScreen>
             ),
             Switch(
               activeThumbColor: AppColour.primary,
-              value: isAvailable,
+              value: available,
               onChanged: (value) {
                 setState(() {
-                  isAvailable = value;
+                  available = value;
                   _hasUnsavedChanges = true;
                 });
               },

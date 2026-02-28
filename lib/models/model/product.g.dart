@@ -22,14 +22,15 @@ Product _$ProductFromJson(Map<String, dynamic> json) => Product(
   price: (json['price'] as num?)?.toDouble(),
   quantity: (json['quantity'] as num?)?.toInt(),
   measurement: json['measurement'] as String?,
-  isDiscountable: json['isDiscountable'] as bool?,
+  discountable: json['discountable'] as bool?,
   mrp: (json['mrp'] as num?)?.toDouble(),
   stockQuantity: (json['stockQuantity'] as num?)?.toInt(),
   lowStockQuantity: (json['lowStockQuantity'] as num?)?.toInt(),
   lastStockUpdate: json['lastStockUpdate'] == null
       ? null
       : DateTime.parse(json['lastStockUpdate'] as String),
-  isAvailable: json['isAvailable'] as bool?,
+  available: json['available'] as bool?,
+  deleted: json['deleted'] as bool?,
   photosList: (json['photosList'] as List<dynamic>?)
       ?.map((e) => e as String)
       .toList(),
@@ -47,11 +48,12 @@ Map<String, dynamic> _$ProductToJson(Product instance) => <String, dynamic>{
   'price': instance.price,
   'quantity': instance.quantity,
   'measurement': instance.measurement,
-  'isDiscountable': instance.isDiscountable,
+  'discountable': instance.discountable,
   'mrp': instance.mrp,
   'stockQuantity': instance.stockQuantity,
   'lowStockQuantity': instance.lowStockQuantity,
   'lastStockUpdate': instance.lastStockUpdate?.toIso8601String(),
-  'isAvailable': instance.isAvailable,
+  'available': instance.available,
+  'deleted': instance.deleted,
   'photosList': instance.photosList,
 };

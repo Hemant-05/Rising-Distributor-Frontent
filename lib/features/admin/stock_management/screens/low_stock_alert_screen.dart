@@ -242,7 +242,7 @@ class _LowStockAlertScreenState extends State<LowStockAlertScreen>
 
   Widget _buildSummaryHeader() {
     final outOfStockCount = _lowStockProducts
-        .where((p) => !p.isAvailable!)
+        .where((p) => !p.available!)
         .length;
     final lowStockCount = _lowStockProducts.length - outOfStockCount;
 
@@ -330,7 +330,7 @@ class _LowStockAlertScreenState extends State<LowStockAlertScreen>
   }
 
   Widget _buildLowStockCard(Product product, int index) {
-    final isOutOfStock = !product.isAvailable!;
+    final isOutOfStock = !product.available!;
     final urgencyColor = isOutOfStock ? Colors.red : Colors.orange;
 
     return TweenAnimationBuilder<double>(
@@ -465,7 +465,7 @@ class _LowStockAlertScreenState extends State<LowStockAlertScreen>
   }
 
   Widget _buildStockStatus(Product product) {
-    final isOutOfStock = !product.isAvailable!;
+    final isOutOfStock = !product.available!;
     final urgencyColor = isOutOfStock ? Colors.red : Colors.orange;
     final stockPercentage = product.lowStockQuantity! > 0
         ? (product.stockQuantity! / product.lowStockQuantity!).clamp(0.0, 1.0)
