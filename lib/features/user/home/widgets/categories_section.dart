@@ -1,4 +1,4 @@
-import'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:persistent_bottom_nav_bar/persistent_bottom_nav_bar.dart';
 import 'package:raising_india/comman/simple_text_style.dart';
@@ -10,21 +10,22 @@ import 'category_showing_widget.dart';
 Widget categories_section(BuildContext context) {
   return Consumer<CategoryService>(
     builder: (context, categoryService, _) {
-      if(categoryService.isLoading){
+      if(categoryService.isLoading && categoryService.categories.isEmpty){
         return SizedBox(
-          height: 150,
-          child: Center(child: CircularProgressIndicator(
-            color: AppColour.primary,
-          )),
+          height: 120,
+          child: Center(child: CircularProgressIndicator(color: AppColour.primary)),
         );
       }
-      final categories = categoryService.categories;
 
-      // If loading or empty, hide or show placeholder
-      if (categories.isEmpty) return const SizedBox.shrink();
+      // ✅ IMPLEMENTATION UPGRADE: Only show top-level "Root" categories on the Home Screen!
+      final rootCategories = categoryService.categories
+          .where((c) => c.parentCategory == null)
+          .toList();
 
-      // Show max 3-4 items horizontally
-      final displayList = categories.take(4).toList();
+      if (rootCategories.isEmpty) return const SizedBox.shrink();
+
+      // Show up to 8 items horizontally (users expect to scroll this list)
+      final displayList = rootCategories.take(8).toList();
 
       return Column(
         children: [
@@ -59,11 +60,12 @@ Widget categories_section(BuildContext context) {
               ),
             ],
           ),
-          const SizedBox(height: 10),
+          const SizedBox(height: 8),
           SizedBox(
-            height: 120,
+            height: 110, // Adjusted height for the new circular widgets
             width: double.infinity,
             child: ListView.builder(
+              physics: const BouncingScrollPhysics(),
               scrollDirection: Axis.horizontal,
               itemCount: displayList.length,
               itemBuilder: (context, index) {

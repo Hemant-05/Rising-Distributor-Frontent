@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart' show SvgPicture;
+import 'package:raising_india/comman/simple_text_style.dart';
 import 'package:raising_india/constant/AppColour.dart';
 
 Widget buildDetailChip({
@@ -25,8 +26,7 @@ Widget buildDetailChip({
           ),
         Text(
           label,
-          style: TextStyle(
-            fontFamily: 'Sen',
+          style: simple_text_style(
             fontSize: 14,
             color: AppColour.black,
             fontWeight: FontWeight.w500,

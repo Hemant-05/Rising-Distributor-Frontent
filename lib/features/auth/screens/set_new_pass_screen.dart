@@ -90,100 +90,102 @@ class _SetNewPassScreenState extends State<SetNewPassScreen> {
     return Scaffold(
       resizeToAvoidBottomInset: false,
       backgroundColor: AppColour.background,
-      body: Stack(
-        children: [
-          Align(
-            alignment: const Alignment(-2.5, -1.4),
-            child: SvgPicture.asset(
-              back_vector_svg,
-              color: AppColour.lightGrey.withOpacity(0.2),
-              height: 250,
-              width: 250,
-            ),
-          ),
-          Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Expanded(
-                flex: 1,
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.end,
-                  children: [
-                    Text('Reset Password', style: bold_text_style(AppColour.white)),
-                    const SizedBox(height: 10),
-                    Text(
-                      'Create a new password for your account',
-                      style: simple_text_style(color: AppColour.white),
-                    ),
-                  ],
-                ),
+      body: SafeArea(
+        child: Stack(
+          children: [
+            Align(
+              alignment: const Alignment(-2.5, -1.4),
+              child: SvgPicture.asset(
+                back_vector_svg,
+                color: AppColour.lightGrey.withOpacity(0.2),
+                height: 250,
+                width: 250,
               ),
-              const SizedBox(height: 40),
-              Expanded(
-                flex: 3,
-                child: Container(
-                  decoration: BoxDecoration(
-                    color: AppColour.white,
-                    borderRadius: const BorderRadius.only(
-                      topLeft: Radius.circular(22),
-                      topRight: Radius.circular(22),
-                    ),
+            ),
+            Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Expanded(
+                  flex: 1,
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.end,
+                    children: [
+                      Text('Reset Password', style: bold_text_style(AppColour.white)),
+                      const SizedBox(height: 10),
+                      Text(
+                        'Create a new password for your account',
+                        style: simple_text_style(color: AppColour.white),
+                      ),
+                    ],
                   ),
-                  padding: const EdgeInsets.all(22),
-                  child: SingleChildScrollView(
-                    child: Column(
-                      children: [
-                        cus_text_field(
-                          label: 'OTP',
-                          controller: _codeController,
-                          hintText: '123456',
-                        ),
-                        const SizedBox(height: 20),
-                        cus_text_field(
-                          label: 'PASSWORD',
-                          controller: _passController,
-                          hintText: '********',
-                          obscureText: true,
-                        ),
-                        const SizedBox(height: 20),
-                        cus_text_field(
-                          label: 'CONFIRM PASSWORD',
-                          controller: _conPasswordController,
-                          hintText: '********',
-                          obscureText: true,
-                        ),
-                        const SizedBox(height: 20),
-                        if (_error != null)
-                          Text(
-                            _error!,
-                            style: simple_text_style(color: AppColour.red),
+                ),
+                const SizedBox(height: 40),
+                Expanded(
+                  flex: 3,
+                  child: Container(
+                    decoration: BoxDecoration(
+                      color: AppColour.white,
+                      borderRadius: const BorderRadius.only(
+                        topLeft: Radius.circular(22),
+                        topRight: Radius.circular(22),
+                      ),
+                    ),
+                    padding: const EdgeInsets.all(22),
+                    child: SingleChildScrollView(
+                      child: Column(
+                        children: [
+                          cus_text_field(
+                            label: 'OTP',
+                            controller: _codeController,
+                            hintText: '123456',
                           ),
-                        if (_error != null) const SizedBox(height: 20),
-                        ElevatedButton(
-                          onPressed: _isLoading ? null : _onResetPressed,
-                          style: elevated_button_style(),
-                          child: _isLoading
-                              ? SizedBox(
-                            height: 30,
-                            width: 30,
-                            child: const CircularProgressIndicator(),
-                          )
-                              : Text(
-                            'RESET PASSWORD',
-                            style: simple_text_style(
-                              color: AppColour.white,
-                              fontWeight: FontWeight.bold,
+                          const SizedBox(height: 20),
+                          cus_text_field(
+                            label: 'PASSWORD',
+                            controller: _passController,
+                            hintText: '********',
+                            obscureText: true,
+                          ),
+                          const SizedBox(height: 20),
+                          cus_text_field(
+                            label: 'CONFIRM PASSWORD',
+                            controller: _conPasswordController,
+                            hintText: '********',
+                            obscureText: true,
+                          ),
+                          const SizedBox(height: 20),
+                          if (_error != null)
+                            Text(
+                              _error!,
+                              style: simple_text_style(color: AppColour.red),
+                            ),
+                          if (_error != null) const SizedBox(height: 20),
+                          ElevatedButton(
+                            onPressed: _isLoading ? null : _onResetPressed,
+                            style: elevated_button_style(),
+                            child: _isLoading
+                                ? SizedBox(
+                              height: 30,
+                              width: 30,
+                              child: const CircularProgressIndicator(),
+                            )
+                                : Text(
+                              'RESET PASSWORD',
+                              style: simple_text_style(
+                                color: AppColour.white,
+                                fontWeight: FontWeight.bold,
+                              ),
                             ),
                           ),
-                        ),
-                      ],
+                        ],
+                      ),
                     ),
                   ),
                 ),
-              ),
-            ],
-          ),
-        ],
+              ],
+            ),
+          ],
+        ),
       ),
     );
   }

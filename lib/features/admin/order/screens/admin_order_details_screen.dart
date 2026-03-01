@@ -781,13 +781,14 @@ class _AdminOrderDetailScreenState extends State<AdminOrderDetailScreen> {
     );
   }
 
+  // ✅ 1. Updated Cancel Section UI & Logic
   Widget _cancelOrderStatus() {
     return Card(
       elevation: 2,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       color: AppColour.white,
       child: Padding(
-        padding: EdgeInsets.all(16),
+        padding: const EdgeInsets.all(16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -797,10 +798,7 @@ class _AdminOrderDetailScreenState extends State<AdminOrderDetailScreen> {
                 const SizedBox(width: 8),
                 Text(
                   'Cancel This Order',
-                  style: simple_text_style(
-                    fontSize: 18,
-                    fontWeight: FontWeight.w600,
-                  ),
+                  style: simple_text_style(fontSize: 18, fontWeight: FontWeight.w600),
                 ),
               ],
             ),
@@ -810,39 +808,64 @@ class _AdminOrderDetailScreenState extends State<AdminOrderDetailScreen> {
                 Expanded(
                   child: TextField(
                     controller: _cancelController,
-                    decoration: InputDecoration(hintText: 'Enter Reason'),
+                    decoration: InputDecoration(
+                      hintText: 'Enter cancellation reason...',
+                      hintStyle: simple_text_style(color: Colors.grey),
+                      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(8),
+                        borderSide: BorderSide(color: Colors.grey.shade300),
+                      ),
+                      focusedBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(8),
+                        borderSide: BorderSide(color: AppColour.red),
+                      ),
+                    ),
                   ),
                 ),
-                const SizedBox(width: 10),
-                ElevatedButton(
-                  onPressed: () {
-                    String reason = _cancelController.text.trim().toString();
-                    if (reason.isNotEmpty) {
-                      /*context.read<AdminService>().cancelOrder(
-                        order.id.toString(),
-                        '$reason \nCancelled By : Rising India Corporation',
-                        order.paymentStatus!,
-                      );*/
-                      // @ add cancel order from admin side.
-                      Navigator.pop(context);
-                    } else {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          content: Text(
-                            'Please Enter Reason, to Cancel the order',
-                          ),
-                          backgroundColor: AppColour.red,
-                        ),
-                      );
-                    }
-                  },
-                  style: elevated_button_style(width: 100),
-                  child: Text(
-                    'Cancel',
-                    style: simple_text_style(
-                      color: AppColour.white,
-                      fontWeight: FontWeight.bold,
+                const SizedBox(width: 12),
+                SizedBox(
+                  height: 48,
+                  child: ElevatedButton(
+                    onPressed: isUpdating ? null : () async {
+                      String reason = _cancelController.text.trim();
+                      if (reason.isEmpty) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(content: const Text('Please enter a reason to cancel the order'), backgroundColor: AppColour.red),
+                        );
+                        return;
+                      }
+
+                      setState(() => isUpdating = true);
+                      try {
+                        // ✅ Make the actual API call
+                        await context.read<OrderService>().cancelOrder(orderId, reason);
+
+                        setState(() {
+                          currentOrderStatus = 'CANCELLED'; // Force UI update
+                          widget.order.status = 'CANCELLED';
+                          // Assuming you added cancelReason to your Flutter Order model
+                          widget.order.cancelReason = reason;
+                        });
+
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(content: Text('Order Cancelled Successfully'), backgroundColor: Colors.green),
+                        );
+                      } catch (e) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(content: Text('Failed to cancel: $e'), backgroundColor: AppColour.red),
+                        );
+                      } finally {
+                        setState(() => isUpdating = false);
+                      }
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppColour.red,
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                     ),
+                    child: isUpdating
+                        ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
+                        : Text('Cancel', style: simple_text_style(color: AppColour.white, fontWeight: FontWeight.bold)),
                   ),
                 ),
               ],
@@ -853,12 +876,119 @@ class _AdminOrderDetailScreenState extends State<AdminOrderDetailScreen> {
     );
   }
 
+
+  // ✅ Pst this method inside your State class
+  Widget _buildTimeline() {
+    return Column(
+      children: orderStatusStages.asMap().entries.map((entry) {
+        final index = entry.key;
+        final stage = entry.value;
+        final isCompleted = index <= currentStatusIndex;
+        final isCurrent = index == currentStatusIndex;
+        final canAdvance = canAdvanceToStatus(index);
+
+        return GestureDetector(
+          onTap: canAdvance && !isUpdating
+              ? () => _updateOrderStatus(stage['key'])
+              : null,
+          child: Container(
+            margin: const EdgeInsets.only(bottom: 16),
+            child: Row(
+              children: [
+                // Timeline indicator
+                Column(
+                  children: [
+                    Container(
+                      width: 40,
+                      height: 40,
+                      decoration: BoxDecoration(
+                        color: isCompleted
+                            ? Colors.orange.shade600
+                            : canAdvance
+                            ? Colors.orange.shade200
+                            : Colors.grey.shade300,
+                        shape: BoxShape.circle,
+                        border: isCurrent
+                            ? Border.all(
+                          color: Colors.orange.shade600,
+                          width: 3,
+                        )
+                            : null,
+                      ),
+                      child: Icon(
+                        isCompleted ? Icons.check : stage['icon'],
+                        color: isCompleted
+                            ? Colors.white
+                            : canAdvance
+                            ? Colors.orange.shade600
+                            : Colors.grey.shade600,
+                        size: 20,
+                      ),
+                    ),
+                    if (index < orderStatusStages.length - 1)
+                      Container(
+                        width: 2,
+                        height: 20,
+                        color: isCompleted
+                            ? Colors.orange.shade600
+                            : Colors.grey.shade300,
+                      ),
+                  ],
+                ),
+                const SizedBox(width: 16),
+
+                // Status label
+                Expanded(
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(vertical: 8),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          stage['label'],
+                          style: simple_text_style(
+                            fontWeight: isCurrent ? FontWeight.w600 : FontWeight.w500,
+                            fontSize: 16,
+                            color: isCompleted ? Colors.black : Colors.grey.shade600,
+                          ),
+                        ),
+                        if (canAdvance)
+                          Text(
+                            'Tap to update',
+                            style: simple_text_style(
+                              fontSize: 12,
+                              color: AppColour.primary,
+                            ),
+                          ),
+                      ],
+                    ),
+                  ),
+                ),
+
+                // Loading indicator
+                if (isUpdating && canAdvance)
+                  SizedBox(
+                    width: 20,
+                    height: 20,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      color: AppColour.primary,
+                    ),
+                  ),
+              ],
+            ),
+          ),
+        );
+      }).toList(),
+    );
+  }
+  // ✅ 2. Updated Order Status Section to show the reason if cancelled
   Widget _buildOrderStatusSection() {
-    orderIsRunning =
-        currentOrderStatus == OrderStatusPreparing ||
-        currentOrderStatus == OrderStatusConfirmed ||
-        currentOrderStatus == OrderStatusCreated ||
-        currentOrderStatus == OrderStatusDispatch;
+    // Normalize string to match backend
+    final safeStatus = currentOrderStatus.toUpperCase();
+
+    orderIsRunning = safeStatus != 'DELIVERED' && safeStatus != 'CANCELLED';
+
     return Card(
       elevation: 2,
       color: AppColour.white,
@@ -872,33 +1002,20 @@ class _AdminOrderDetailScreenState extends State<AdminOrderDetailScreen> {
               children: [
                 Icon(Icons.timeline, color: Colors.orange.shade600),
                 const SizedBox(width: 8),
-                Text(
-                  'Order Status',
-                  style: simple_text_style(
-                    fontSize: 18,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
+                Text('Order Status', style: simple_text_style(fontSize: 18, fontWeight: FontWeight.w600)),
                 const Spacer(),
                 if (!orderIsRunning)
                   Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 12,
-                      vertical: 6,
-                    ),
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                     decoration: BoxDecoration(
-                      color: currentOrderStatus == OrderStatusDeliverd
-                          ? Colors.green.withOpacity(0.2)
-                          : AppColour.red.withOpacity(0.2),
+                      color: safeStatus == 'DELIVERED' ? Colors.green.withOpacity(0.15) : AppColour.red.withOpacity(0.15),
                       borderRadius: BorderRadius.circular(20),
                     ),
                     child: Text(
-                      currentOrderStatus.toUpperCase(),
+                      safeStatus,
                       style: simple_text_style(
                         fontWeight: FontWeight.bold,
-                        color: currentOrderStatus == OrderStatusDeliverd
-                            ? Colors.green
-                            : AppColour.red,
+                        color: safeStatus == 'DELIVERED' ? Colors.green.shade700 : AppColour.red,
                       ),
                     ),
                   ),
@@ -906,123 +1023,66 @@ class _AdminOrderDetailScreenState extends State<AdminOrderDetailScreen> {
             ),
             const SizedBox(height: 20),
 
-            // Status Timeline
+            // If running, show timeline. If finished, show conclusion.
             orderIsRunning
-                ? Column(
-                    children: orderStatusStages.asMap().entries.map((entry) {
-                      final index = entry.key;
-                      final stage = entry.value;
-                      final isCompleted = index <= currentStatusIndex;
-                      final isCurrent = index == currentStatusIndex;
-                      final canAdvance = canAdvanceToStatus(index);
-
-                      return GestureDetector(
-                        onTap: canAdvance && !isUpdating
-                            ? () => _updateOrderStatus(stage['key'])
-                            : null,
-                        child: Container(
-                          margin: const EdgeInsets.only(bottom: 16),
-                          child: Row(
-                            children: [
-                              // Timeline indicator
-                              Column(
-                                children: [
-                                  Container(
-                                    width: 40,
-                                    height: 40,
-                                    decoration: BoxDecoration(
-                                      color: isCompleted
-                                          ? Colors.orange.shade600
-                                          : canAdvance
-                                          ? Colors.orange.shade200
-                                          : Colors.grey.shade300,
-                                      shape: BoxShape.circle,
-                                      border: isCurrent
-                                          ? Border.all(
-                                              color: Colors.orange.shade600,
-                                              width: 3,
-                                            )
-                                          : null,
-                                    ),
-                                    child: Icon(
-                                      isCompleted ? Icons.check : stage['icon'],
-                                      color: isCompleted
-                                          ? Colors.white
-                                          : canAdvance
-                                          ? Colors.orange.shade600
-                                          : Colors.grey.shade600,
-                                      size: 20,
-                                    ),
-                                  ),
-                                  if (index < orderStatusStages.length - 1)
-                                    Container(
-                                      width: 2,
-                                      height: 20,
-                                      color: isCompleted
-                                          ? Colors.orange.shade600
-                                          : Colors.grey.shade300,
-                                    ),
-                                ],
-                              ),
-                              const SizedBox(width: 16),
-
-                              // Status label
-                              Expanded(
-                                child: Container(
-                                  padding: const EdgeInsets.symmetric(
-                                    vertical: 8,
-                                  ),
-                                  child: Column(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.start,
-                                    children: [
-                                      Text(
-                                        stage['label'],
-                                        style: simple_text_style(
-                                          fontWeight: isCurrent
-                                              ? FontWeight.w600
-                                              : FontWeight.w500,
-                                          fontSize: 16,
-                                          color: isCompleted
-                                              ? Colors.black
-                                              : Colors.grey.shade600,
-                                        ),
-                                      ),
-                                      if (canAdvance)
-                                        Text(
-                                          'Tap to check',
-                                          style: simple_text_style(
-                                            fontSize: 12,
-                                            color: AppColour.primary,
-                                          ),
-                                        ),
-                                    ],
-                                  ),
-                                ),
-                              ),
-
-                              // Loading indicator
-                              if (isUpdating && canAdvance)
-                                SizedBox(
-                                  width: 20,
-                                  height: 20,
-                                  child: CircularProgressIndicator(
-                                    strokeWidth: 2,
-                                    color: AppColour.primary,
-                                  ),
-                                ),
-                            ],
-                          ),
-                        ),
-                      );
-                    }).toList(),
-                  )
-                : Text(
-                    widget.order.status == OrderStatusCancelled
-                        ? 'Reason : ${widget.order.payment?.paymentStatus}' // @ add cancellation reason
-                        : 'Delivered At : ${DateFormat('d/MM/yy • h:mm a').format(widget.order.createdAt ?? DateTime.now())}',
-                    style: simple_text_style(fontSize: 14),
+                ? _buildTimeline() // (Your existing timeline mapping logic goes here)
+                : Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: Colors.grey.shade50,
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: Colors.grey.shade200),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    safeStatus == 'CANCELLED'
+                        ? '❌ Order was Cancelled'
+                        : '✅ Delivered Successfully',
+                    style: simple_text_style(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                      color: safeStatus == 'CANCELLED' ? AppColour.red : Colors.green.shade700,
+                    ),
                   ),
+                  const SizedBox(height: 8),
+
+                  // Show the date
+                  Text(
+                    'At: ${DateFormat('MMM d, yyyy • h:mm a').format(widget.order.createdAt ?? DateTime.now())}',
+                    style: simple_text_style(color: Colors.grey.shade700),
+                  ),
+
+                  // ✅ Show Cancel Reason if available!
+                  if (safeStatus == 'CANCELLED' && widget.order.cancelReason != null) ...[
+                    const SizedBox(height: 12),
+                    Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: AppColour.red.withOpacity(0.05),
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(color: AppColour.red.withOpacity(0.2)),
+                      ),
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Icon(Icons.info_outline, color: AppColour.red, size: 18),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Text(
+                              'Reason: ${widget.order.cancelReason}',
+                              style: simple_text_style(color: AppColour.red, fontWeight: FontWeight.w500),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ],
+              ),
+            ),
           ],
         ),
       ),
@@ -1165,7 +1225,7 @@ class _AdminOrderDetailScreenState extends State<AdminOrderDetailScreen> {
               children: [
                 Text('Delivery Fee:', style: simple_text_style(fontSize: 16)),
                 Text(
-                  '₹${order.totalPrice!.toStringAsFixed(2)}', // @ Delivery fee
+                  '₹${order.deliveryFee.toStringAsFixed(2)}', // @ Delivery fee
                   style: simple_text_style(fontSize: 16),
                 ),
               ],

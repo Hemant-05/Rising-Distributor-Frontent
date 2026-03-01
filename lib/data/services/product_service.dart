@@ -201,43 +201,33 @@ class ProductService extends ChangeNotifier {
       return "Failed to delete product.";
     }
   }
-  // Fetch Archived
+
   Future<void> fetchArchivedProducts() async {
     _isLoading = true;
     notifyListeners();
     try {
       _archivedProducts = await _repo.getArchivedProducts();
     } catch (e) {
-      print("Archived Fetch Error: $e");
+      print("Error fetching archived products: $e");
     } finally {
       _isLoading = false;
       notifyListeners();
     }
   }
 
-  // Restore Product
   Future<String?> restoreProduct(String pid) async {
-    _isLoading = true;
-    notifyListeners();
     try {
-      Product restored = await _repo.restoreProduct(pid);
-
-      // Remove from archived list
-      _archivedProducts.removeWhere((p) => p.pid == pid);
-
-      // Add back to active list so it shows up instantly
-      _products.insert(0, restored);
-
-      _isLoading = false;
-      notifyListeners();
+      await _repo.restoreProduct(pid);
+      final restoredProductIndex = _archivedProducts.indexWhere((p) => p.pid == pid);
+      if (restoredProductIndex != -1) {
+        final restoredProduct = _archivedProducts.removeAt(restoredProductIndex);
+        _products.insert(0, restoredProduct);
+        notifyListeners();
+      }
       return null;
     } on AppError catch (e) {
-      _isLoading = false;
-      notifyListeners();
       return e.message;
     } catch (e) {
-      _isLoading = false;
-      notifyListeners();
       return "Failed to restore product.";
     }
   }

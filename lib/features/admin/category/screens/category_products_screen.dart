@@ -13,10 +13,7 @@ import 'package:raising_india/models/model/product.dart';
 class CategoryProductsScreen extends StatefulWidget {
   final Category category;
 
-  const CategoryProductsScreen({
-    super.key,
-    required this.category,
-  });
+  const CategoryProductsScreen({super.key, required this.category});
 
   @override
   State<CategoryProductsScreen> createState() => _CategoryProductsScreenState();
@@ -34,7 +31,9 @@ class _CategoryProductsScreenState extends State<CategoryProductsScreen> {
 
     // Fetch the products for this category
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      context.read<ProductService>().fetchProductsByCategory(_currentCategory.name!);
+      context.read<ProductService>().fetchProductsByCategory(
+        _currentCategory.name!,
+      );
     });
   }
 
@@ -65,7 +64,10 @@ class _CategoryProductsScreenState extends State<CategoryProductsScreen> {
             Expanded(
               child: Text(
                 _currentCategory.name ?? "Category",
-                style: simple_text_style(fontSize: 20, fontWeight: FontWeight.bold),
+                style: simple_text_style(
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                ),
                 overflow: TextOverflow.ellipsis,
               ),
             ),
@@ -80,22 +82,27 @@ class _CategoryProductsScreenState extends State<CategoryProductsScreen> {
                 physics: const BouncingScrollPhysics(),
                 slivers: [
                   SliverToBoxAdapter(
-                    child: _buildCategoryHeader(productService.categoryProducts),
+                    child: _buildCategoryHeader(
+                      productService.categoryProducts,
+                    ),
                   ),
                   if (productService.isLoading)
                     const SliverFillRemaining(
                       child: Center(child: CircularProgressIndicator()),
                     )
                   else if (productService.categoryProducts.isEmpty)
-                    SliverFillRemaining(
-                      child: _buildEmptyState(),
-                    )
+                    SliverFillRemaining(child: _buildEmptyState())
                   else
                     SliverPadding(
-                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 8,
+                      ),
                       sliver: SliverList(
                         delegate: SliverChildBuilderDelegate(
-                              (context, index) => _buildProductCard(productService.categoryProducts[index]),
+                          (context, index) => _buildProductCard(
+                            productService.categoryProducts[index],
+                          ),
                           childCount: productService.categoryProducts.length,
                         ),
                       ),
@@ -168,13 +175,23 @@ class _CategoryProductsScreenState extends State<CategoryProductsScreen> {
                   ),
                   child: ClipRRect(
                     borderRadius: BorderRadius.circular(12),
-                    child: (_currentCategory.imageUrl != null && _currentCategory.imageUrl!.isNotEmpty)
+                    child:
+                        (_currentCategory.imageUrl != null &&
+                            _currentCategory.imageUrl!.isNotEmpty)
                         ? CachedNetworkImage(
-                      imageUrl: _currentCategory.imageUrl!,
-                      fit: BoxFit.cover,
-                      errorWidget: (_, __, ___) => Icon(Icons.category, color: AppColour.primary, size: 30),
-                    )
-                        : Icon(Icons.category, color: AppColour.primary, size: 30),
+                            imageUrl: _currentCategory.imageUrl!,
+                            fit: BoxFit.cover,
+                            errorWidget: (_, __, ___) => Icon(
+                              Icons.category,
+                              color: AppColour.primary,
+                              size: 30,
+                            ),
+                          )
+                        : Icon(
+                            Icons.category,
+                            color: AppColour.primary,
+                            size: 30,
+                          ),
                   ),
                 ),
                 const SizedBox(width: 16),
@@ -184,23 +201,45 @@ class _CategoryProductsScreenState extends State<CategoryProductsScreen> {
                     children: [
                       Text(
                         _currentCategory.name ?? "Unnamed",
-                        style: simple_text_style(fontSize: 20, fontWeight: FontWeight.bold),
+                        style: simple_text_style(
+                          fontSize: 20,
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
                       const SizedBox(height: 4),
                       Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 10,
+                          vertical: 4,
+                        ),
                         decoration: BoxDecoration(
                           color: Colors.orange.shade50,
                           borderRadius: BorderRadius.circular(20),
                         ),
                         child: Text(
                           '${list.length} Products',
-                          style: simple_text_style(color: Colors.orange.shade700, fontSize: 12, fontWeight: FontWeight.bold),
+                          style: simple_text_style(
+                            color: Colors.orange.shade700,
+                            fontSize: 12,
+                            fontWeight: FontWeight.bold,
+                          ),
                         ),
                       ),
                     ],
                   ),
                 ),
+                if (list.isEmpty) ...[
+                  const SizedBox(width: 16),
+                  IconButton(
+                    onPressed: () => _navigateToAddCategory(context),
+                    icon: Icon(
+                      Icons.add_circle,
+                      color: AppColour.primary,
+                      size: 28,
+                    ),
+                    tooltip: 'Add Category',
+                  ),
+                ],
               ],
             ),
           ),
@@ -221,7 +260,13 @@ class _CategoryProductsScreenState extends State<CategoryProductsScreen> {
                       children: [
                         const Icon(Icons.edit, color: Colors.blue, size: 18),
                         const SizedBox(width: 8),
-                        Text('Edit Category', style: simple_text_style(color: Colors.blue, fontWeight: FontWeight.bold)),
+                        Text(
+                          'Edit Category',
+                          style: simple_text_style(
+                            color: Colors.blue,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
                       ],
                     ),
                   ),
@@ -236,9 +281,19 @@ class _CategoryProductsScreenState extends State<CategoryProductsScreen> {
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        const Icon(Icons.delete_outline, color: Colors.red, size: 18),
+                        const Icon(
+                          Icons.delete_outline,
+                          color: Colors.red,
+                          size: 18,
+                        ),
                         const SizedBox(width: 8),
-                        Text('Delete', style: simple_text_style(color: Colors.red, fontWeight: FontWeight.bold)),
+                        Text(
+                          'Delete',
+                          style: simple_text_style(
+                            color: Colors.red,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
                       ],
                     ),
                   ),
@@ -259,7 +314,11 @@ class _CategoryProductsScreenState extends State<CategoryProductsScreen> {
         color: Colors.white,
         borderRadius: BorderRadius.circular(12),
         boxShadow: [
-          BoxShadow(color: Colors.grey.shade100, blurRadius: 4, offset: const Offset(0, 2)),
+          BoxShadow(
+            color: Colors.grey.shade100,
+            blurRadius: 4,
+            offset: const Offset(0, 2),
+          ),
         ],
       ),
       child: ListTile(
@@ -273,12 +332,14 @@ class _CategoryProductsScreenState extends State<CategoryProductsScreen> {
           ),
           child: ClipRRect(
             borderRadius: BorderRadius.circular(8),
-            child: (product.photosList != null && product.photosList!.isNotEmpty)
+            child:
+                (product.photosList != null && product.photosList!.isNotEmpty)
                 ? CachedNetworkImage(
-              imageUrl: product.photosList!.first,
-              fit: BoxFit.cover,
-              errorWidget: (_, __, ___) => const Icon(Icons.inventory_2, color: Colors.grey),
-            )
+                    imageUrl: product.photosList!.first,
+                    fit: BoxFit.cover,
+                    errorWidget: (_, __, ___) =>
+                        const Icon(Icons.inventory_2, color: Colors.grey),
+                  )
                 : const Icon(Icons.inventory_2, color: Colors.grey),
           ),
         ),
@@ -294,12 +355,18 @@ class _CategoryProductsScreenState extends State<CategoryProductsScreen> {
             children: [
               Text(
                 '₹${product.price?.toStringAsFixed(0)}',
-                style: simple_text_style(color: AppColour.primary, fontWeight: FontWeight.bold),
+                style: simple_text_style(
+                  color: AppColour.primary,
+                  fontWeight: FontWeight.bold,
+                ),
               ),
               const SizedBox(width: 8),
               Text(
                 '• Stock: ${product.stockQuantity ?? 0}',
-                style: simple_text_style(color: Colors.grey.shade600, fontSize: 12),
+                style: simple_text_style(
+                  color: Colors.grey.shade600,
+                  fontSize: 12,
+                ),
               ),
             ],
           ),
@@ -317,11 +384,19 @@ class _CategoryProductsScreenState extends State<CategoryProductsScreen> {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(Icons.inventory_2_outlined, size: 64, color: Colors.grey.shade300),
+          Icon(
+            Icons.inventory_2_outlined,
+            size: 64,
+            color: Colors.grey.shade300,
+          ),
           const SizedBox(height: 16),
           Text(
             "No products found",
-            style: simple_text_style(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.grey.shade700),
+            style: simple_text_style(
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+              color: Colors.grey.shade700,
+            ),
           ),
           const SizedBox(height: 8),
           Text(
@@ -349,17 +424,31 @@ class _CategoryProductsScreenState extends State<CategoryProductsScreen> {
       // 2. Find the newly updated version of this category from the refreshed tree
       if (mounted) {
         final categories = context.read<CategoryService>().categories;
-        final updatedCategory = _findCategoryInTree(categories, _currentCategory.id!);
+        final updatedCategory = _findCategoryInTree(
+          categories,
+          _currentCategory.id!,
+        );
 
         if (updatedCategory != null) {
           setState(() {
             _currentCategory = updatedCategory; // UI INSTANTLY UPDATES!
           });
           // Re-fetch products just in case category name changed
-          context.read<ProductService>().fetchProductsByCategory(_currentCategory.name!);
+          context.read<ProductService>().fetchProductsByCategory(
+            _currentCategory.name!,
+          );
         }
       }
     }
+  }
+
+  void _navigateToAddCategory(BuildContext context) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => AddEditCategoryScreen(parentId: _currentCategory.id),
+      ),
+    );
   }
 
   void _showDeleteCategoryDialog(BuildContext context) {
@@ -374,9 +463,14 @@ class _CategoryProductsScreenState extends State<CategoryProductsScreen> {
             const Text('Delete Category'),
           ],
         ),
-        content: Text('Are you sure you want to delete "${_currentCategory.name}"?\nAll nested sub-categories will also be deleted.'),
+        content: Text(
+          'Are you sure you want to delete "${_currentCategory.name}"?\nAll nested sub-categories will also be deleted.',
+        ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Cancel'),
+          ),
           ElevatedButton(
             style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
             onPressed: () async {
@@ -385,7 +479,9 @@ class _CategoryProductsScreenState extends State<CategoryProductsScreen> {
               setState(() => _isDeleting = true); // Show loading overlay
 
               if (_currentCategory.id != null) {
-                final error = await context.read<CategoryService>().deleteCategory(_currentCategory.id!);
+                final error = await context
+                    .read<CategoryService>()
+                    .deleteCategory(_currentCategory.id!);
 
                 if (error == null) {
                   // ✅ CRITICAL: Sync parent screen state before popping!
@@ -394,17 +490,33 @@ class _CategoryProductsScreenState extends State<CategoryProductsScreen> {
                   if (mounted) {
                     setState(() => _isDeleting = false);
                     Navigator.pop(context); // Go back to Category List Screen
-                    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Category Deleted"), backgroundColor: Colors.green));
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text("Category Deleted"),
+                        backgroundColor: Colors.green,
+                      ),
+                    );
                   }
                 } else {
                   if (mounted) {
                     setState(() => _isDeleting = false);
-                    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(error), backgroundColor: Colors.red));
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text(error),
+                        backgroundColor: Colors.red,
+                      ),
+                    );
                   }
                 }
               }
             },
-            child: const Text('Delete', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+            child: const Text(
+              'Delete',
+              style: TextStyle(
+                color: Colors.white,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
           ),
         ],
       ),

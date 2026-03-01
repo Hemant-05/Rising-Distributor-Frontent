@@ -36,6 +36,24 @@ class AuthRepository with RepoErrorHandler {
     }
   }
 
+  Future<Map<String, dynamic>> registerAdmin({
+    required String name,
+    required String email,
+    required String password,
+  }) async {
+    try {
+      final request = RegistrationRequest(
+        name: name,
+        email: email,
+        password: password,
+      );
+      final response = await _client.registerAdmin(request);
+      return response.data!;
+    } catch (e) {
+      throw handleError(e);
+    }
+  }
+
 
   // --- 1. LOGIN ---
   Future<AuthResponse> login(String email, String password) async {
@@ -53,14 +71,12 @@ class AuthRepository with RepoErrorHandler {
     required String name,
     required String email,
     required String password,
-    required String mobileNumber,
   }) async {
     try {
       final request = RegistrationRequest(
         name: name,
         email: email,
         password: password,
-        number: mobileNumber,
       );
       final response = await _client.registerUser(request);
       return response.data!;

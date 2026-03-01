@@ -17,7 +17,8 @@ class Order {
   final String? couponCode;
   final double? discountAmount;
 
-  final String? status;
+  String? status;
+  String? cancelReason;
   final DateTime? createdAt;
 
   final double deliveryFee;
@@ -34,6 +35,7 @@ class Order {
     this.couponCode,
     this.discountAmount,
     this.status,
+    this.cancelReason,
     this.createdAt,
     this.deliveryFee = 0.0,
     this.payment,

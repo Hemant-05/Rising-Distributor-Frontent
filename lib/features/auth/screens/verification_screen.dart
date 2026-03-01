@@ -103,6 +103,14 @@ class _VerificationCodeScreenState extends State<VerificationCodeScreen> {
     }
   }
 
+  Future<void> skip() async {
+    Navigator.pushAndRemoveUntil(
+      context,
+      MaterialPageRoute(builder: (context) => const MainScreenU()),
+      (route) => false,
+    );
+  }
+
   // --- LOGIC: Verify OTP ---
   Future<void> verifyOTP() async {
     if (_verificationCodeController.text.isEmpty) {
@@ -131,9 +139,9 @@ class _VerificationCodeScreenState extends State<VerificationCodeScreen> {
         context,
         MaterialPageRoute(
           builder: (context) =>
-          widget.role == admin ? const HomeScreenA() : const MainScreenU(),
+              widget.role == admin ? const HomeScreenA() : const MainScreenU(),
         ),
-            (route) => false,
+        (route) => false,
       );
     } else {
       setState(() => _error = error);
@@ -144,142 +152,162 @@ class _VerificationCodeScreenState extends State<VerificationCodeScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColour.background,
-      body: Stack(
-        children: [
-          Align(
-            alignment: const Alignment(-2.5, -1.4),
-            child: SvgPicture.asset(
-              back_vector_svg,
-              color: AppColour.lightGrey.withOpacity(0.2),
-              height: 250,
-              width: 250,
+      body: SafeArea(
+        child: Stack(
+          children: [
+            Align(
+              alignment: const Alignment(-2.5, -1.4),
+              child: SvgPicture.asset(
+                back_vector_svg,
+                color: AppColour.lightGrey.withOpacity(0.2),
+                height: 250,
+                width: 250,
+              ),
             ),
-          ),
-          Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              SizedBox(
-                height: 180,
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                  children: [
-                    Row(
-                      children: [
-                        Container(
-                          height: 40,
-                          width: 40,
-                          margin: const EdgeInsets.only(top: 20, left: 20),
-                          decoration: BoxDecoration(
-                            color: AppColour.white,
-                            borderRadius: BorderRadius.circular(20),
-                          ),
-                          child: InkWell(
-                            onTap: () => Navigator.pop(context),
-                            child: Icon(
-                              Icons.arrow_back_ios_rounded,
-                              size: 16,
-                              color: AppColour.black,
+            Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                SizedBox(
+                  height: 180,
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                    children: [
+                      Row(
+                        children: [
+                          Container(
+                            height: 40,
+                            width: 40,
+                            margin: const EdgeInsets.only(top: 20, left: 20),
+                            decoration: BoxDecoration(
+                              color: AppColour.white,
+                              borderRadius: BorderRadius.circular(20),
+                            ),
+                            child: InkWell(
+                              onTap: () => Navigator.pop(context),
+                              child: Icon(
+                                Icons.arrow_back_ios_rounded,
+                                size: 16,
+                                color: AppColour.black,
+                              ),
                             ),
                           ),
-                        ),
-                      ],
-                    ),
-                    Column(
-                      children: [
-                        Text('Verification', style: bold_text_style(AppColour.white)),
-                        const SizedBox(height: 10),
-                        Text(
-                          'Verify your mobile number with otp',
-                          style: simple_text_style(color: AppColour.white),
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 40),
-              Expanded(
-                flex: 3,
-                child: Container(
-                  decoration: BoxDecoration(
-                    color: AppColour.white,
-                    borderRadius: const BorderRadius.only(
-                      topLeft: Radius.circular(22),
-                      topRight: Radius.circular(22),
-                    ),
+                          const Spacer(),
+                          TextButton(onPressed: ()=> skip(), child: Text('SKIP', style: simple_text_style(color: AppColour.white, fontWeight: FontWeight.bold),)),
+                          SizedBox(width: 10,),
+                        ],
+                      ),
+                      Column(
+                        children: [
+                          Text(
+                            'Verification',
+                            style: bold_text_style(AppColour.white),
+                          ),
+                          const SizedBox(height: 10),
+                          Text(
+                            'Verify your mobile number with otp',
+                            style: simple_text_style(color: AppColour.white),
+                          ),
+                        ],
+                      ),
+                    ],
                   ),
-                  padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 22),
-                  child: SingleChildScrollView(
-                    child: Column(
-                      children: [
-                        const SizedBox(height: 10),
-                        cus_text_field(
-                          label: 'NUMBER',
-                          controller: _numberController,
-                          hintText: '9987456225',
-                          isNumber: true,
-                          // Disable editing number after OTP is sent
-                        ),
-                        const SizedBox(height: 20),
-                        if (isNumberVerified) ...{
+                ),
+                const SizedBox(height: 40),
+                Expanded(
+                  flex: 3,
+                  child: Container(
+                    decoration: BoxDecoration(
+                      color: AppColour.white,
+                      borderRadius: const BorderRadius.only(
+                        topLeft: Radius.circular(22),
+                        topRight: Radius.circular(22),
+                      ),
+                    ),
+                    padding: const EdgeInsets.symmetric(
+                      vertical: 4,
+                      horizontal: 22,
+                    ),
+                    child: SingleChildScrollView(
+                      child: Column(
+                        children: [
+                          const SizedBox(height: 10),
                           cus_text_field(
-                            label: 'OTP',
-                            controller: _verificationCodeController,
-                            hintText: '1234',
+                            label: 'NUMBER',
+                            controller: _numberController,
+                            hintText: '9987456225',
                             isNumber: true,
+                            // Disable editing number after OTP is sent
                           ),
                           const SizedBox(height: 20),
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.end,
-                            children: [
-                              InkWell(
-                                onTap: (t == 0) ? sendOTP : null,
-                                child: Text(
-                                  'Resend OTP ${t > 0 ? t.toString() : ''}',
-                                  style: simple_text_style(
-                                    color: (t == 0) ? AppColour.primary : AppColour.grey,
-                                    fontWeight: FontWeight.bold,
+                          if (isNumberVerified) ...{
+                            cus_text_field(
+                              label: 'OTP',
+                              controller: _verificationCodeController,
+                              hintText: '1234',
+                              isNumber: true,
+                            ),
+                            const SizedBox(height: 20),
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.end,
+                              children: [
+                                InkWell(
+                                  onTap: (t == 0) ? sendOTP : null,
+                                  child: Text(
+                                    'Resend OTP ${t > 0 ? t.toString() : ''}',
+                                    style: simple_text_style(
+                                      color: (t == 0)
+                                          ? AppColour.primary
+                                          : AppColour.grey,
+                                      fontWeight: FontWeight.bold,
+                                    ),
                                   ),
                                 ),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 20),
-                        },
-                        if (_error != null) ...{
-                          Text(
-                            _error!,
-                            style: TextStyle(fontFamily: 'Sen', color: AppColour.red),
-                          ),
-                          const SizedBox(height: 20),
-                        },
-                        ElevatedButton(
-                          onPressed: isLoading
-                              ? null
-                              : (isNumberVerified ? verifyOTP : sendOTP),
-                          style: elevated_button_style(),
-                          child: isLoading
-                              ? SizedBox(
-                            height: 30,
-                            width: 30,
-                            child: CircularProgressIndicator(color: AppColour.white),
-                          )
-                              : Text(
-                            isNumberVerified ? 'VERIFY OTP' : 'VERIFY NUMBER',
-                            style: simple_text_style(
-                              color: AppColour.white,
-                              fontWeight: FontWeight.bold,
+                              ],
                             ),
+                            const SizedBox(height: 20),
+                          },
+                          if (_error != null) ...{
+                            Text(
+                              _error!,
+                              style: TextStyle(
+                                fontFamily: 'Sen',
+                                color: AppColour.red,
+                              ),
+                            ),
+                            const SizedBox(height: 20),
+                          },
+                          ElevatedButton(
+                            onPressed: isLoading
+                                ? null
+                                : (isNumberVerified ? verifyOTP : sendOTP),
+                            style: elevated_button_style(),
+                            child: isLoading
+                                ? SizedBox(
+                                    height: 30,
+                                    width: 30,
+                                    child: CircularProgressIndicator(
+                                      color: AppColour.white,
+                                    ),
+                                  )
+                                : Text(
+                                    isNumberVerified
+                                        ? 'VERIFY OTP'
+                                        : 'VERIFY NUMBER',
+                                    style: simple_text_style(
+                                      color: AppColour.white,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
                           ),
-                        ),
-                      ],
+                        ],
+                      ),
                     ),
                   ),
                 ),
-              ),
-            ],
-          ),
-        ],
+              ],
+            ),
+          ],
+        ),
       ),
     );
   }

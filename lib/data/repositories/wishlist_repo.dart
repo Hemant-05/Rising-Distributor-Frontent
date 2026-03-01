@@ -1,8 +1,7 @@
+import 'package:raising_india/data/rest_client.dart';
 import 'package:raising_india/error/exceptions.dart';
 import 'package:raising_india/models/model/wishlist.dart';
-
-import '../../../data/rest_client.dart';
-import '../../../services/service_locator.dart';
+import 'package:raising_india/services/service_locator.dart';
 
 class WishlistRepository with RepoErrorHandler {
   final RestClient _client = getIt<RestClient>();
@@ -16,17 +15,17 @@ class WishlistRepository with RepoErrorHandler {
     }
   }
 
-  Future<void> add(String userId, String pid) async {
+  Future<void> addToWishlist(String userId, String productPid) async {
     try {
-      await _client.addToWishlist(userId, pid);
+      await _client.addToWishlist(userId, productPid);
     } catch (e) {
       throw handleError(e);
     }
   }
 
-  Future<void> remove(String userId, String pid) async {
+  Future<void> removeFromWishlist(String userId, String productPid) async {
     try {
-      await _client.removeFromWishlist(userId, pid);
+      await _client.removeFromWishlist(userId, productPid);
     } catch (e) {
       throw handleError(e);
     }

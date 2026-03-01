@@ -1,4 +1,5 @@
 import 'package:dio/dio.dart';
+import 'package:raising_india/constant/ConString.dart';
 import 'package:raising_india/error/exceptions.dart';
 import 'package:raising_india/data/repositories/auth_repository.dart';
 import 'package:raising_india/models/dto/auth_response.dart';
@@ -116,6 +117,16 @@ class AuthService extends ChangeNotifier {
     _isLoading = true;
     notifyListeners();
     try {
+      if(email.isEmpty || password.isEmpty){
+        return "All fields are required";
+      }
+      if (!email.contains('@') || !email.contains('.')) {
+        return "Invalid email format";
+      }
+      if (password.length < 6) {
+        return "Password must be at least 6 characters long";
+      }
+
       final authResponse = await _repo.login(email, password);
       await _persistTokens(authResponse.accessToken, authResponse.refreshToken);
       await _fetchAndSetUser();
@@ -136,17 +147,34 @@ class AuthService extends ChangeNotifier {
     required String name,
     required String email,
     required String password,
-    required String mobileNumber,
+    required String role,
   }) async {
     _isLoading = true;
     notifyListeners();
     try {
-      final data = await _repo.registerUser(
-        name: name,
-        email: email,
-        password: password,
-        mobileNumber: mobileNumber,
-      );
+      var data = {};
+      if(name.isEmpty || email.isEmpty || password.isEmpty){
+        return "All fields are required";
+      }
+      if (!email.contains('@') || !email.contains('.')) {
+        return "Invalid email format";
+      }
+      if (password.length < 6) {
+        return "Password must be at least 6 characters long";
+      }
+      if (role == user) {
+        data = await _repo.registerUser(
+          name: name,
+          email: email,
+          password: password,
+        );
+      }else{
+        data = await _repo.registerAdmin(
+          name: name,
+          email: email,
+          password: password,
+        );
+      }
 
       if (data.containsKey('tokens')) {
         final tokenMap = data['tokens'] as Map<String, dynamic>;

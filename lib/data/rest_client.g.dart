@@ -656,11 +656,13 @@ class _RestClient implements RestClient {
   @override
   Future<ApiResponse<Category>> createCategory(
     String name,
+    String? imageURL,
     int? parentId,
   ) async {
     final _extra = <String, dynamic>{};
     final queryParameters = <String, dynamic>{
       r'name': name,
+      r'imageURL': imageURL,
       r'parentId': parentId,
     };
     queryParameters.removeWhere((k, v) => v == null);

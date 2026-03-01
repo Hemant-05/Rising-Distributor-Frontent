@@ -46,26 +46,28 @@ class _OnBoardingScreenState extends State<OnBoardingScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColour.white,
-      body: Column(
-        children: [
-          Expanded(
-            child: PageView.builder(
-              controller: _pageController,
-              itemCount: _onboardingItems.length,
-              onPageChanged: (index) {
-                setState(() {
-                  _currentPage = index;
-                });
-              },
-              itemBuilder: (context, index) {
-                return OnboardingPage(item: _onboardingItems[index]);
-              },
+      body: SafeArea(
+        child: Column(
+          children: [
+            Expanded(
+              child: PageView.builder(
+                controller: _pageController,
+                itemCount: _onboardingItems.length,
+                onPageChanged: (index) {
+                  setState(() {
+                    _currentPage = index;
+                  });
+                },
+                itemBuilder: (context, index) {
+                  return OnboardingPage(item: _onboardingItems[index]);
+                },
+              ),
             ),
-          ),
-          _buildPageIndicator(),
-          _buildNavigationButtons(),
-          SizedBox(height: 20),
-        ],
+            _buildPageIndicator(),
+            _buildNavigationButtons(),
+            SizedBox(height: 20),
+          ],
+        ),
       ),
     );
   }

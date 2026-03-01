@@ -261,7 +261,7 @@ class AdminOrderCard extends StatelessWidget {
 
   // Helper methods for status colors and text
   Color _getStatusColor(String status) {
-    switch (status) {
+    switch (status.toLowerCase()) {
       case 'delivered':
         return Colors.green;
       case 'cancelled':

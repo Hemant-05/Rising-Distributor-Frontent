@@ -129,6 +129,7 @@ abstract class RestClient {
   @POST("/categories/create")
   Future<ApiResponse<Category>> createCategory(
     @Query("name") String name,
+    @Query("imageURL") String? imageURL,
     @Query("parentId") int? parentId,
   );
 

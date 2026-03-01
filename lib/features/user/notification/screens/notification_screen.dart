@@ -191,6 +191,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                                   notif.message ?? '',
                                   style: simple_text_style(
                                     color: isUnread ? Colors.black87 : Colors.grey.shade600,
+                                    isEllipsisAble: false,
                                     fontSize: 13,
                                   )
                               ),

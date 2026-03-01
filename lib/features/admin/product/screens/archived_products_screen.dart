@@ -27,11 +27,11 @@ class _ArchivedProductsScreenState extends State<ArchivedProductsScreen> {
     if (mounted) {
       if (error == null) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text("Product restored!"), backgroundColor: Colors.green),
+          const SnackBar(content: Text('Product restored successfully!'), backgroundColor: Colors.green),
         );
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(error), backgroundColor: Colors.red),
+          SnackBar(content: Text(error), backgroundColor: AppColour.red),
         );
       }
     }
@@ -42,14 +42,14 @@ class _ArchivedProductsScreenState extends State<ArchivedProductsScreen> {
     return Scaffold(
       backgroundColor: Colors.grey.shade50,
       appBar: AppBar(
-        backgroundColor: Colors.white,
-        elevation: 0,
         automaticallyImplyLeading: false,
+        backgroundColor: AppColour.white,
+        elevation: 0,
         title: Row(
           children: [
             back_button(),
             const SizedBox(width: 8),
-            Text('Trash / Archived', style: simple_text_style(fontSize: 20, fontWeight: FontWeight.bold)),
+            Text('Archived Products', style: simple_text_style(fontSize: 20, fontWeight: FontWeight.bold)),
           ],
         ),
       ),
@@ -64,42 +64,90 @@ class _ArchivedProductsScreenState extends State<ArchivedProductsScreen> {
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Icon(Icons.delete_outline, size: 80, color: Colors.grey.shade300),
+                  Icon(Icons.inventory_2_outlined, size: 80, color: Colors.grey.shade300),
                   const SizedBox(height: 16),
-                  Text("Trash is empty", style: simple_text_style(fontSize: 18, color: Colors.grey.shade600, fontWeight: FontWeight.bold)),
+                  Text(
+                    'No Archived Products',
+                    style: simple_text_style(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.grey.shade700),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    'Products you delete will appear here.',
+                    style: simple_text_style(color: Colors.grey.shade500),
+                  ),
                 ],
               ),
             );
           }
 
-          return ListView.builder(
+          return ListView.separated(
             padding: const EdgeInsets.all(16),
             itemCount: productService.archivedProducts.length,
+            separatorBuilder: (context, index) => const SizedBox(height: 12),
             itemBuilder: (context, index) {
               final product = productService.archivedProducts[index];
-              return Card(
-                margin: const EdgeInsets.only(bottom: 12),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                child: ListTile(
-                  contentPadding: const EdgeInsets.all(12),
-                  leading: ClipRRect(
-                    borderRadius: BorderRadius.circular(8),
-                    child: (product.photosList != null && product.photosList!.isNotEmpty)
-                        ? CachedNetworkImage(imageUrl: product.photosList!.first, width: 60, height: 60, fit: BoxFit.cover)
-                        : Container(width: 60, height: 60, color: Colors.grey.shade200, child: const Icon(Icons.inventory_2)),
-                  ),
-                  title: Text(product.name ?? "Unnamed", style: simple_text_style(fontWeight: FontWeight.bold)),
-                  subtitle: Text("ID: ${product.pid}", style: simple_text_style(color: Colors.grey, fontSize: 12)),
-                  trailing: ElevatedButton.icon(
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.green.shade50,
-                      foregroundColor: Colors.green.shade700,
-                      elevation: 0,
+              final imageUrl = (product.photosList != null && product.photosList!.isNotEmpty)
+                  ? product.photosList!.first
+                  : '';
+
+              return Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: AppColour.white,
+                  borderRadius: BorderRadius.circular(12),
+                  boxShadow: [
+                    BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 10, offset: const Offset(0, 4)),
+                  ],
+                ),
+                child: Row(
+                  children: [
+                    // Product Image
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(8),
+                      child: CachedNetworkImage(
+                        imageUrl: imageUrl,
+                        width: 60,
+                        height: 60,
+                        fit: BoxFit.cover,
+                        errorWidget: (context, url, error) => Container(
+                          width: 60, height: 60, color: Colors.grey.shade100,
+                          child: const Icon(Icons.image_not_supported, color: Colors.grey),
+                        ),
+                      ),
                     ),
-                    icon: const Icon(Icons.restore, size: 18),
-                    label: const Text("Restore"),
-                    onPressed: () => _handleRestore(product.pid!),
-                  ),
+                    const SizedBox(width: 16),
+
+                    // Product Details
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            product.name ?? 'Unknown',
+                            maxLines: 1, overflow: TextOverflow.ellipsis,
+                            style: simple_text_style(fontWeight: FontWeight.bold, fontSize: 16),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            '₹${product.price?.toStringAsFixed(0) ?? '0'}',
+                            style: simple_text_style(color: AppColour.primary, fontWeight: FontWeight.bold),
+                          ),
+                        ],
+                      ),
+                    ),
+
+                    // Restore Button
+                    ElevatedButton.icon(
+                      onPressed: () => _handleRestore(product.pid!),
+                      icon: const Icon(Icons.restore, size: 16, color: Colors.white),
+                      label: Text('Restore', style: simple_text_style(color: Colors.white, fontWeight: FontWeight.bold)),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppColour.primary,
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                      ),
+                    ),
+                  ],
                 ),
               );
             },

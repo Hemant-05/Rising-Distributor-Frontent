@@ -143,7 +143,7 @@ class CategoryService extends ChangeNotifier {
 
       // 3. Save to Repo
       // Adjust parameters based on your Repo's specific addCategory signature
-      await _repo.createCategory(name, parentId); // Example: assuming createCategory takes name & parentId
+      await _repo.createCategory(name,imageUrl, parentId); // Example: assuming createCategory takes name & parentId
 
       // 4. Refresh List
       await loadCategories();

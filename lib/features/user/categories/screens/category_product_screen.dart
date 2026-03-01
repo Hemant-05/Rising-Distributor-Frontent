@@ -21,7 +21,6 @@ class _CategoryProductScreenState extends State<CategoryProductScreen> {
     super.initState();
     // Fetch products for this specific category
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      print('============================= ${widget.category}');
       context.read<ProductService>().fetchProductsByCategory(widget.category);
     });
   }

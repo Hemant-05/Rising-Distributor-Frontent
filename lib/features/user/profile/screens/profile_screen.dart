@@ -18,6 +18,7 @@ import 'package:raising_india/features/user/coupon/screens/coupons_screen.dart';
 import 'package:raising_india/features/user/address/screens/select_address_screen.dart';
 import 'package:raising_india/features/user/order/screens/order_screen.dart';
 import 'package:raising_india/features/user/profile/screens/personal_info_screen.dart';
+import 'package:raising_india/features/user/wishlist/wishlist_screen.dart';
 import 'package:raising_india/screens/policy_screen.dart';
 
 class ProfileScreen extends StatelessWidget {
@@ -50,61 +51,70 @@ class ProfileScreen extends StatelessWidget {
                 children: [
                   // --- PROFILE HEADER ---
                   InkWell(
-                    onTap: (){
-                      Navigator.push(context, MaterialPageRoute(builder: (context) => PersonalInfoScreen(),));
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => PersonalInfoScreen(),
+                        ),
+                      );
                     },
                     child: SizedBox(
                       height: 150,
                       width: double.infinity,
                       child: user == null
-                          ? const Center(child: CircularProgressIndicator())
+                          ? Center(
+                              child: CircularProgressIndicator(
+                                color: AppColour.primary,
+                              ),
+                            )
                           : Row(
-                        crossAxisAlignment: CrossAxisAlignment.center,
-                        children: [
-                          Container(
-                            height: 100,
-                            width: 100,
-                            decoration: BoxDecoration(
-                              color: AppColour.primary,
-                              borderRadius: BorderRadius.circular(100),
+                              crossAxisAlignment: CrossAxisAlignment.center,
+                              children: [
+                                Container(
+                                  height: 100,
+                                  width: 100,
+                                  decoration: BoxDecoration(
+                                    color: AppColour.primary,
+                                    borderRadius: BorderRadius.circular(100),
+                                  ),
+                                  child: Icon(
+                                    Icons.person_outline,
+                                    color: AppColour.white,
+                                    size: 50,
+                                  ),
+                                ),
+                                const SizedBox(width: 15),
+                                Column(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      user.name ?? "User",
+                                      style: simple_text_style(
+                                        fontSize: 24,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 10),
+                                    Text(
+                                      user.email ?? "",
+                                      style: simple_text_style(
+                                        fontSize: 14,
+                                        color: AppColour.lightGrey,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 10),
+                                    Text(
+                                      user.mobileNumber ?? "No Number",
+                                      style: simple_text_style(
+                                        color: AppColour.lightGrey,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ],
                             ),
-                            child: Icon(
-                              Icons.person_outline,
-                              color: AppColour.white,
-                              size: 50,
-                            ),
-                          ),
-                          const SizedBox(width: 15),
-                          Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                user.name ?? "User",
-                                style: simple_text_style(
-                                  fontSize: 24,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                              const SizedBox(height: 10),
-                              Text(
-                                user.email ?? "",
-                                style: simple_text_style(
-                                  fontSize: 14,
-                                  color: AppColour.lightGrey,
-                                ),
-                              ),
-                              const SizedBox(height: 10),
-                              Text(
-                                user.mobileNumber ?? "No Number",
-                                style: simple_text_style(
-                                  color: AppColour.lightGrey,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ],
-                      ),
                     ),
                   ),
                   const SizedBox(height: 8),
@@ -116,19 +126,25 @@ class ProfileScreen extends StatelessWidget {
                         optionListTile(map_svg, 'Addresses', () {
                           PersistentNavBarNavigator.pushNewScreen(
                             context,
-                            screen: const SelectAddressScreen(isFromProfile: true),
+                            screen: const SelectAddressScreen(
+                              isFromProfile: true,
+                            ),
                             withNavBar: false,
-                            pageTransitionAnimation: PageTransitionAnimation.cupertino,
+                            pageTransitionAnimation:
+                                PageTransitionAnimation.cupertino,
                           );
                         }),
                         optionListTile(coupon_svg, 'Coupons & Cashback\'s', () {
                           // Load coupons before navigating
-                          context.read<CouponService>().fetchAllCoupons(); // Assuming you have this specific method
+                          context
+                              .read<CouponService>()
+                              .fetchAllCoupons(); // Assuming you have this specific method
                           PersistentNavBarNavigator.pushNewScreen(
                             context,
                             screen: const CouponsScreen(isSelectionMode: false),
                             withNavBar: false,
-                            pageTransitionAnimation: PageTransitionAnimation.cupertino,
+                            pageTransitionAnimation:
+                                PageTransitionAnimation.cupertino,
                           );
                         }),
                       ],
@@ -144,7 +160,17 @@ class ProfileScreen extends StatelessWidget {
                             context,
                             screen: const OrderScreen(),
                             withNavBar: false,
-                            pageTransitionAnimation: PageTransitionAnimation.cupertino,
+                            pageTransitionAnimation:
+                                PageTransitionAnimation.cupertino,
+                          );
+                        }),
+                        optionListTile(border_heart_svg, 'Wishlist', () {
+                          PersistentNavBarNavigator.pushNewScreen(
+                            context,
+                            screen: const WishlistScreen(),
+                            withNavBar: false,
+                            pageTransitionAnimation:
+                            PageTransitionAnimation.cupertino,
                           );
                         }),
                         optionListTile(policy_svg, 'Term & Conditions', () {
@@ -152,7 +178,8 @@ class ProfileScreen extends StatelessWidget {
                             context,
                             screen: const PolicyScreen(),
                             withNavBar: false,
-                            pageTransitionAnimation: PageTransitionAnimation.cupertino,
+                            pageTransitionAnimation:
+                                PageTransitionAnimation.cupertino,
                           );
                         }),
                       ],
@@ -161,18 +188,8 @@ class ProfileScreen extends StatelessWidget {
 
                   // --- LOGOUT ---
                   customContainer(
-                    optionListTile(logout_svg, 'Log Out', () async {
-                      await context.read<AuthService>().signOut();
-
-                      if (context.mounted) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(content: Text('Logged out...')),
-                        );
-                        Navigator.of(context, rootNavigator: true).pushAndRemoveUntil(
-                          MaterialPageRoute(builder: (_) => const WelcomeScreen()),
-                              (route) => false,
-                        );
-                      }
+                    optionListTile(logout_svg, 'Log Out', () {
+                      _handleLogout(context, authService);
                     }),
                   ),
                 ],
@@ -210,6 +227,71 @@ class ProfileScreen extends StatelessWidget {
       ),
       title: Text(title, style: simple_text_style(fontWeight: FontWeight.w500)),
       trailing: const Icon(Icons.keyboard_arrow_right_rounded),
+    );
+  }
+
+  Future<void> _handleLogout(
+    BuildContext context,
+    AuthService authService,
+  ) async {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: Row(
+          children: [
+            const Icon(Icons.logout, color: Colors.red),
+            const SizedBox(width: 8),
+            Text(
+              'Logout',
+              style: simple_text_style(fontWeight: FontWeight.bold),
+            ),
+          ],
+        ),
+        content: Text(
+          'Are you sure you want to log out?',
+          style: simple_text_style(isEllipsisAble: false),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: Text(
+              'Cancel',
+              style: simple_text_style(color: Colors.grey.shade600),
+            ),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.red,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
+            ),
+            onPressed: () async {
+              Navigator.pop(ctx);
+              if (authService.customer != null) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text('Logged out : ${authService.customer!.name}'),
+                  ),
+                );
+                await context.read<AuthService>().signOut();
+                Navigator.of(context, rootNavigator: true).pushAndRemoveUntil(
+                  MaterialPageRoute(builder: (_) => const WelcomeScreen()),
+                  (route) => false,
+                );
+              }
+            },
+            child: Text(
+              'Logout',
+              style: simple_text_style(
+                color: Colors.white,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

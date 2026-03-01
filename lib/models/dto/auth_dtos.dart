@@ -19,7 +19,7 @@ class LogInRequest {
 class RegistrationRequest {
   final String? name;
   final String? email;
-  final String? number; // Maps to "number" in Java
+  final String? number;
   final String? password;
 
   RegistrationRequest({this.name, this.email, this.number, this.password});

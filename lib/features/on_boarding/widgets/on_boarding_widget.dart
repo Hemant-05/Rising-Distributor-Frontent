@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'package:raising_india/comman/simple_text_style.dart';
+import 'package:raising_india/constant/AppColour.dart';
 import 'package:raising_india/models/on_boarding_item.dart';
 
 
@@ -10,6 +12,7 @@ class OnboardingPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    var size = MediaQuery.of(context).size;
     return Padding(
       padding: const EdgeInsets.all(40.0),
       child: Column(
@@ -17,15 +20,16 @@ class OnboardingPage extends StatelessWidget {
         children: [
           SvgPicture.asset(
             item.icon,
-            width: 250,
-            height: 250,
+            width: size.width * 0.6,
+            height: size.height * 0.2,
             fit: BoxFit.cover,
           ),
-          SizedBox(height: 80),
+          SizedBox(height: size.height * 0.05),
           Text(
             item.title,
-            style: TextStyle(
-              fontSize: 24,
+            style: simple_text_style(
+              fontSize: 20,
+              isEllipsisAble: false,
               fontWeight: FontWeight.bold,
             ),
           ),
@@ -33,14 +37,13 @@ class OnboardingPage extends StatelessWidget {
           Text(
             item.description,
             textAlign: TextAlign.center,
-            style: TextStyle(
+            style: simple_text_style(
+              isEllipsisAble: false,
               fontSize: 16,
-              color: Colors.grey[600],
-              height: 1.5,
+              color: AppColour.grey
             ),
           ),
           SizedBox(height: 20),
-
         ],
       ),
     );

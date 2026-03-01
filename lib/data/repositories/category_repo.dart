@@ -27,9 +27,9 @@ class CategoryRepository with RepoErrorHandler {
   }
 
   // --- ADMIN ---
-  Future<Category> createCategory(String name, int? parentId) async {
+  Future<Category> createCategory(String name,String? imageUrl, int? parentId) async {
     try {
-      final response = await _client.createCategory(name, parentId);
+      final response = await _client.createCategory(name,imageUrl, parentId);
       return response.data!;
     } catch (e) {
       throw handleError(e);
