@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:raising_india/comman/simple_text_style.dart';
 import 'package:raising_india/constant/AppColour.dart';
+import 'package:raising_india/constant/ConString.dart';
 import 'package:raising_india/models/model/order.dart';
 import 'package:raising_india/models/model/order_item.dart';
 
@@ -126,10 +127,10 @@ class AdminOrderCard extends StatelessWidget {
 
                   // Payment Method
                   _buildStatusChip(
-                    icon: order.payment?.paymentMethod == 'prepaid'
+                    icon: order.payment?.paymentMethod == PayMethodOnline
                         ? Icons.credit_card
                         : Icons.money,
-                    label: order.payment?.paymentMethod == 'prepaid' ? 'Prepaid' : 'COD',
+                    label: order.payment?.paymentMethod == PayMethodOnline ? 'ONLINE' : 'COD',
                     color: Colors.blue,
                   ),
 

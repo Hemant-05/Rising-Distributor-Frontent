@@ -49,9 +49,28 @@ class AdminRepository with RepoErrorHandler {
     }
   }
 
+  Future<Order> refundOrder(int orderId) async {
+    try {
+      final response = await _client.refundOrder(orderId);
+      return response.data!;
+    } catch (e) {
+      throw handleError(e);
+    }
+  }
+
+  Future<Order> updatePayment(int orderId, String paymentStatus) async{
+    try {
+      final response = await _client.updatePaymentStatus(
+          orderId, paymentStatus);
+      return response.data!;
+    } catch (e) {
+      throw handleError(e);
+    }
+  }
+
   Future<Order> updateOrderStatus(int orderId, String status) async {
     try {
-      final response = await _client.updateAdminOrderStatus(orderId, status);
+      final response = await _client.updateOrderStatus(orderId, status);
       return response.data!;
     } catch (e) {
       throw handleError(e);

@@ -8,21 +8,22 @@ final double platformFee = 3;
 const String baseUrl = 'https://rising-distributor.onrender.com/api';
 // const String baseUrl = 'http://10.246.75.128:8080';
 
-const String OrderStatusCreated = 'created';
-const String OrderStatusConfirmed = 'confirmed';
-const String OrderStatusPreparing = 'preparing';
-const String OrderStatusDispatch = 'dispatch';
-const String OrderStatusDeliverd = 'delivered';
-const String OrderStatusCancelled = 'cancelled';
+const String OrderStatusPlaced = 'PLACED';
+const String OrderStatusConfirmed = 'CONFIRMED';
+const String OrderStatusPreparing = 'PREPARING';
+const String OrderStatusDispatch = 'DISPATCH';
+const String OrderStatusDeliverd = 'DELIVERED';
+const String OrderStatusCancelled = 'CANCELLED';
 
-const String PayMethodPrepaid = 'prepaid';
-const String PayMethodCOD = 'cod';
+const String PayMethodOnline = 'ONLINE';
+const String PayMethodCOD = 'COD';
 
-const String PayStatusPending = 'pending';
-const String PayStatusPaid = 'paid';
-const String PayStatusFailed = 'failed';
-const String PayStatusRefunded = 'refunded';
-const String PayStatusNotPaid = 'not_paid';
+const String PayStatusPaid = 'PAID';
+const String PayStatusPending = 'PENDING';
+const String PayStatusFailed = 'FAILED';
+const String PayStatusRefunding = 'REFUNDING';
+const String PayStatusRefunded = 'REFUNDED';
+const String PayStatusCancelled = 'CANCELLED';
 
 final String welcomeDescription = 'We are glad to have you here. Let\'s get started with your journey towards making a difference in your life.';
 

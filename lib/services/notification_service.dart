@@ -59,13 +59,6 @@ class NotificationBackgroundService {
 
     // F. Subscribe to topic (Fast operation, safe to await)
     await _firebaseMessaging.subscribeToTopic('all_users');
-
-    // NOTE: We do NOT update the database token here.
-    // We simply print the token. The actual update happens silently.
-    String? token = await _firebaseMessaging.getToken();
-
-    // Trigger token sync in background (fire and forget)
-    syncTokenInBackground(token!);
     }
 
   // 2. Request Permission
@@ -144,6 +137,20 @@ class NotificationBackgroundService {
       log("Token sync result: $res");
     } catch (e) {
       log("Skipping token sync (User might be logged out or server error): $e");
+    }
+  }
+
+  // ✅ NEW: Call this explicitly AFTER the user logs in
+  static Future<void> syncFCMTokenWithServer() async {
+    try {
+      String? token = await _firebaseMessaging.getToken();
+      if (token != null) {
+        final userService = getIt<UserService>();
+        String? res = await userService.updateFCM(token);
+        log("Post-Login Token sync result: $res");
+      }
+    } catch (e) {
+      log("Failed to sync FCM Token: $e");
     }
   }
 

@@ -4,12 +4,16 @@ import 'package:intl/intl.dart';
 import 'package:persistent_bottom_nav_bar/persistent_bottom_nav_bar.dart';
 import 'package:raising_india/comman/simple_text_style.dart';
 import 'package:raising_india/constant/AppColour.dart';
+import 'package:raising_india/constant/ConString.dart';
+import 'package:raising_india/data/services/address_service.dart';
 import 'package:raising_india/data/services/auth_service.dart';
 import 'package:raising_india/data/services/banner_service.dart';
 import 'package:raising_india/data/services/cart_service.dart';
 import 'package:raising_india/data/services/category_service.dart';
 import 'package:raising_india/data/services/order_service.dart';
 import 'package:raising_india/data/services/product_service.dart';
+import 'package:raising_india/data/services/user_service.dart';
+import 'package:raising_india/data/services/wishlist_service.dart';
 
 // Screens & Widgets
 import 'package:raising_india/features/user/address/screens/select_address_screen.dart';
@@ -18,7 +22,9 @@ import 'package:raising_india/features/user/home/widgets/categories_section.dart
 import 'package:raising_india/features/user/home/widgets/product_grid.dart';
 import 'package:raising_india/features/user/home/widgets/search_bar_widget.dart';
 import 'package:raising_india/features/user/order/screens/order_tracking_screen.dart';
+import 'package:raising_india/models/model/address.dart';
 import 'package:raising_india/models/model/order.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../widgets/product_card.dart';
 
 class HomeScreenU extends StatefulWidget {
@@ -29,23 +35,36 @@ class HomeScreenU extends StatefulWidget {
 }
 
 class _HomeScreenUState extends State<HomeScreenU> {
-
   @override
   void initState() {
     super.initState();
+    fcm_token();
     // Load all data when screen opens
     WidgetsBinding.instance.addPostFrameCallback((_) {
       context.read<ProductService>().fetchAvailableProducts();
       context.read<ProductService>().fetchBestSelling();
       context.read<BannerService>().loadHomeBanners();
       context.read<CategoryService>().loadCategories();
+      var authService = context.read<AuthService>();
 
       // Load orders only if user is logged in
-      if (context.read<AuthService>().isCustomer) {
+      if (authService.isCustomer) {
         context.read<OrderService>().fetchMyOrders();
         context.read<CartService>().fetchCart();
+        context.read<AddressService>().fetchAddresses();
+        context.read<WishlistService>().fetchWishlist(
+          authService.customer!.uid!,
+        );
       }
     });
+  }
+
+  Future<void> fcm_token() async{
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    String? token = prefs.getString('fcm_token');
+    if(token != null) {
+      // context.read<UserService>().updateFCM(token);
+    }
   }
 
   Future<void> _onRefresh() async {
@@ -53,15 +72,32 @@ class _HomeScreenUState extends State<HomeScreenU> {
     final bannerService = context.read<BannerService>();
     final orderService = context.read<OrderService>();
     final categoryService = context.read<CategoryService>();
+    final authService = context.read<AuthService>();
+    final wishlistService = context.read<WishlistService>();
+    final addressService = context.read<AddressService>();
+    final cartService = context.read<CartService>();
 
     await Future.wait([
       bannerService.loadHomeBanners(),
       productService.fetchAvailableProducts(),
       productService.fetchBestSelling(),
       categoryService.loadCategories(),
-      if (context.read<AuthService>().isCustomer)
-        orderService.fetchMyOrders(),
+      if (authService.isCustomer) cartService.fetchCart(),
+      orderService.fetchMyOrders(),
+      addressService.fetchAddresses(),
+      wishlistService.fetchWishlist(authService.customer!.uid!),
     ]);
+  }
+
+  String _formatFullAddress(Address address) {
+    List<String> parts = [
+      address.streetAddress ?? '',
+      address.city ?? '',
+      address.state ?? '',
+      address.zipCode ?? '',
+    ];
+    parts.removeWhere((part) => part.trim().isEmpty);
+    return parts.join(', ');
   }
 
   @override
@@ -69,9 +105,6 @@ class _HomeScreenUState extends State<HomeScreenU> {
     // Access User Data
     final authService = context.watch<AuthService>();
     final user = authService.customer;
-
-    // Fallback if not logged in (though Splash Screen prevents this)
-    String addressDisplay = 'Tap to add address...';
     String nameDisplay = 'there';
 
     if (user != null) {
@@ -80,7 +113,7 @@ class _HomeScreenUState extends State<HomeScreenU> {
 
     return Scaffold(
       backgroundColor: AppColour.white,
-      appBar: buildModernAppBar(context, addressDisplay),
+      appBar: buildModernAppBar(context),
       body: RefreshIndicator(
         color: AppColour.primary,
         backgroundColor: AppColour.white,
@@ -109,13 +142,16 @@ class _HomeScreenUState extends State<HomeScreenU> {
               // All Products Grid
               Consumer<ProductService>(
                 builder: (context, productService, _) {
-                  if (productService.isLoading && productService.products.isEmpty) {
+                  if (productService.isLoading &&
+                      productService.products.isEmpty) {
                     return SliverToBoxAdapter(
                       child: SizedBox(
                         height: 180,
-                        child: Center(child: CircularProgressIndicator(
-                          color: AppColour.primary ,
-                        )),
+                        child: Center(
+                          child: CircularProgressIndicator(
+                            color: AppColour.primary,
+                          ),
+                        ),
                       ),
                     );
                   }
@@ -137,7 +173,7 @@ class _HomeScreenUState extends State<HomeScreenU> {
     );
   }
 
-  AppBar buildModernAppBar(BuildContext context, String address) {
+  AppBar buildModernAppBar(BuildContext context) {
     return AppBar(
       backgroundColor: AppColour.white,
       elevation: 0,
@@ -167,22 +203,38 @@ class _HomeScreenUState extends State<HomeScreenU> {
                     fontWeight: FontWeight.bold,
                   ),
                 ),
-                GestureDetector(
-                  onTap: () => PersistentNavBarNavigator.pushNewScreen(
-                    context,
-                    screen: const SelectAddressScreen(isFromProfile: true),
-                    withNavBar: false,
-                    pageTransitionAnimation: PageTransitionAnimation.cupertino,
-                  ),
-                  child: Text(
-                    address,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: simple_text_style(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
+                Consumer<AddressService>(
+                  builder: (context, addressService, state) {
+                    if (addressService.isLoading) {
+                      return Text(
+                        'Loading...',
+                        style: simple_text_style(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      );
+                    }
+                    var list = addressService.addresses;
+                    final address = list.isNotEmpty ? _formatFullAddress(list.first) : 'Add Address';
+                    return GestureDetector(
+                      onTap: () => PersistentNavBarNavigator.pushNewScreen(
+                        context,
+                        screen: const SelectAddressScreen(isFromProfile: true),
+                        withNavBar: false,
+                        pageTransitionAnimation:
+                            PageTransitionAnimation.cupertino,
+                      ),
+                      child: Text(
+                        address,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: simple_text_style(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    );
+                  },
                 ),
               ],
             ),
@@ -220,12 +272,12 @@ class _HomeScreenUState extends State<HomeScreenU> {
       child: Consumer<ProductService>(
         builder: (context, productService, _) {
           if (productService.isLoading && productService.bestSelling.isEmpty) {
-            if(productService.isLoading){
+            if (productService.isLoading) {
               return SizedBox(
                 height: 150,
-                child: Center(child: CircularProgressIndicator(
-                  color: AppColour.primary,
-                )),
+                child: Center(
+                  child: CircularProgressIndicator(color: AppColour.primary),
+                ),
               );
             }
           }
@@ -240,12 +292,9 @@ class _HomeScreenUState extends State<HomeScreenU> {
             separatorBuilder: (_, __) => const SizedBox(width: 12),
             itemBuilder: (context, i) {
               return SizedBox(
-              width: 180,
-              child: product_card(
-                product: list[i],
-                isBig: true,
-              ),
-            );
+                width: 180,
+                child: product_card(product: list[i], isBig: true),
+              );
             },
           );
         },
@@ -285,9 +334,13 @@ class _HomeScreenUState extends State<HomeScreenU> {
         }
 
         // Filter for ongoing orders (Not Delivered/Cancelled)
-        final ongoingOrders = orderService.orders.where((o) =>
-        o.status != 'DELIVERED' && o.status != 'CANCELLED'
-        ).toList();
+        final ongoingOrders = orderService.orders
+            .where(
+              (o) =>
+                  o.status != OrderStatusDeliverd &&
+                  o.status != OrderStatusCancelled,
+            )
+            .toList();
 
         if (ongoingOrders.isEmpty) return const SizedBox();
 
@@ -328,7 +381,10 @@ class _HomeScreenUState extends State<HomeScreenU> {
         borderRadius: BorderRadius.circular(12),
       ),
       child: Center(
-        child: CircularProgressIndicator(color: AppColour.primary, strokeWidth: 2),
+        child: CircularProgressIndicator(
+          color: AppColour.primary,
+          strokeWidth: 2,
+        ),
       ),
     );
   }
@@ -419,12 +475,18 @@ class _HomeScreenUState extends State<HomeScreenU> {
 
   Color _getStatusColor(String status) {
     switch (status.toUpperCase()) {
-      case 'PENDING': return Colors.blue;
-      case 'CONFIRMED': return Colors.green;
-      case 'SHIPPED': return Colors.purple;
-      case 'DELIVERED': return Colors.green.shade700;
-      case 'CANCELLED': return Colors.red;
-      default: return Colors.grey;
+      case 'PENDING':
+        return Colors.blue;
+      case 'CONFIRMED':
+        return Colors.green;
+      case 'SHIPPED':
+        return Colors.purple;
+      case 'DELIVERED':
+        return Colors.green.shade700;
+      case 'CANCELLED':
+        return Colors.red;
+      default:
+        return Colors.grey;
     }
   }
 }

@@ -85,7 +85,7 @@ class OrderRepository with RepoErrorHandler {
   // 7. Update Status (Admin Only)
   Future<Order> updateOrderStatus(int id, String status) async {
     try {
-      final response = await _client.updateAdminOrderStatus(id, status);
+      final response = await _client.updateOrderStatus(id, status);
       return response.data!;
     } catch (e) {
       throw handleError(e);

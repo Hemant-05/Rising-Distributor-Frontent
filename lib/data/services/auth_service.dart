@@ -5,6 +5,7 @@ import 'package:raising_india/data/repositories/auth_repository.dart';
 import 'package:raising_india/models/dto/auth_response.dart';
 import 'package:raising_india/models/model/admin.dart';
 import 'package:raising_india/models/model/customer.dart';
+import 'package:raising_india/services/notification_service.dart';
 import 'package:raising_india/services/service_locator.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter/material.dart';
@@ -101,6 +102,7 @@ class AuthService extends ChangeNotifier {
         _dio.options.headers['Authorization'] = 'Bearer $token';
         // This will verify the token and set the user roles
         await _fetchAndSetUser();
+        await NotificationBackgroundService.syncFCMTokenWithServer();
       }
     } catch (e) {
       // If anything fails during startup check, clear everything
@@ -130,6 +132,7 @@ class AuthService extends ChangeNotifier {
       final authResponse = await _repo.login(email, password);
       await _persistTokens(authResponse.accessToken, authResponse.refreshToken);
       await _fetchAndSetUser();
+      await NotificationBackgroundService.syncFCMTokenWithServer();
 
       return null;
     } on AppError catch (e) {
@@ -175,6 +178,8 @@ class AuthService extends ChangeNotifier {
           password: password,
         );
       }
+
+      await NotificationBackgroundService.syncFCMTokenWithServer();
 
       if (data.containsKey('tokens')) {
         final tokenMap = data['tokens'] as Map<String, dynamic>;

@@ -196,7 +196,7 @@ class OrderDetailsScreen extends StatelessWidget {
 // --- Helper utils for status/icons/text/colors ---
 String _statusText(String s) {
   switch (s) {
-    case OrderStatusCreated : return "Order Placed At";
+    case OrderStatusPlaced : return "Order Placed At";
     case OrderStatusConfirmed : return "Order Confirmed";
     case OrderStatusPreparing : return "Preparing";
     case OrderStatusDispatch : return "Out For Delivery";

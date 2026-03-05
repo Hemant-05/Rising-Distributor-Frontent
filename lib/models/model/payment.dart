@@ -7,10 +7,10 @@ class Payment {
   final int? id;
   // Order is ignored via @JsonIgnore in Java
 
-  final String? paymentMethod;
-  final String? paymentStatus;
-  final String? transactionId;
-  final DateTime? paymentDate;
+  String? paymentMethod;
+  String? paymentStatus;
+  String? transactionId;
+  DateTime? paymentDate;
 
   Payment({
     this.id,

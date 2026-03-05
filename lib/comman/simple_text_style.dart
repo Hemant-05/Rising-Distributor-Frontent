@@ -4,6 +4,7 @@ TextStyle simple_text_style({
   Color color = Colors.black,
   bool isLineThrough = false,
   bool isEllipsisAble = true,
+  double letterSpacing = 1.0,
   double fontSize = 16,
   FontWeight fontWeight = FontWeight.w400,
 }) {

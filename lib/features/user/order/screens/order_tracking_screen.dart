@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:raising_india/comman/back_button.dart';
 import 'package:raising_india/comman/simple_text_style.dart';
 import 'package:raising_india/constant/AppColour.dart';
+import 'package:raising_india/constant/ConString.dart';
 import 'package:raising_india/models/model/order.dart';
 
 class OrderTrackingScreen extends StatelessWidget {
@@ -27,7 +28,37 @@ class OrderTrackingScreen extends StatelessWidget {
       body: Column(
         children: [
           // Timeline
-          _buildStatusTimeline(order.status ?? "PENDING"),
+          if (order.status!.toUpperCase().compareTo(OrderStatusCancelled) == 0) ...[
+            Card(
+              color: AppColour.white,
+              margin: const EdgeInsets.all(16),
+              child: Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Order Cancelled',
+                      style: simple_text_style(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.red,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      'Your order has been cancelled.\nReason : ${order.cancelReason}',
+                      style: simple_text_style(fontSize: 16),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
+
+          if(order.status!.toUpperCase() != OrderStatusCancelled)
+            _buildStatusTimeline(order.status ?? "PENDING"),
 
           // Payment Info Card
           Card(
@@ -39,9 +70,18 @@ class OrderTrackingScreen extends StatelessWidget {
                 color: Colors.green,
               ),
               title: Text('Payment Method', style: simple_text_style()),
-              subtitle: Text(
-                (order.payment?.paymentMethod ?? "Unknown").toUpperCase(),
-                style: simple_text_style(fontWeight: FontWeight.bold),
+              subtitle: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    (order.payment?.paymentMethod ?? "Unknown").toUpperCase(),
+                    style: simple_text_style(fontWeight: FontWeight.bold),
+                  ),
+                  const SizedBox(height: 4),
+                  Text('₹${order.totalPrice?.toStringAsFixed(2) ?? "0.00"}',style: simple_text_style(),),
+                  const SizedBox(height: 4),
+                  Text('Payment Status : ${order.payment?.paymentStatus ?? "Pending"}',style: simple_text_style(),),
+                ],
               ),
             ),
           ),
@@ -52,11 +92,12 @@ class OrderTrackingScreen extends StatelessWidget {
 
   Widget _buildStatusTimeline(String currentStatus) {
     final statuses = [
-      'PENDING',
-      'CONFIRMED',
-      'PREPARING', // Optional, depends on your backend enums
-      'SHIPPED',
-      'DELIVERED',
+      OrderStatusPlaced,
+      OrderStatusConfirmed,
+      OrderStatusPreparing,
+      OrderStatusDispatch,
+      OrderStatusDeliverd,
+      OrderStatusCancelled,
     ];
 
     // Simple index mapping
@@ -73,7 +114,10 @@ class OrderTrackingScreen extends StatelessWidget {
           children: [
             Text(
               'Order Status: $currentStatus',
-              style: simple_text_style(fontSize: 18, fontWeight: FontWeight.bold),
+              style: simple_text_style(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+              ),
             ),
             const SizedBox(height: 20),
 
@@ -88,16 +132,24 @@ class OrderTrackingScreen extends StatelessWidget {
                   Column(
                     children: [
                       Container(
-                        width: 16, height: 16,
+                        width: 16,
+                        height: 16,
                         decoration: BoxDecoration(
                           color: isCompleted ? Colors.green : Colors.grey[300],
                           shape: BoxShape.circle,
                         ),
-                        child: isCompleted ? const Icon(Icons.check, size: 10, color: Colors.white) : null,
+                        child: isCompleted
+                            ? const Icon(
+                                Icons.check,
+                                size: 10,
+                                color: Colors.white,
+                              )
+                            : null,
                       ),
                       if (index < statuses.length - 1)
                         Container(
-                          width: 2, height: 30,
+                          width: 2,
+                          height: 30,
                           color: isCompleted ? Colors.green : Colors.grey[300],
                         ),
                     ],
@@ -107,7 +159,9 @@ class OrderTrackingScreen extends StatelessWidget {
                     status,
                     style: simple_text_style(
                       color: isCompleted ? Colors.black : Colors.grey,
-                      fontWeight: isCompleted ? FontWeight.bold : FontWeight.normal,
+                      fontWeight: isCompleted
+                          ? FontWeight.bold
+                          : FontWeight.normal,
                     ),
                   ),
                 ],
@@ -120,7 +174,7 @@ class OrderTrackingScreen extends StatelessWidget {
   }
 
   IconData _getPaymentIcon(String method) {
-    if (method.toLowerCase().contains('cod')) return Icons.money;
+    if (method.toLowerCase().contains(PayMethodCOD)) return Icons.money;
     return Icons.credit_card;
   }
 }

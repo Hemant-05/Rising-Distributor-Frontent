@@ -62,11 +62,46 @@ class AdminService extends ChangeNotifier {
     }
   }
 
+  Future<Order?> refundOrder(int orderId) async{
+    _isLoading = true;
+    notifyListeners();
+    try {
+      Order order = await _repo.refundOrder(orderId);
+      _error = null;
+      return order;
+      } catch (e) {
+      _error = e.toString();
+      print("Admin Refund Order Error: $e");
+    }finally{
+      _isLoading = false;
+      notifyListeners();
+    }
+    return null;
+  }
+
+  Future<Order?> updatePayment(int orderId, String paymentStatus) async {
+    _isLoading = true;
+    notifyListeners();
+    try {
+      Order order = await _repo.updatePayment(orderId, paymentStatus);
+      _error = null;
+      return order;
+    } catch (e) {
+      _error = e.toString();
+      print("Admin Refund Order Error: $e");
+    }finally{
+      _isLoading = false;
+      notifyListeners();
+    }
+    return null;
+  }
+
   Future<void> fetchAllProducts() async{
     _isLoading = true;
     notifyListeners();
     try {
       _products = await _repo.getAllProducts();
+      _error = null;
     } catch (e) {
       _error = e.toString();
       print("Admin Products Error: $e");
@@ -82,6 +117,7 @@ class AdminService extends ChangeNotifier {
     notifyListeners();
     try {
       _dashboardStats = await _repo.getDashboard();
+      _error = null;
     } catch (e) {
       _error = e.toString();
       print("Dashboard Error: $e");
@@ -95,6 +131,7 @@ class AdminService extends ChangeNotifier {
     try {
       await _repo.updateOrderStatus(orderId, status);
       await _repo.getAllOrders();
+      _error = null;
       return null;
     } on AppError catch (e) {
       _error = e.message;

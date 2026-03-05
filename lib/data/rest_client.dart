@@ -305,6 +305,17 @@ abstract class RestClient {
       @Body() CancelRequest request,
       );
 
+  @PUT("/orders/{id}/refund")
+  Future<ApiResponse<Order>> refundOrder(@Path("id") int id);
+
+  @PUT("/orders/{id}/update-payment")
+  Future<ApiResponse<Order>> updatePaymentStatus(@Path("id")int id, @Query("paymentStatus") String paymentStatus);
+
+  @PUT("/orders/{id}")
+  Future<ApiResponse<Order>> updateOrderStatus(
+    @Path("id") int id,
+    @Query("status") String status);
+
   @GET("/orders/{id}/invoice")
   @DioResponseType(ResponseType.bytes)
   Future<List<int>> downloadInvoice(@Path("id") int id);
