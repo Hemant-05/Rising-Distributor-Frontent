@@ -6,8 +6,8 @@ part of 'admin_order_review_dto.dart';
 // JsonSerializableGenerator
 // **************************************************************************
 
-AdminOrderReviewDto _$AdminOrderReviewDtoFromJson(Map<String, dynamic> json) =>
-    AdminOrderReviewDto(
+OrderReviewDto _$OrderReviewDtoFromJson(Map<String, dynamic> json) =>
+    OrderReviewDto(
       serviceReview: json['serviceReview'] == null
           ? null
           : ServiceReview.fromJson(
@@ -18,8 +18,8 @@ AdminOrderReviewDto _$AdminOrderReviewDtoFromJson(Map<String, dynamic> json) =>
           .toList(),
     );
 
-Map<String, dynamic> _$AdminOrderReviewDtoToJson(
-  AdminOrderReviewDto instance,
+Map<String, dynamic> _$OrderReviewDtoToJson(
+  OrderReviewDto instance,
 ) => <String, dynamic>{
   'serviceReview': instance.serviceReview?.toJson(),
   'productReviews': instance.productReviews?.map((e) => e.toJson()).toList(),

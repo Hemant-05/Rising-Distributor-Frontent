@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
 import 'package:persistent_bottom_nav_bar/persistent_bottom_nav_bar.dart';
+import 'package:raising_india/comman/helper_functions.dart';
 import 'package:raising_india/comman/simple_text_style.dart';
 import 'package:raising_india/constant/AppColour.dart';
 import 'package:raising_india/constant/ConString.dart';
@@ -89,17 +90,6 @@ class _HomeScreenUState extends State<HomeScreenU> {
     ]);
   }
 
-  String _formatFullAddress(Address address) {
-    List<String> parts = [
-      address.streetAddress ?? '',
-      address.city ?? '',
-      address.state ?? '',
-      address.zipCode ?? '',
-    ];
-    parts.removeWhere((part) => part.trim().isEmpty);
-    return parts.join(', ');
-  }
-
   @override
   Widget build(BuildContext context) {
     // Access User Data
@@ -179,52 +169,52 @@ class _HomeScreenUState extends State<HomeScreenU> {
       elevation: 0,
       titleSpacing: 12,
       automaticallyImplyLeading: false,
-      title: Row(
-        children: [
-          CircleAvatar(
-            radius: 16,
-            backgroundColor: AppColour.primary,
-            child: const Icon(
-              Icons.location_on_outlined,
-              size: 16,
-              color: Colors.white,
+      title: GestureDetector(
+        onTap: () => PersistentNavBarNavigator.pushNewScreen(
+          context,
+          screen: const SelectAddressScreen(isFromProfile: true),
+          withNavBar: false,
+          pageTransitionAnimation:
+          PageTransitionAnimation.cupertino,
+        ),
+        child: Row(
+          children: [
+            CircleAvatar(
+              radius: 16,
+              backgroundColor: AppColour.primary,
+              child: const Icon(
+                Icons.location_on_outlined,
+                size: 16,
+                color: Colors.white,
+              ),
             ),
-          ),
-          const SizedBox(width: 10),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'DELIVER TO',
-                  style: simple_text_style(
-                    color: AppColour.primary,
-                    fontSize: 11,
-                    fontWeight: FontWeight.bold,
+            const SizedBox(width: 10),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'DELIVER TO',
+                    style: simple_text_style(
+                      color: AppColour.primary,
+                      fontSize: 11,
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
-                ),
-                Consumer<AddressService>(
-                  builder: (context, addressService, state) {
-                    if (addressService.isLoading) {
+                  Consumer<AddressService>(
+                    builder: (context, addressService, state) {
+                      if (addressService.isLoading) {
+                        return Text(
+                          'Loading...',
+                          style: simple_text_style(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        );
+                      }
+                      var list = addressService.addresses;
+                      final address = list.isNotEmpty ? formatFullAddress(list.first) : 'Add Address';
                       return Text(
-                        'Loading...',
-                        style: simple_text_style(
-                          fontSize: 14,
-                          fontWeight: FontWeight.w700,
-                        ),
-                      );
-                    }
-                    var list = addressService.addresses;
-                    final address = list.isNotEmpty ? _formatFullAddress(list.first) : 'Add Address';
-                    return GestureDetector(
-                      onTap: () => PersistentNavBarNavigator.pushNewScreen(
-                        context,
-                        screen: const SelectAddressScreen(isFromProfile: true),
-                        withNavBar: false,
-                        pageTransitionAnimation:
-                            PageTransitionAnimation.cupertino,
-                      ),
-                      child: Text(
                         address,
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
@@ -232,14 +222,14 @@ class _HomeScreenUState extends State<HomeScreenU> {
                           fontSize: 14,
                           fontWeight: FontWeight.w700,
                         ),
-                      ),
-                    );
-                  },
-                ),
-              ],
+                      );
+                    },
+                  ),
+                ],
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

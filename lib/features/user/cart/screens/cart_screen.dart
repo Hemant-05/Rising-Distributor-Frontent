@@ -258,15 +258,15 @@ class _CartScreenState extends State<CartScreen> {
                         ),
                       ],
                     ),
-                    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+                    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 6),
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
                         Text(
-                          'Free Delivery Above ₹99',
+                          'Free Delivery Above ₹199',
                           style: simple_text_style(
                             fontSize: 14,
-                            color: total > 99 ? AppColour.green : AppColour.grey,
+                            color: total > 199 ? AppColour.green : AppColour.grey,
                             fontWeight: FontWeight.bold,
                           ),
                         ),

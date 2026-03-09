@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:raising_india/error/exceptions.dart';
+import 'package:raising_india/models/model/cart.dart';
 import 'package:raising_india/models/model/coupon.dart';
 
 import '../repositories/coupon_repo.dart';
@@ -14,6 +15,10 @@ class CouponService extends ChangeNotifier {
   bool _isLoading = false;
   bool get isLoading => _isLoading;
 
+  String _errorMessage = '';
+  String get errorMessage => _errorMessage;
+
+
   // --- USER LOGIC ---
 
   /// Applies coupon and returns the UPDATED Cart.
@@ -23,11 +28,13 @@ class CouponService extends ChangeNotifier {
     notifyListeners();
     try {
       final updatedCart = await _repo.applyCoupon(userId, code);
-      return updatedCart; // Success: Return Cart object
+      return updatedCart.toJson(); // Success: Return Cart object
     } on AppError catch (e) {
-      return e.message; // Error: Return String message
+      _errorMessage =  e.message; // Error: Return String message
+      return e.message;
     } catch (e) {
-      return "Failed to apply coupon.";
+      _errorMessage = "Failed to apply coupon. : ${e.toString()}";
+      return "Failed to apply coupon. : ${e.toString()}";
     } finally {
       _isLoading = false;
       notifyListeners();
@@ -41,8 +48,10 @@ class CouponService extends ChangeNotifier {
       final updatedCart = await _repo.removeCoupon(userId);
       return updatedCart; // Success
     } on AppError catch (e) {
+      _errorMessage = e.message; // Error
       return e.message;
     } catch (e) {
+      _errorMessage = "Failed to remove coupon. + ${e.toString()}";
       return "Failed to remove coupon.";
     } finally {
       _isLoading = false;
@@ -58,7 +67,7 @@ class CouponService extends ChangeNotifier {
     try {
       _coupons = await _repo.getAllCoupons();
     } catch (e) {
-      print("Coupon Fetch Error: $e");
+      _errorMessage = "Failed to fetch coupons. : ${e.toString()}";
     } finally {
       _isLoading = false;
       notifyListeners();
@@ -71,8 +80,10 @@ class CouponService extends ChangeNotifier {
       await fetchAllCoupons();
       return null;
     } on AppError catch (e) {
+      _errorMessage = e.message;
       return e.message;
     } catch (e) {
+      _errorMessage = "Failed to create coupon. : ${e.toString()}";
       return "Failed to create coupon.";
     }
   }
@@ -84,8 +95,10 @@ class CouponService extends ChangeNotifier {
       notifyListeners();
       return null;
     } on AppError catch (e) {
+      _errorMessage = e.message;
       return e.message;
     } catch (e) {
+      _errorMessage = "Failed to delete coupon. : ${e.toString()}";
       return "Failed to delete coupon.";
     }
   }

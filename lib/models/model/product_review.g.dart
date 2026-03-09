@@ -11,7 +11,7 @@ ProductReview _$ProductReviewFromJson(Map<String, dynamic> json) =>
       id: (json['id'] as num?)?.toInt(),
       userId: json['userId'] as String?,
       userName: json['userName'] as String?,
-      productId: (json['productId'] as num?)?.toInt(),
+      productId: (json['productId'] as String),
       rating: (json['rating'] as num?)?.toDouble(),
       reviewText: json['reviewText'] as String?,
       createdAt: json['createdAt'] == null

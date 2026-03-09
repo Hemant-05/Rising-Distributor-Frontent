@@ -112,15 +112,16 @@ class ProductService extends ChangeNotifier {
       }
 
       // 2. Update Product Model with new URLs
-      request.photosList!.insertAll(0, imageUrls);
+      request.photosList = imageUrls;
 
       // 3. Save Product to Database
       Product product = await _repo.addProduct(request);
 
-      _products.insert(_products.length-1, product);
+      _products.add(product);
 
       return null; // Success
     } catch (e) {
+      print('-=-=-= ERROR: $e');
       for(String url in imageUrls){
         imageService.deleteImage(url);
       }

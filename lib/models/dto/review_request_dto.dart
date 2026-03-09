@@ -31,7 +31,7 @@ class ReviewRequestDto {
 // Nested Class mapped as a standalone Dart class
 @JsonSerializable()
 class ProductRatingDto {
-  final int? productId;
+  final String? productId;
   final double? rating;
   final String? reviewText;
 

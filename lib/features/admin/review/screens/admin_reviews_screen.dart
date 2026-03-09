@@ -8,6 +8,7 @@ import 'package:raising_india/data/services/review_service.dart';
 import 'package:raising_india/models/dto/admin_order_review_dto.dart';
 import 'package:raising_india/models/model/product_review.dart';
 import 'package:raising_india/models/model/service_review.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 
 class AdminReviewsScreen extends StatefulWidget {
   const AdminReviewsScreen({super.key});
@@ -16,35 +17,21 @@ class AdminReviewsScreen extends StatefulWidget {
   State<AdminReviewsScreen> createState() => _AdminReviewsScreenState();
 }
 
-class _AdminReviewsScreenState extends State<AdminReviewsScreen>
-    with TickerProviderStateMixin {
-
+class _AdminReviewsScreenState extends State<AdminReviewsScreen> with TickerProviderStateMixin {
   final TextEditingController _searchController = TextEditingController();
   late AnimationController _animationController;
   late Animation<double> _fadeAnimation;
 
-  final List<String> _filterOptions = ['all', 'high_rating', 'low_rating', 'recent'];
-  final List<String> _filterLabels = ['All Reviews', 'High Ratings (4+)', 'Low Ratings (≤2)', 'Recent (7 days)'];
-
   @override
   void initState() {
     super.initState();
-
-    _animationController = AnimationController(
-      duration: const Duration(milliseconds: 800),
-      vsync: this,
-    );
-
-    _fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
-      CurvedAnimation(parent: _animationController, curve: Curves.easeInOut),
-    );
-
+    _animationController = AnimationController(duration: const Duration(milliseconds: 800), vsync: this);
+    _fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(CurvedAnimation(parent: _animationController, curve: Curves.easeInOut));
     _animationController.forward();
 
-    // FIX: Wait for the widget to finish building before notifying listeners
     WidgetsBinding.instance.addPostFrameCallback((_) {
       context.read<ReviewService>().loadAdminReviews();
-      context.read<ReviewService>().fetchReviewAnalytics(); // Sync total counts
+      context.read<ReviewService>().fetchReviewAnalytics();
     });
   }
 
@@ -78,26 +65,22 @@ class _AdminReviewsScreenState extends State<AdminReviewsScreen>
         children: [
           back_button(),
           const SizedBox(width: 8),
-          Text('Reviews', style: simple_text_style(fontSize: 20)),
+          Text('Customer Reviews', style: simple_text_style(fontSize: 20, fontWeight: FontWeight.bold)),
         ],
       ),
     );
   }
 
-  Widget _buildLoadingState() {
+  Widget _buildLoadingState() => Center(child: CircularProgressIndicator(color: AppColour.primary));
+
+  Widget _buildEmptyState() {
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          CircularProgressIndicator(color: AppColour.primary),
+          Icon(Icons.rate_review_outlined, size: 80, color: Colors.grey.shade300),
           const SizedBox(height: 16),
-          Text(
-            'Loading reviews...',
-            style: simple_text_style(
-              color: Colors.grey.shade600,
-              fontSize: 16,
-            ),
-          ),
+          Text('No reviews yet', style: simple_text_style(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.grey.shade600)),
         ],
       ),
     );
@@ -108,33 +91,13 @@ class _AdminReviewsScreenState extends State<AdminReviewsScreen>
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(Icons.error_outline, size: 80, color: Colors.red.shade400),
+          Icon(Icons.error_outline, size: 60, color: Colors.red.shade400),
           const SizedBox(height: 16),
-          Text(
-            'Something went wrong',
-            style: simple_text_style(
-              fontSize: 18,
-              fontWeight: FontWeight.w600,
-              color: Colors.red.shade600,
-            ),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            message,
-            style: simple_text_style(
-              color: Colors.grey.shade600,
-              fontSize: 14,
-            ),
-            textAlign: TextAlign.center,
-          ),
+          Text(message, style: simple_text_style(color: Colors.grey.shade600)),
           const SizedBox(height: 24),
           ElevatedButton(
-            onPressed: () {
-              context.read<ReviewService>().loadAdminReviews();
-            },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppColour.primary,
-            ),
+            style: ElevatedButton.styleFrom(backgroundColor: AppColour.primary),
+            onPressed: () => context.read<ReviewService>().loadAdminReviews(),
             child: const Text('Retry'),
           ),
         ],
@@ -142,7 +105,7 @@ class _AdminReviewsScreenState extends State<AdminReviewsScreen>
     );
   }
 
-  Widget _buildLoadedState(List<AdminOrderReviewDto> list) {
+  Widget _buildLoadedState(List<OrderReviewDto> list) {
     return RefreshIndicator(
       color: AppColour.primary,
       backgroundColor: AppColour.white,
@@ -155,16 +118,23 @@ class _AdminReviewsScreenState extends State<AdminReviewsScreen>
         child: Column(
           children: [
             _buildStatsHeader(list),
-            _buildSearchAndFilterSection(list),
-            Expanded(child: _buildReviewsList(list)),
+            _buildSearchSection(),
+            Expanded(
+              child: ListView.builder(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                physics: const BouncingScrollPhysics(),
+                itemCount: list.length,
+                itemBuilder: (context, index) => _buildOrderReviewCard(list[index]),
+              ),
+            ),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildStatsHeader(List<AdminOrderReviewDto> list) {
-    // FIX: Dynamically calculate accurate rating averages instead of printing list length!
+  // --- Header Stats ---
+  Widget _buildStatsHeader(List<OrderReviewDto> list) {
     double sTotal = 0; int sCount = 0;
     double pTotal = 0; int pCount = 0;
 
@@ -189,37 +159,20 @@ class _AdminReviewsScreenState extends State<AdminReviewsScreen>
     return Container(
       margin: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: [AppColour.primary, AppColour.primary.withOpacity(0.8)],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
+        gradient: LinearGradient(colors: [AppColour.primary, AppColour.primary.withOpacity(0.8)], begin: Alignment.topLeft, end: Alignment.bottomRight),
         borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: AppColour.primary.withOpacity(0.3),
-            blurRadius: 12,
-            offset: const Offset(0, 6),
-          ),
-        ],
+        boxShadow: [BoxShadow(color: AppColour.primary.withOpacity(0.3), blurRadius: 10, offset: const Offset(0, 4))],
       ),
-      child: Padding(
-        padding: const EdgeInsets.all(20),
-        child: Row(
-          children: [
-            Expanded(
-              child: _buildStatItem('Total Reviews', list.length.toString(), Icons.rate_review),
-            ),
-            Container(width: 1, height: 40, color: Colors.white.withOpacity(0.3)),
-            Expanded(
-              child: _buildStatItem('Service Rating', sAvg.toStringAsFixed(1), Icons.room_service),
-            ),
-            Container(width: 1, height: 40, color: Colors.white.withOpacity(0.3)),
-            Expanded(
-              child: _buildStatItem('Product Rating', pAvg.toStringAsFixed(1), Icons.shopping_basket),
-            ),
-          ],
-        ),
+      padding: const EdgeInsets.all(20),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+        children: [
+          _buildStatItem('Total\nReviews', list.length.toString(), Icons.rate_review),
+          Container(width: 1, height: 40, color: Colors.white30),
+          _buildStatItem('Service\nRating', sAvg.toStringAsFixed(1), Icons.delivery_dining),
+          Container(width: 1, height: 40, color: Colors.white30),
+          _buildStatItem('Product\nRating', pAvg.toStringAsFixed(1), Icons.shopping_bag),
+        ],
       ),
     );
   }
@@ -229,250 +182,201 @@ class _AdminReviewsScreenState extends State<AdminReviewsScreen>
       children: [
         Icon(icon, color: Colors.white, size: 24),
         const SizedBox(height: 8),
-        Text(
-          value,
-          style: simple_text_style(
-            color: Colors.white,
-            fontSize: 24,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-        Text(
-          title,
-          style: simple_text_style(
-            color: Colors.white.withOpacity(0.9),
-            fontSize: 12,
-          ),
-          textAlign: TextAlign.center,
-        ),
+        Text(value, style: simple_text_style(color: Colors.white, fontSize: 24, fontWeight: FontWeight.bold)),
+        Text(title, style: simple_text_style(color: Colors.white70, fontSize: 12), textAlign: TextAlign.center),
       ],
     );
   }
 
-  Widget _buildSearchAndFilterSection(List<AdminOrderReviewDto> list) {
+  // --- Search ---
+  Widget _buildSearchSection() {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      child: TextField(
+        controller: _searchController,
+        onChanged: (val) => context.read<ReviewService>().loadAdminReviews(page: 0, keyword: val),
+        decoration: InputDecoration(
+          hintText: 'Search reviews or order IDs...',
+          hintStyle: simple_text_style(color: Colors.grey.shade400),
+          prefixIcon: Icon(Icons.search, color: AppColour.primary),
+          filled: true,
+          fillColor: Colors.white,
+          border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: Colors.grey.shade200)),
+          enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: Colors.grey.shade200)),
+        ),
+      ),
+    );
+  }
+
+  // ===========================================================================
+  // 🚀 UPGRADED REVIEW CARD (Handles Multiple Products!)
+  // ===========================================================================
+  Widget _buildOrderReviewCard(OrderReviewDto reviewData) {
+    ServiceReview? serviceReview = reviewData.serviceReview;
+    List<ProductReview> productReviews = reviewData.productReviews ?? [];
+
+    // ✅ Safely extract username based on your exact models
+    String userName = 'Unknown User';
+    if (productReviews.isNotEmpty && productReviews.first.userName != null) {
+      userName = productReviews.first.userName!;
+    } else if (serviceReview?.userId != null) {
+      userName = 'User ID: ${serviceReview!.userId}'; // Fallback to ID
+    }
+
+    String orderId = serviceReview?.orderId?.toString() ?? 'N/A';
+    DateTime? reviewDate = serviceReview?.createdAt ?? (productReviews.isNotEmpty ? productReviews.first.createdAt : null);
+
     return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 16),
+      margin: const EdgeInsets.only(bottom: 20),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: Colors.grey.shade200),
+        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.02), blurRadius: 10, offset: const Offset(0, 4))],
+      ),
       child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          // --- 1. Order Header ---
           Container(
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(12),
-              boxShadow: [
-                BoxShadow(color: Colors.grey.shade200, blurRadius: 8, offset: const Offset(0, 2)),
-              ],
-            ),
-            child: TextField(
-              controller: _searchController,
-              onChanged: (value) {
-                context.read<ReviewService>().loadAdminReviews(page: 0, keyword: value);
-              },
-              decoration: InputDecoration(
-                hintText: 'Search reviews, users, or order IDs...',
-                prefixIcon: Icon(Icons.search, color: AppColour.primary),
-                border: InputBorder.none,
-                contentPadding: const EdgeInsets.all(16),
-              ),
-              style: simple_text_style(fontSize: 14),
-            ),
-          ),
-          const SizedBox(height: 12),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildReviewsList(List<AdminOrderReviewDto> reviews) {
-    return ListView.builder(
-      padding: const EdgeInsets.all(16),
-      itemCount: reviews.length,
-      itemBuilder: (context, index) {
-        final review = reviews[index];
-        return _buildReviewCard(review, index);
-      },
-    );
-  }
-
-  Widget _buildEmptyState() {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(Icons.rate_review_outlined, size: 80, color: Colors.grey.shade400),
-          const SizedBox(height: 16),
-          Text(
-            'No reviews found',
-            style: simple_text_style(
-              fontSize: 18,
-              fontWeight: FontWeight.w600,
-              color: Colors.grey.shade600,
-            ),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            'Reviews will appear here when customers submit them',
-            style: simple_text_style(color: Colors.grey.shade500, fontSize: 14),
-            textAlign: TextAlign.center,
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildReviewCard(AdminOrderReviewDto review, int index) {
-    // Safely extract the first product review if it exists
-    ProductReview? productReview = (review.productReviews != null && review.productReviews!.isNotEmpty)
-        ? review.productReviews!.first
-        : null;
-    ServiceReview? serviceReview = review.serviceReview;
-
-    String userName = productReview?.userName ?? serviceReview?.userId ?? 'Unknown User';
-    DateTime? date = productReview?.createdAt ?? serviceReview?.createdAt ?? DateTime.now();
-
-    return TweenAnimationBuilder<double>(
-      duration: Duration(milliseconds: 500 + (index * 100)),
-      tween: Tween<double>(begin: 0.0, end: 1.0),
-      curve: Curves.easeOutBack,
-      builder: (context, value, child) {
-        return Transform.scale(
-          scale: value,
-          child: Container(
-            margin: const EdgeInsets.only(bottom: 16),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(16),
-              boxShadow: [
-                BoxShadow(color: Colors.grey.shade200, blurRadius: 10, offset: const Offset(0, 4)),
-              ],
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            decoration: BoxDecoration(color: Colors.grey.shade50, borderRadius: const BorderRadius.vertical(top: Radius.circular(16))),
+            child: Row(
               children: [
-                Container(
-                  padding: const EdgeInsets.all(20),
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      colors: [AppColour.primary.withOpacity(0.1), AppColour.primary.withOpacity(0.05)],
-                    ),
-                    borderRadius: const BorderRadius.only(
-                      topLeft: Radius.circular(16),
-                      topRight: Radius.circular(16),
-                    ),
-                  ),
+                CircleAvatar(backgroundColor: AppColour.primary.withOpacity(0.1), radius: 20, child: Text(userName[0].toUpperCase(), style: simple_text_style(color: AppColour.primary, fontWeight: FontWeight.bold))),
+                const SizedBox(width: 12),
+                Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Row(
-                        children: [
-                          CircleAvatar(
-                            radius: 25,
-                            backgroundColor: AppColour.primary,
-                            child: Text(
-                              userName.isNotEmpty ? userName[0].toUpperCase() : 'U',
-                              style: simple_text_style(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold),
-                            ),
-                          ),
-                          const SizedBox(width: 16),
-                          Expanded(
-                            flex: 3,
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(userName.substring(0,8), style: simple_text_style(fontSize: 18, fontWeight: FontWeight.bold)),
-                                const SizedBox(height: 4),
-                                Row(
-                                  children: [
-                                    Icon(Icons.access_time, size: 16, color: Colors.grey.shade600),
-                                    const SizedBox(width: 4),
-                                    Text(
-                                      DateFormat('d/M/yy, hh:mm a').format(date),
-                                      style: simple_text_style(color: Colors.grey.shade600, fontSize: 12),
-                                    ),
-                                  ],
-                                ),
-                              ],
-                            ),
-                          ),
-                          Expanded(
-                            flex: 1,
-                            child: Row(
-                              children: [
-                                if (serviceReview != null)
-                                  Expanded(child: _buildRatingSection('Service', serviceReview.rating ?? 0, Icons.room_service, Colors.blue)),
-                                if (serviceReview != null && productReview != null)
-                                  Container(width: 1, height: 40, color: Colors.grey.shade300),
-                                if (productReview != null)
-                                  Expanded(child: _buildRatingSection('Product', productReview.rating ?? 0, Icons.shopping_basket, Colors.green)),
-                              ],
-                            ),
-                          ),
-                        ],
-                      ),
+                      Text(userName, style: simple_text_style(fontWeight: FontWeight.bold, fontSize: 16)),
+                      Text('Order #$orderId', style: simple_text_style(color: Colors.grey.shade600, fontSize: 12)),
                     ],
                   ),
                 ),
-                Padding(
-                  padding: const EdgeInsets.all(20),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      if (serviceReview != null && (serviceReview.reviewText?.isNotEmpty ?? false)) ...[
-                        _buildReviewSection('Service Review', serviceReview.reviewText!, Icons.room_service, Colors.blue),
-                        const SizedBox(height: 16),
-                      ],
-                      if (productReview != null && (productReview.reviewText?.isNotEmpty ?? false)) ...[
-                        _buildReviewSection('Product Review', productReview.reviewText!, Icons.shopping_basket, Colors.green),
-                      ],
-                    ],
-                  ),
-                ),
+                if (reviewDate != null)
+                  Text(DateFormat('MMM d, yyyy').format(reviewDate), style: simple_text_style(color: Colors.grey.shade500, fontSize: 12)),
               ],
             ),
           ),
-        );
-      },
+
+          // --- 2. Service Review Section ---
+          if (serviceReview != null) ...[
+            Padding(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Icon(Icons.local_shipping_outlined, color: Colors.blue.shade600, size: 20),
+                      const SizedBox(width: 8),
+                      Text("Delivery & Service", style: simple_text_style(fontWeight: FontWeight.bold, fontSize: 15, color: Colors.blue.shade800)),
+                      const Spacer(),
+                      _buildStarRating(serviceReview.rating ?? 0.0),
+                    ],
+                  ),
+                  if (serviceReview.reviewText != null && serviceReview.reviewText!.isNotEmpty) ...[
+                    const SizedBox(height: 8),
+                    Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(color: Colors.blue.shade50, borderRadius: BorderRadius.circular(8)),
+                      child: Text('"${serviceReview.reviewText}"', style: simple_text_style(fontSize: 14, color: Colors.blue.shade900)),
+                    ),
+                  ]
+                ],
+              ),
+            ),
+            if (productReviews.isNotEmpty) const Divider(height: 1, color: Colors.black12),
+          ],
+
+          // --- 3. Individual Product Reviews List ---
+          if (productReviews.isNotEmpty)
+            Padding(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text("Product Reviews (${productReviews.length})", style: simple_text_style(fontWeight: FontWeight.bold, fontSize: 14, color: Colors.grey.shade700)),
+                  const SizedBox(height: 12),
+
+                  // Generates a separate block for EVERY product reviewed in this order
+                  ...productReviews.map((pr) => _buildSingleProductReview(pr)),
+                ],
+              ),
+            ),
+        ],
+      ),
     );
   }
 
-  Widget _buildRatingSection(String title, double rating, IconData icon, Color color) {
-    return Column(
-      children: [
-        Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Text(rating.toStringAsFixed(1), style: simple_text_style(fontSize: 18, fontWeight: FontWeight.bold, color: color)),
-            const SizedBox(width: 4),
-            const Icon(Icons.star, color: Colors.amber, size: 16),
-          ],
-        ),
-        Text(title, style: simple_text_style(color: Colors.grey.shade600, fontSize: 12)),
-      ],
-    );
-  }
+  Widget _buildSingleProductReview(ProductReview pr) {
+    // ✅ Use productId since the full product object isn't in the model
+    String productName = "Product ID: ${pr.productId ?? 'Unknown'}";
 
-  Widget _buildReviewSection(String title, String content, IconData icon, Color color) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          children: [
-            Icon(icon, color: color, size: 18),
-            const SizedBox(width: 8),
-            Text(title, style: simple_text_style(fontSize: 16, fontWeight: FontWeight.w600, color: color)),
-          ],
-        ),
-        const SizedBox(height: 8),
-        Container(
-          width: double.infinity,
-          padding: const EdgeInsets.all(12),
-          decoration: BoxDecoration(
-            color: color.withOpacity(0.05),
-            borderRadius: BorderRadius.circular(8),
-            border: Border.all(color: color.withOpacity(0.2)),
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.grey.shade200),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // ✅ Fallback Product Image
+              ClipRRect(
+                borderRadius: BorderRadius.circular(8),
+                child: Container(
+                  width: 50, height: 50, color: Colors.grey.shade100,
+                  child: const Icon(Icons.shopping_bag, color: Colors.grey),
+                ),
+              ),
+              const SizedBox(width: 12),
+              // Name & Stars
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(productName, style: simple_text_style(fontWeight: FontWeight.w600, fontSize: 14), maxLines: 2, overflow: TextOverflow.ellipsis),
+                    const SizedBox(height: 4),
+                    _buildStarRating(pr.rating ?? 0.0),
+                  ],
+                ),
+              ),
+            ],
           ),
-          child: Text(content, style: TextStyle(fontSize: 14, color: Colors.grey.shade800)),
-        ),
-      ],
+          // Product Comment
+          if (pr.reviewText != null && pr.reviewText!.isNotEmpty) ...[
+            const SizedBox(height: 12),
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(color: Colors.grey.shade50, borderRadius: BorderRadius.circular(8)),
+              child: Text('"${pr.reviewText}"', style: simple_text_style(fontSize: 13, color: Colors.grey.shade800)),
+            ),
+          ]
+        ],
+      ),
+    );
+  }
+
+  // --- Helper: Render 5 Stars ---
+  Widget _buildStarRating(double rating) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: List.generate(5, (index) {
+        return Icon(
+          index < rating.floor() ? Icons.star : Icons.star_border,
+          size: 16,
+          color: Colors.amber,
+        );
+      }),
     );
   }
 

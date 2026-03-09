@@ -30,7 +30,7 @@ class ReviewRepository with RepoErrorHandler {
 
   // --- ADMIN METHODS ---
 
-  Future<AdminOrderReviewDto> getReviewByOrder(int orderId) async {
+  Future<OrderReviewDto> getReviewByOrder(int orderId) async {
     try {
       final response = await _client.getReviewByOrder(orderId);
       if (response.data == null) {
@@ -43,7 +43,7 @@ class ReviewRepository with RepoErrorHandler {
   }
 
   /// Get All Reviews with pagination and filtering
-  Future<Page<AdminOrderReviewDto>> getAllReviews({
+  Future<Page<OrderReviewDto>> getAllReviews({
     int page = 0,
     int size = 10,
     String? keyword,

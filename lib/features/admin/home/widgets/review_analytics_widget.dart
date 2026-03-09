@@ -205,7 +205,7 @@ class _ReviewAnalyticsWidgetState extends State<ReviewAnalyticsWidget> {
   }
 
   // --- Helper: Build Recent Reviews List ---
-  Widget _buildRecentReviewsList(List<AdminOrderReviewDto> reviews) {
+  Widget _buildRecentReviewsList(List<OrderReviewDto> reviews) {
     if (reviews.isEmpty) {
       return Padding(
         padding: const EdgeInsets.all(16.0),

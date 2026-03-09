@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:raising_india/comman/bold_text_style.dart';
 import 'package:raising_india/comman/simple_text_style.dart';
 import 'package:raising_india/constant/AppColour.dart';
 
@@ -11,42 +10,60 @@ Future<void> showCancelOrderDialog(BuildContext context, void Function(String re
     barrierDismissible: false,
     builder: (context) {
       return AlertDialog(
-        title: Text('Cancel Order',style: bold_text_style(),),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        backgroundColor: Colors.white,
+        title: Row(
+          children: [
+            Icon(Icons.warning_amber_rounded, color: Colors.red.shade400, size: 28),
+            const SizedBox(width: 8),
+            Text('Cancel Order', style: simple_text_style(fontSize: 20, fontWeight: FontWeight.bold)),
+          ],
+        ),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             Text(
-              'If you cancel the order, you will be refunded the full amount except the platform fee (₹4).',
-              style: TextStyle(fontFamily: 'Sen', fontSize: 14),
+              'If you cancel the order, you will be refunded the full amount except the platform fee (₹3).',
+              style: simple_text_style(fontSize: 14, color: Colors.grey.shade700, height: 1.5),
             ),
-            SizedBox(height: 10),
+            const SizedBox(height: 20),
             TextField(
               controller: reasonController,
+              maxLines: 2,
               decoration: InputDecoration(
-                hintText: 'Cancellation Reason',
-                hintStyle: simple_text_style(color: AppColour.lightGrey),
-                focusedBorder: OutlineInputBorder(borderSide: BorderSide(color: AppColour.primary)),
-                border: OutlineInputBorder(borderSide: BorderSide(color: AppColour.primary))
+                hintText: 'Please tell us why...',
+                hintStyle: simple_text_style(color: Colors.grey.shade400, fontSize: 14),
+                filled: true,
+                fillColor: Colors.grey.shade50,
+                contentPadding: const EdgeInsets.all(16),
+                border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
+                focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: AppColour.primary)),
               ),
             ),
           ],
         ),
+        actionsPadding: const EdgeInsets.only(right: 16, bottom: 16),
         actions: [
           TextButton(
-            child: Text('Back',style: simple_text_style(),),
             onPressed: () => Navigator.of(context).pop(),
+            child: Text('Keep Order', style: simple_text_style(color: Colors.grey.shade700, fontWeight: FontWeight.bold)),
           ),
-          TextButton(
-            child: Text('Cancel Order',style: simple_text_style(color: Colors.red,fontWeight: FontWeight.bold)),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.red.shade50,
+              elevation: 0,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+            ),
             onPressed: () {
               final reason = reasonController.text.trim();
               if (reason.isNotEmpty) {
                 Navigator.of(context).pop();
                 onCancel(reason);
               } else {
-                ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Please fill the reason..'),));
+                ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Please provide a reason')));
               }
             },
+            child: Text('Yes, Cancel', style: simple_text_style(color: Colors.red.shade700, fontWeight: FontWeight.bold)),
           ),
         ],
       );

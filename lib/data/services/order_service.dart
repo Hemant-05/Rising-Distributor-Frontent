@@ -34,13 +34,15 @@ class OrderService extends ChangeNotifier {
   }
 
   // --- 2. Place Order ---
-  Future<String?> placeOrder({required int addressId, required String paymentMethod}) async {
+  Future<dynamic> placeOrder({required int addressId, required String paymentMethod}) async {
     try {
-      await _repo.placeOrder(addressId, paymentMethod);
+      // Assuming your repository returns the created Order object
+      final createdOrder = await _repo.placeOrder(addressId, paymentMethod);
       await fetchMyOrders(); // Refresh list to show new order
-      return null; // Success
+
+      return createdOrder; // ✅ Return the full order object!
     } on AppError catch (e) {
-      return e.message;
+      return e.message; // Return error string
     } catch (e) {
       return "Failed to place order.";
     }

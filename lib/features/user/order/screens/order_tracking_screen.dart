@@ -6,175 +6,130 @@ import 'package:raising_india/constant/ConString.dart';
 import 'package:raising_india/models/model/order.dart';
 
 class OrderTrackingScreen extends StatelessWidget {
-  final Order order; // Pass full object
+  final Order order;
 
   const OrderTrackingScreen({super.key, required this.order});
 
   @override
   Widget build(BuildContext context) {
+    bool isCancelled = order.status!.toUpperCase() == OrderStatusCancelled;
+
     return Scaffold(
-      backgroundColor: AppColour.white,
+      backgroundColor: Colors.grey.shade50,
       appBar: AppBar(
         backgroundColor: AppColour.white,
+        elevation: 0,
         automaticallyImplyLeading: false,
         title: Row(
           children: [
             back_button(),
             const SizedBox(width: 8),
-            Text('Track Order', style: simple_text_style(fontSize: 20)),
+            Text('Track Order', style: simple_text_style(fontSize: 20, fontWeight: FontWeight.bold)),
           ],
         ),
       ),
-      body: Column(
-        children: [
-          // Timeline
-          if (order.status!.toUpperCase().compareTo(OrderStatusCancelled) == 0) ...[
-            Card(
-              color: AppColour.white,
-              margin: const EdgeInsets.all(16),
-              child: Container(
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          children: [
+            // Order ID Header
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(color: AppColour.primary.withOpacity(0.1), borderRadius: BorderRadius.circular(12)),
+              child: Text('Order #${order.id}', style: simple_text_style(fontSize: 16, fontWeight: FontWeight.bold, color: AppColour.primary), textAlign: TextAlign.center),
+            ),
+            const SizedBox(height: 20),
+
+            if (isCancelled)
+              Container(
                 width: double.infinity,
-                padding: const EdgeInsets.all(16),
+                padding: const EdgeInsets.all(20),
+                decoration: BoxDecoration(color: Colors.red.shade50, borderRadius: BorderRadius.circular(16), border: Border.all(color: Colors.red.shade200)),
+                child: Column(
+                  children: [
+                    Icon(Icons.cancel_outlined, color: Colors.red.shade700, size: 48),
+                    const SizedBox(height: 12),
+                    Text('Order Cancelled', style: simple_text_style(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.red.shade700)),
+                    const SizedBox(height: 8),
+                    Text(order.cancelReason ?? 'No reason provided', textAlign: TextAlign.center, style: simple_text_style(fontSize: 14, color: Colors.red.shade900)),
+                  ],
+                ),
+              )
+            else
+              Container(
+                decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(16), boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.03), blurRadius: 10, offset: const Offset(0, 4))]),
+                padding: const EdgeInsets.all(24),
+                child: _buildStepperTimeline(order.status ?? "PENDING"),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildStepperTimeline(String currentStatus) {
+    final statuses = [
+      {'title': 'Order Placed', 'key': OrderStatusPlaced, 'desc': 'We have received your order'},
+      {'title': 'Confirmed', 'key': OrderStatusConfirmed, 'desc': 'Order has been confirmed'},
+      {'title': 'Preparing', 'key': OrderStatusPreparing, 'desc': 'Seller is packing your items'},
+      {'title': 'Out for Delivery', 'key': OrderStatusDispatch, 'desc': 'Order is on the way'},
+      {'title': 'Delivered', 'key': OrderStatusDeliverd, 'desc': 'Package arrived safely'},
+    ];
+
+    int currentIndex = statuses.indexWhere((s) => s['key'] == currentStatus.toUpperCase());
+    if (currentIndex == -1) currentIndex = 0;
+
+    return ListView.builder(
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      itemCount: statuses.length,
+      itemBuilder: (context, index) {
+        final step = statuses[index];
+        final isCompleted = index <= currentIndex;
+        final isActive = index == currentIndex;
+        final isLast = index == statuses.length - 1;
+
+        return Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Timeline Column
+            Column(
+              children: [
+                Container(
+                  width: 24, height: 24,
+                  decoration: BoxDecoration(
+                    color: isActive ? AppColour.primary : (isCompleted ? AppColour.primary : Colors.grey.shade200),
+                    shape: BoxShape.circle,
+                    border: isActive ? Border.all(color: AppColour.primary.withOpacity(0.3), width: 4) : null,
+                  ),
+                  child: isCompleted ? const Icon(Icons.check, size: 14, color: Colors.white) : null,
+                ),
+                if (!isLast)
+                  Container(
+                    width: 2, height: 50,
+                    color: isCompleted && index < currentIndex ? AppColour.primary : Colors.grey.shade200,
+                  ),
+              ],
+            ),
+            const SizedBox(width: 16),
+            // Text Column
+            Expanded(
+              child: Padding(
+                padding: const EdgeInsets.only(bottom: 24), // Matches the line height
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      'Order Cancelled',
-                      style: simple_text_style(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.red,
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      'Your order has been cancelled.\nReason : ${order.cancelReason}',
-                      style: simple_text_style(fontSize: 16),
-                    ),
+                    Text(step['title']!, style: simple_text_style(fontSize: 16, fontWeight: isActive || isCompleted ? FontWeight.bold : FontWeight.w500, color: isActive || isCompleted ? Colors.black87 : Colors.grey.shade500)),
+                    const SizedBox(height: 4),
+                    Text(step['desc']!, style: simple_text_style(fontSize: 13, color: Colors.grey.shade500)),
                   ],
                 ),
               ),
             ),
           ],
-
-          if(order.status!.toUpperCase() != OrderStatusCancelled)
-            _buildStatusTimeline(order.status ?? "PENDING"),
-
-          // Payment Info Card
-          Card(
-            color: AppColour.white,
-            margin: const EdgeInsets.all(16),
-            child: ListTile(
-              leading: Icon(
-                _getPaymentIcon(order.payment?.paymentMethod ?? ""),
-                color: Colors.green,
-              ),
-              title: Text('Payment Method', style: simple_text_style()),
-              subtitle: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    (order.payment?.paymentMethod ?? "Unknown").toUpperCase(),
-                    style: simple_text_style(fontWeight: FontWeight.bold),
-                  ),
-                  const SizedBox(height: 4),
-                  Text('₹${order.totalPrice?.toStringAsFixed(2) ?? "0.00"}',style: simple_text_style(),),
-                  const SizedBox(height: 4),
-                  Text('Payment Status : ${order.payment?.paymentStatus ?? "Pending"}',style: simple_text_style(),),
-                ],
-              ),
-            ),
-          ),
-        ],
-      ),
+        );
+      },
     );
-  }
-
-  Widget _buildStatusTimeline(String currentStatus) {
-    final statuses = [
-      OrderStatusPlaced,
-      OrderStatusConfirmed,
-      OrderStatusPreparing,
-      OrderStatusDispatch,
-      OrderStatusDeliverd,
-      OrderStatusCancelled,
-    ];
-
-    // Simple index mapping
-    int currentIndex = statuses.indexOf(currentStatus.toUpperCase());
-    if (currentIndex == -1) currentIndex = 0; // Default
-
-    return Card(
-      color: AppColour.white,
-      margin: const EdgeInsets.all(16),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'Order Status: $currentStatus',
-              style: simple_text_style(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            const SizedBox(height: 20),
-
-            // Draw Timeline
-            ...List.generate(statuses.length, (index) {
-              final status = statuses[index];
-              final isCompleted = index <= currentIndex;
-
-              return Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Column(
-                    children: [
-                      Container(
-                        width: 16,
-                        height: 16,
-                        decoration: BoxDecoration(
-                          color: isCompleted ? Colors.green : Colors.grey[300],
-                          shape: BoxShape.circle,
-                        ),
-                        child: isCompleted
-                            ? const Icon(
-                                Icons.check,
-                                size: 10,
-                                color: Colors.white,
-                              )
-                            : null,
-                      ),
-                      if (index < statuses.length - 1)
-                        Container(
-                          width: 2,
-                          height: 30,
-                          color: isCompleted ? Colors.green : Colors.grey[300],
-                        ),
-                    ],
-                  ),
-                  const SizedBox(width: 12),
-                  Text(
-                    status,
-                    style: simple_text_style(
-                      color: isCompleted ? Colors.black : Colors.grey,
-                      fontWeight: isCompleted
-                          ? FontWeight.bold
-                          : FontWeight.normal,
-                    ),
-                  ),
-                ],
-              );
-            }),
-          ],
-        ),
-      ),
-    );
-  }
-
-  IconData _getPaymentIcon(String method) {
-    if (method.toLowerCase().contains(PayMethodCOD)) return Icons.money;
-    return Icons.credit_card;
   }
 }

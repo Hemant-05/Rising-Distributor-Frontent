@@ -4,20 +4,20 @@ part 'product_request.g.dart';
 
 @JsonSerializable(explicitToJson: true)
 class ProductRequest {
-  final String? name;
-  final int? categoryId; // Java Long maps to Dart int
-  final int? brandId;    // Java Long maps to Dart int
-  final double? price;   // Java BigDecimal maps to Dart double
-  final String? description;
-  final int? quantity;   // Java Integer maps to Dart int
-  final String? measurement;
-  final double? mrp;     // Java BigDecimal maps to Dart double
-  final int? stockQuantity;
-  final int? lowStockQuantity;
-  final bool? available;
-  final bool? discountable;
-  final List<String>? photosList;
-  final double? rating;
+  String? name;
+  int? categoryId; // Java Long maps to Dart int
+  int? brandId;    // Java Long maps to Dart int
+  double? price;   // Java BigDecimal maps to Dart double
+  String? description;
+  int? quantity;   // Java Integer maps to Dart int
+  String? measurement;
+  double? mrp;     // Java BigDecimal maps to Dart double
+  int? stockQuantity;
+  int? lowStockQuantity;
+  bool? available;
+  bool? discountable;
+  List<String>? photosList;
+  double? rating;
 
   ProductRequest({
     this.name,

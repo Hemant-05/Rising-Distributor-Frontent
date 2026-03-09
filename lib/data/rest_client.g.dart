@@ -2452,12 +2452,12 @@ class _RestClient implements RestClient {
   }
 
   @override
-  Future<ApiResponse<AdminOrderReviewDto>> getReviewByOrder(int orderId) async {
+  Future<ApiResponse<OrderReviewDto>> getReviewByOrder(int orderId) async {
     final _extra = <String, dynamic>{};
     final queryParameters = <String, dynamic>{};
     final _headers = <String, dynamic>{};
     const Map<String, dynamic>? _data = null;
-    final _options = _setStreamType<ApiResponse<AdminOrderReviewDto>>(
+    final _options = _setStreamType<ApiResponse<OrderReviewDto>>(
       Options(method: 'GET', headers: _headers, extra: _extra)
           .compose(
             _dio.options,
@@ -2468,11 +2468,11 @@ class _RestClient implements RestClient {
           .copyWith(baseUrl: _combineBaseUrls(_dio.options.baseUrl, baseUrl)),
     );
     final _result = await _dio.fetch<Map<String, dynamic>>(_options);
-    late ApiResponse<AdminOrderReviewDto> _value;
+    late ApiResponse<OrderReviewDto> _value;
     try {
-      _value = ApiResponse<AdminOrderReviewDto>.fromJson(
+      _value = ApiResponse<OrderReviewDto>.fromJson(
         _result.data!,
-        (json) => AdminOrderReviewDto.fromJson(json as Map<String, dynamic>),
+        (json) => OrderReviewDto.fromJson(json as Map<String, dynamic>),
       );
     } on Object catch (e, s) {
       errorLogger?.logError(e, s, _options, response: _result);
@@ -2482,7 +2482,7 @@ class _RestClient implements RestClient {
   }
 
   @override
-  Future<ApiResponse<Page<AdminOrderReviewDto>>> getAllReviews(
+  Future<ApiResponse<Page<OrderReviewDto>>> getAllReviews(
     int page,
     int size,
     String? keyword,
@@ -2500,7 +2500,7 @@ class _RestClient implements RestClient {
     queryParameters.removeWhere((k, v) => v == null);
     final _headers = <String, dynamic>{};
     const Map<String, dynamic>? _data = null;
-    final _options = _setStreamType<ApiResponse<Page<AdminOrderReviewDto>>>(
+    final _options = _setStreamType<ApiResponse<Page<OrderReviewDto>>>(
       Options(method: 'GET', headers: _headers, extra: _extra)
           .compose(
             _dio.options,
@@ -2511,13 +2511,13 @@ class _RestClient implements RestClient {
           .copyWith(baseUrl: _combineBaseUrls(_dio.options.baseUrl, baseUrl)),
     );
     final _result = await _dio.fetch<Map<String, dynamic>>(_options);
-    late ApiResponse<Page<AdminOrderReviewDto>> _value;
+    late ApiResponse<Page<OrderReviewDto>> _value;
     try {
-      _value = ApiResponse<Page<AdminOrderReviewDto>>.fromJson(
+      _value = ApiResponse<Page<OrderReviewDto>>.fromJson(
         _result.data!,
-        (json) => Page<AdminOrderReviewDto>.fromJson(
+        (json) => Page<OrderReviewDto>.fromJson(
           json as Map<String, dynamic>,
-          (json) => AdminOrderReviewDto.fromJson(json as Map<String, dynamic>),
+          (json) => OrderReviewDto.fromJson(json as Map<String, dynamic>),
         ),
       );
     } on Object catch (e, s) {

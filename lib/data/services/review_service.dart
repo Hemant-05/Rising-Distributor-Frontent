@@ -15,8 +15,8 @@ class ReviewService extends ChangeNotifier {
   String? get error => _error;
 
   // --- Admin State ---
-  List<AdminOrderReviewDto> _adminReviews = [];
-  List<AdminOrderReviewDto> get adminReviews => _adminReviews;
+  List<OrderReviewDto> _adminReviews = [];
+  List<OrderReviewDto> get adminReviews => _adminReviews;
 
   int _totalReviewsCount = 0;
   double _averageRating = 0.0;
@@ -34,8 +34,10 @@ class ReviewService extends ChangeNotifier {
       await _repo.submitReview(request);
       return null;
     } on AppError catch (e) {
+      _error = e.message;
       return e.message;
     } catch (e) {
+      _error = e.toString();
       return "Failed to submit review. Please try again.";
     } finally {
       _isLoading = false;
@@ -48,8 +50,19 @@ class ReviewService extends ChangeNotifier {
     try {
       return await _repo.getProductReviews(productId);
     } catch (e) {
+      _error = e.toString();
       debugPrint("Error fetching product reviews: $e");
       return [];
+    }
+  }
+
+  Future<OrderReviewDto> getReviewByOrder(int orderId) async {
+    try {
+      return await _repo.getReviewByOrder(orderId);
+    } catch (e) {
+      _error = e.toString();
+      debugPrint("Error fetching review by order: $e");
+      throw e;
     }
   }
 
@@ -87,6 +100,7 @@ class ReviewService extends ChangeNotifier {
       _averageRating = ratingCount > 0 ? (totalStars / ratingCount) : 0.0;
 
     } catch (e) {
+      _error = e.toString();
       debugPrint("Review Analytics Error: $e");
     } finally {
       _isLoading = false;
@@ -117,7 +131,7 @@ class ReviewService extends ChangeNotifier {
     } on AppError catch (e) {
       _error = e.message;
     } catch (e) {
-      _error = "Failed to load reviews.";
+      _error = "Failed to load reviews. ${e.toString()}";
     } finally {
       _isLoading = false;
       notifyListeners();

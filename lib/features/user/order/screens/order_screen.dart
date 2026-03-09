@@ -14,7 +14,7 @@ class OrderScreen extends StatefulWidget {
 }
 
 class _OrderScreenState extends State<OrderScreen> {
-  int index = 0; // Default to Ongoing (0)
+  int _selectedIndex = 0; // Default to Ongoing (0)
 
   @override
   void initState() {
@@ -27,16 +27,16 @@ class _OrderScreenState extends State<OrderScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColour.white,
+      backgroundColor: Colors.grey.shade50, // Professional soft background
       appBar: AppBar(
         automaticallyImplyLeading: false,
         backgroundColor: AppColour.white,
+        elevation: 0,
         title: Row(
           children: [
             back_button(),
-            const SizedBox(width: 8),
-            Text('My Orders', style: simple_text_style(fontSize: 20)),
-            const Spacer(),
+            const SizedBox(width: 12),
+            Text('My Orders', style: simple_text_style(fontSize: 22, fontWeight: FontWeight.bold)),
           ],
         ),
       ),
@@ -46,23 +46,20 @@ class _OrderScreenState extends State<OrderScreen> {
             return Center(child: CircularProgressIndicator(color: AppColour.primary));
           }
 
-          // Filter Orders Locally
           final allOrders = orderService.orders;
-
-          final ongoingOrders = allOrders.where((o) =>
-          o.status != 'DELIVERED' && o.status != 'CANCELLED'
-          ).toList();
-
-          final historyOrders = allOrders.where((o) =>
-          o.status == 'DELIVERED' || o.status == 'CANCELLED'
-          ).toList();
+          final ongoingOrders = allOrders.where((o) => o.status != 'DELIVERED' && o.status != 'CANCELLED').toList();
+          final historyOrders = allOrders.where((o) => o.status == 'DELIVERED' || o.status == 'CANCELLED').toList();
 
           return Column(
             children: [
-              // Tabs
-              SizedBox(
-                height: 50,
-                width: double.infinity,
+              // Custom Pill-Shaped Tab Bar
+              Container(
+                margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                padding: const EdgeInsets.all(4),
+                decoration: BoxDecoration(
+                  color: Colors.grey.shade200,
+                  borderRadius: BorderRadius.circular(24),
+                ),
                 child: Row(
                   children: [
                     _buildTab('Ongoing', 0, ongoingOrders.length),
@@ -70,13 +67,12 @@ class _OrderScreenState extends State<OrderScreen> {
                   ],
                 ),
               ),
-              Divider(color: AppColour.lightGrey.withOpacity(0.5)),
 
-              // Content
+              // Content Area
               Expanded(
-                child: index == 0
-                    ? onGoingWidget(ongoingOrders) // Pass filtered list
-                    : onCompletedWidget(historyOrders), // Pass filtered list
+                child: _selectedIndex == 0
+                    ? onGoingWidget(ongoingOrders)
+                    : onCompletedWidget(historyOrders),
               ),
             ],
           );
@@ -86,16 +82,26 @@ class _OrderScreenState extends State<OrderScreen> {
   }
 
   Widget _buildTab(String title, int tabIndex, int count) {
+    final isSelected = _selectedIndex == tabIndex;
     return Expanded(
-      child: InkWell(
-        onTap: () => setState(() => index = tabIndex),
-        child: Container(
+      child: GestureDetector(
+        onTap: () => setState(() => _selectedIndex = tabIndex),
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 200),
+          padding: const EdgeInsets.symmetric(vertical: 12),
           alignment: Alignment.center,
+          decoration: BoxDecoration(
+            color: isSelected ? AppColour.white : Colors.transparent,
+            borderRadius: BorderRadius.circular(20),
+            boxShadow: isSelected
+                ? [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 4, offset: const Offset(0, 2))]
+                : [],
+          ),
           child: Text(
             '$title ($count)',
             style: simple_text_style(
-              color: index == tabIndex ? AppColour.primary : AppColour.lightGrey,
-              fontWeight: FontWeight.bold,
+              color: isSelected ? AppColour.primary : Colors.grey.shade600,
+              fontWeight: isSelected ? FontWeight.bold : FontWeight.w600,
             ),
           ),
         ),

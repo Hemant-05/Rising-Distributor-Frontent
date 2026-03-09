@@ -24,8 +24,7 @@ class HomeScreenA extends StatefulWidget {
   State<HomeScreenA> createState() => _HomeScreenAState();
 }
 
-class _HomeScreenAState extends State<HomeScreenA>
-    with TickerProviderStateMixin {
+class _HomeScreenAState extends State<HomeScreenA> with TickerProviderStateMixin {
 
   // ✅ Animation Controllers for stunning animations
   late AnimationController _fadeAnimationController;
@@ -79,7 +78,6 @@ class _HomeScreenAState extends State<HomeScreenA>
   }
 
   void navigateToOrderListScreen(String title, OrderFilterType orderType) {
-
     context.read<AdminService>().loadOrdersByFilterType(orderType);
     Navigator.push(
       context,
@@ -112,7 +110,7 @@ class _HomeScreenAState extends State<HomeScreenA>
               physics: const BouncingScrollPhysics(),
               child: Column(
                 children: [
-                  // ✅ Order Statistics Section
+                  // ✅ Order Statistics Section (Upgraded)
                   _buildOrderStatsSection(),
 
                   // ✅ Low Stock Section
@@ -133,9 +131,10 @@ class _HomeScreenAState extends State<HomeScreenA>
       ),
     );
   }
+
   Widget _buildReviewAnalyticsSection() {
     return Container(
-      margin: EdgeInsets.symmetric(horizontal: 16),
+      margin: const EdgeInsets.symmetric(horizontal: 16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -147,20 +146,12 @@ class _HomeScreenAState extends State<HomeScreenA>
                   color: AppColour.primary.withOpacity(0.1),
                   borderRadius: BorderRadius.circular(10),
                 ),
-                child: Icon(
-                  Icons.bar_chart,
-                  color: AppColour.primary,
-                  size: 20,
-                ),
+                child: Icon(Icons.star_rate, color: AppColour.primary, size: 20),
               ),
               const SizedBox(width: 12),
               Text(
                 'Review Statistics',
-                style: simple_text_style(
-                  fontSize: 20,
-                  fontWeight: FontWeight.bold,
-                  color: AppColour.primary,
-                ),
+                style: simple_text_style(fontSize: 20, fontWeight: FontWeight.bold, color: AppColour.primary),
               ),
             ],
           ),
@@ -170,10 +161,10 @@ class _HomeScreenAState extends State<HomeScreenA>
       ),
     );
   }
-  
+
   Widget _buildSalesAnalyticsSection() {
     return Container(
-      margin: EdgeInsets.symmetric(horizontal: 16),
+      margin: const EdgeInsets.symmetric(horizontal: 16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -185,20 +176,12 @@ class _HomeScreenAState extends State<HomeScreenA>
                   color: AppColour.primary.withOpacity(0.1),
                   borderRadius: BorderRadius.circular(10),
                 ),
-                child: Icon(
-                  Icons.bar_chart,
-                  color: AppColour.primary,
-                  size: 20,
-                ),
+                child: Icon(Icons.auto_graph, color: AppColour.primary, size: 20),
               ),
               const SizedBox(width: 12),
               Text(
                 'Sales Statistics',
-                style: simple_text_style(
-                  fontSize: 20,
-                  fontWeight: FontWeight.bold,
-                  color: AppColour.primary,
-                ),
+                style: simple_text_style(fontSize: 20, fontWeight: FontWeight.bold, color: AppColour.primary),
               ),
             ],
           ),
@@ -215,10 +198,7 @@ class _HomeScreenAState extends State<HomeScreenA>
       child: Container(
         decoration: BoxDecoration(
           gradient: LinearGradient(
-            colors: [
-              AppColour.primary,
-              AppColour.primary.withOpacity(0.8),
-            ],
+            colors: [AppColour.primary, AppColour.primary.withOpacity(0.8)],
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
           ),
@@ -228,7 +208,7 @@ class _HomeScreenAState extends State<HomeScreenA>
             padding: const EdgeInsets.all(16),
             child: Consumer<AuthService>(
               builder: (context, authService, _) {
-                String name = authService.admin!.name!;
+                String name = authService.admin?.name ?? 'Admin';
                 return Column(
                   children: [
                     Row(
@@ -239,17 +219,9 @@ class _HomeScreenAState extends State<HomeScreenA>
                           decoration: BoxDecoration(
                             color: Colors.white.withOpacity(0.2),
                             borderRadius: BorderRadius.circular(16),
-                            border: Border.all(
-                              color: Colors.white.withOpacity(0.3),
-                              width: 2,
-                            ),
+                            border: Border.all(color: Colors.white.withOpacity(0.3), width: 2),
                           ),
-                          child: SvgPicture.asset(
-                            profile_svg,
-                            color: Colors.white,
-                            width: 28,
-                            height: 28,
-                          ),
+                          child: SvgPicture.asset(profile_svg, color: Colors.white, width: 28, height: 28),
                         ),
                         const SizedBox(width: 16),
 
@@ -260,28 +232,16 @@ class _HomeScreenAState extends State<HomeScreenA>
                             children: [
                               Text(
                                 'ADMIN DASHBOARD',
-                                style: simple_text_style(
-                                  color: Colors.white,
-                                  fontSize: 20,
-                                  fontWeight: FontWeight.bold,
-                                ),
+                                style: simple_text_style(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold),
                               ),
                               const SizedBox(height: 4),
                               Row(
                                 children: [
-                                  Icon(
-                                    Icons.person,
-                                    color: Colors.white.withOpacity(0.9),
-                                    size: 16,
-                                  ),
+                                  Icon(Icons.person, color: Colors.white.withOpacity(0.9), size: 16),
                                   const SizedBox(width: 4),
                                   Text(
                                     'Welcome, $name',
-                                    style: simple_text_style(
-                                      color: Colors.white.withOpacity(0.9),
-                                      fontSize: 14,
-                                      fontWeight: FontWeight.w500,
-                                    ),
+                                    style: simple_text_style(color: Colors.white.withOpacity(0.9), fontSize: 14, fontWeight: FontWeight.w500),
                                   ),
                                 ],
                               ),
@@ -303,19 +263,11 @@ class _HomeScreenAState extends State<HomeScreenA>
                       child: Row(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          Icon(
-                            Icons.access_time,
-                            color: Colors.white.withOpacity(0.9),
-                            size: 16,
-                          ),
+                          Icon(Icons.access_time, color: Colors.white.withOpacity(0.9), size: 16),
                           const SizedBox(width: 8),
                           Text(
                             '${DateTime.now().day}/${DateTime.now().month}/${DateTime.now().year} • Business Overview',
-                            style: simple_text_style(
-                              color: Colors.white.withOpacity(0.9),
-                              fontSize: 14,
-                              fontWeight: FontWeight.w500,
-                            ),
+                            style: simple_text_style(color: Colors.white.withOpacity(0.9), fontSize: 14, fontWeight: FontWeight.w500),
                           ),
                         ],
                       ),
@@ -330,6 +282,9 @@ class _HomeScreenAState extends State<HomeScreenA>
     );
   }
 
+  // ===========================================================================
+  // 🚀 UPGRADED ORDER STATS SECTION
+  // ===========================================================================
   Widget _buildOrderStatsSection() {
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
@@ -345,126 +300,104 @@ class _HomeScreenAState extends State<HomeScreenA>
                   color: AppColour.primary.withOpacity(0.1),
                   borderRadius: BorderRadius.circular(10),
                 ),
-                child: Icon(
-                  Icons.bar_chart,
-                  color: AppColour.primary,
-                  size: 20,
-                ),
+                child: Icon(Icons.pie_chart_outline, color: AppColour.primary, size: 20),
               ),
               const SizedBox(width: 12),
               Text(
-                'Order Statistics',
-                style: simple_text_style(
-                  fontSize: 20,
-                  fontWeight: FontWeight.bold,
-                  color: AppColour.primary,
-                ),
+                'Order Pipeline',
+                style: simple_text_style(fontSize: 20, fontWeight: FontWeight.bold, color: AppColour.primary),
               ),
             ],
           ),
           const SizedBox(height: 16),
 
-          // --- Stats Cards ---
           Consumer<AdminService>(
             builder: (context, adminService, _) {
-              // 1. Show Shimmer while loading
-              if (adminService.isLoading) {
-                return _buildOrderStatsShimmer(); // Uses the helper we made earlier
-              }
-
-              // 2. Error State
-              if (adminService.dashboardStats == null) {
-                return const Center(
-                  child: Padding(
-                    padding: EdgeInsets.all(16.0),
-                    child: Text('Failed to load statistics'),
-                  ),
-                );
-              }
+              if (adminService.isLoading) return _buildOrderStatsShimmer();
+              if (adminService.dashboardStats == null) return const Center(child: Text('Failed to load statistics'));
 
               DashboardResponse data = adminService.dashboardStats!;
+              final counts = data.orderStatusCounts ?? {};
 
-              // 3. Logic: Calculate "Running Orders" and "Cancelled Orders"
-              int runningOrdersCount = 0;
-              int cancelledOrdersCount = 0;
-
-              if (data.orderStatusCounts != null) {
-                final counts = data.orderStatusCounts!;
-
-                // Adds up all active statuses (excluding Created/Pending, Delivered, and Cancelled)
-                runningOrdersCount = (counts['CONFIRMED'] ?? 0) +
-                    (counts['PREPARING'] ?? 0) +
-                    (counts['DISPATCHED'] ?? 0) +
-                    (counts['SHIPPED'] ?? 0);
-
-                cancelledOrdersCount = counts['CANCELLED'] ?? 0;
-              }
-
-              // Directly using the new backend field!
-              String todaysOrdersCount = (data.todayOrdersCount ?? 0).toString();
+              // Extract exact statuses based on your backend keys
+              int placedCount = counts['PLACED'] ?? 0;
+              int confirmedCount = counts['CONFIRMED'] ?? 0;
+              int preparingCount = counts['PREPARING'] ?? 0;
+              int dispatchCount = counts['DISPATCH'] ?? 0;
+              int deliveredCount = counts['DELIVERED'] ?? 0;
+              int cancelledCount = counts['CANCELLED'] ?? 0;
 
               return Column(
                 children: [
-                  // --- First Row: Running & Cancelled ---
-                  Row(
-                    children: [
-                      Expanded(
-                        child: _buildEnhancedStatsCard(
-                          title: 'RUNNING',
-                          value: runningOrdersCount.toString(),
-                          icon: Icons.local_shipping,
-                          color: AppColour.primary,
-                          onTap: () => navigateToOrderListScreen('Running', OrderFilterType.running),
-                        ),
+                  // 1. Global Business Overview Card (Revenue & Total)
+                  Container(
+                    padding: const EdgeInsets.all(20),
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        colors: [Colors.green.shade700, Colors.green.shade500],
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
                       ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: _buildEnhancedStatsCard(
-                          title: 'CANCELLED',
-                          value: cancelledOrdersCount.toString(),
-                          icon: Icons.cancel,
-                          color: Colors.red,
-                          onTap: () => navigateToOrderListScreen('Cancelled', OrderFilterType.cancelled),
+                      borderRadius: BorderRadius.circular(16),
+                      boxShadow: [BoxShadow(color: Colors.green.withOpacity(0.3), blurRadius: 10, offset: const Offset(0, 4))],
+                    ),
+                    child: Row(
+                      children: [
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text('TODAY\'S REVENUE', style: simple_text_style(color: Colors.white70, fontSize: 12, fontWeight: FontWeight.bold)),
+                              const SizedBox(height: 4),
+                              Text('₹${data.todayRevenue ?? 0}', style: simple_text_style(color: Colors.white, fontSize: 28, fontWeight: FontWeight.bold)),
+                            ],
+                          ),
                         ),
-                      ),
-                    ],
+                        Container(width: 1, height: 40, color: Colors.white30),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.end,
+                            children: [
+                              Text('TODAY\'S ORDERS', style: simple_text_style(color: Colors.white70, fontSize: 12, fontWeight: FontWeight.bold)),
+                              const SizedBox(height: 4),
+                              Text('${data.todayOrdersCount ?? 0}', style: simple_text_style(color: Colors.white, fontSize: 28, fontWeight: FontWeight.bold)),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
-                  const SizedBox(height: 12),
+                  const SizedBox(height: 16),
 
-                  // --- Second Row: Today's Orders & Today's Revenue ---
-                  Row(
+                  // 2. The Detailed Order Pipeline Grid (Compact Cards)
+                  GridView.count(
+                    crossAxisCount: 3,
+                    shrinkWrap: true,
+                    physics: const NeverScrollableScrollPhysics(),
+                    mainAxisSpacing: 12,
+                    crossAxisSpacing: 12,
+                    childAspectRatio: 1.05, // Makes them slightly rectangular
                     children: [
-                      Expanded(
-                        child: _buildEnhancedStatsCard(
-                          title: 'TODAY\'S',
-                          value: todaysOrdersCount,
-                          icon: Icons.shopping_bag,
-                          color: Colors.orange,
-                          onTap: () => navigateToOrderListScreen('Today', OrderFilterType.today),
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: _buildEnhancedStatsCard(
-                          title: 'ALL',
-                          value: '${data.totalOrders ?? 0.0}',
-                          icon: Icons.inventory_2,
-                          color: Colors.purple,
-                          onTap: () => navigateToOrderListScreen('All', OrderFilterType.all),
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 12),
+                      // Note: For navigation, using OrderFilterType.running as a fallback for active orders.
+                      // If you add OrderFilterType.placed to your enum later, update it here!
+                      _buildCompactStatusCard('NEW (PLACED)', placedCount, Icons.fiber_new_rounded, Colors.blue,
+                              () => navigateToOrderListScreen('Newly Placed', OrderFilterType.running)),
 
-                  // --- Third Row: All Orders (Full Width) ---
-                  _buildEnhancedStatsCard(
-                  title: 'TODAY\'S REVENUE',
-                    value: '₹${data.todayRevenue ?? 0}',
-                    icon: Icons.account_balance_wallet,
-                    color: Colors.green,
-                    onTap: () => (){},
-                    isFullWidth: true,
+                      _buildCompactStatusCard('CONFIRMED', confirmedCount, Icons.thumb_up_alt_outlined, Colors.indigo,
+                              () => navigateToOrderListScreen('Confirmed', OrderFilterType.running)),
+
+                      _buildCompactStatusCard('PREPARING', preparingCount, Icons.inventory_2_outlined, Colors.orange,
+                              () => navigateToOrderListScreen('Preparing', OrderFilterType.running)),
+
+                      _buildCompactStatusCard('DISPATCH', dispatchCount, Icons.local_shipping_outlined, Colors.purple,
+                              () => navigateToOrderListScreen('Dispatched', OrderFilterType.running)),
+
+                      _buildCompactStatusCard('DELIVERED', deliveredCount, Icons.done_all_rounded, Colors.green,
+                              () => navigateToOrderListScreen('Delivered', OrderFilterType.all)), // Delivered is usually in "All"
+
+                      _buildCompactStatusCard('CANCELLED', cancelledCount, Icons.cancel_outlined, Colors.red,
+                              () => navigateToOrderListScreen('Cancelled', OrderFilterType.cancelled)),
+                    ],
                   ),
                 ],
               );
@@ -475,224 +408,117 @@ class _HomeScreenAState extends State<HomeScreenA>
     );
   }
 
-// --- HELPER: Shimmer Skeleton Layout ---
+  // --- NEW HELPER: Compact Grid Card ---
+  Widget _buildCompactStatusCard(String title, int count, IconData icon, Color color, VoidCallback onTap) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: color.withOpacity(0.3)),
+          boxShadow: [
+            BoxShadow(color: color.withOpacity(0.05), blurRadius: 4, offset: const Offset(0, 2)),
+          ],
+        ),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(icon, color: color, size: 26),
+            const SizedBox(height: 6),
+            Text(
+              count.toString(),
+              style: simple_text_style(fontSize: 22, fontWeight: FontWeight.bold, color: color),
+            ),
+            const SizedBox(height: 2),
+            Text(
+              title,
+              style: simple_text_style(fontSize: 10, color: Colors.grey.shade700, fontWeight: FontWeight.w700),
+              textAlign: TextAlign.center,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // --- HELPER: Shimmer Skeleton Layout ---
   Widget _buildOrderStatsShimmer() {
     return Shimmer.fromColors(
       baseColor: Colors.grey.shade300,
       highlightColor: Colors.grey.shade100,
       child: Column(
         children: [
-          // First Row Skeleton
+          // Top Revenue Card Skeleton
+          _buildShimmerBox(height: 90),
+          const SizedBox(height: 16),
+          // Grid Skeleton (2 rows of 3)
           Row(
             children: [
-              Expanded(child: _buildShimmerBox(height: 100)),
-              const SizedBox(width: 12),
+              Expanded(child: _buildShimmerBox(height: 100)), const SizedBox(width: 12),
+              Expanded(child: _buildShimmerBox(height: 100)), const SizedBox(width: 12),
               Expanded(child: _buildShimmerBox(height: 100)),
             ],
           ),
           const SizedBox(height: 12),
-
-          // Second Row Skeleton
           Row(
             children: [
-              Expanded(child: _buildShimmerBox(height: 100)),
-              const SizedBox(width: 12),
+              Expanded(child: _buildShimmerBox(height: 100)), const SizedBox(width: 12),
+              Expanded(child: _buildShimmerBox(height: 100)), const SizedBox(width: 12),
               Expanded(child: _buildShimmerBox(height: 100)),
             ],
           ),
-          const SizedBox(height: 12),
-
-          // Third Row Skeleton (Full Width)
-          _buildShimmerBox(height: 100),
         ],
       ),
     );
   }
 
-// Small helper to draw the individual grey rounded rectangles
   Widget _buildShimmerBox({required double height}) {
     return Container(
       height: height,
-      decoration: BoxDecoration(
-        color: Colors.white, // Color is required for Shimmer to paint over it
-        borderRadius: BorderRadius.circular(16),
-      ),
-    );
-  }
-  Widget _buildEnhancedStatsCard({
-    required String title,
-    required String value,
-    required IconData icon,
-    required Color color,
-    required VoidCallback onTap,
-    bool isFullWidth = false,
-  }) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        width: isFullWidth ? double.infinity : null,
-        padding: const EdgeInsets.all(20),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: color.withOpacity(0.2)),
-          boxShadow: [
-            BoxShadow(
-              color: color.withOpacity(0.1),
-              blurRadius: 10,
-              offset: const Offset(0, 4),
-            ),
-          ],
-        ),
-        child: isFullWidth
-            ? Row(
-          children: [
-            Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: color.withOpacity(0.1),
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Icon(icon, color: color, size: 28),
-            ),
-            const SizedBox(width: 16),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    value,
-                    style: simple_text_style(
-                      fontSize: 32,
-                      fontWeight: FontWeight.bold,
-                      color: color,
-                    ),
-                  ),
-                  Text(
-                    title,
-                    style: simple_text_style(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w600,
-                      color: Colors.grey.shade700,
-                    ),
-                  ),
-                  Text(
-                    'Total orders in system',
-                    style: simple_text_style(
-                      color: Colors.grey.shade500,
-                      fontSize: 12,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            Icon(Icons.arrow_forward_ios, color: Colors.grey.shade400, size: 16),
-          ],
-        )
-            : Column(
-          children: [
-            Row(
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(8),
-                  decoration: BoxDecoration(
-                    color: color.withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: Icon(icon, color: color, size: 20),
-                ),
-                const Spacer(),
-                Icon(Icons.arrow_forward_ios, color: Colors.grey.shade400, size: 12),
-              ],
-            ),
-            const SizedBox(height: 8),
-            Text(
-              value,
-              style: simple_text_style(
-                fontSize: 28,
-                fontWeight: FontWeight.bold,
-                color: color,
-              ),
-            ),
-            const SizedBox(height: 4),
-            Text(
-              title,
-              style: simple_text_style(
-                fontSize: 14,
-                fontWeight: FontWeight.w600,
-                color: Colors.grey.shade700,
-              ),
-            ),
-            Text(
-              'Orders',
-              style: simple_text_style(
-                color: Colors.grey.shade500,
-                fontSize: 10,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-  Widget _buildLowStockAlertSection() {
-    return Consumer<AdminService>(
-      builder: (context, adminService, _) {
-        if (adminService.isLoading) {
-          return SizedBox(
-              height: 100,
-              width: double.infinity,
-              child: Center(
-                  child: CircularProgressIndicator(color: AppColour.primary,)));
-        }
-        if (adminService.dashboardStats != null) {
-          return adminService.dashboardStats!.lowStockCount! > 0
-              ? Container(
-            margin: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                colors: [Colors.red.shade100, Colors.red.shade50],
-              ),
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: Colors.red.shade300),
-            ),
-            child: ListTile(
-              leading: Container(
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  color: Colors.red.shade200,
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Icon(Icons.warning, color: Colors.red.shade700),
-              ),
-              title: Text(
-                '${adminService.dashboardStats!
-                    .lowStockCount} Low Stock Alert${adminService
-                    .dashboardStats!.lowStockCount! > 1 ? 's' : ''}',
-                style: simple_text_style(
-                  fontWeight: FontWeight.bold,
-                  color: Colors.red.shade700,
-                ),
-              ),
-              subtitle: Text(
-                'Products need restocking',
-                style: simple_text_style(
-                    color: Colors.red.shade600, fontSize: 12),
-              ),
-              trailing: Icon(
-                  Icons.arrow_forward_ios, color: Colors.red.shade400),
-              onTap: () =>
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                        builder: (_) => const LowStockAlertScreen()),
-                  ),
-            ),
-          ) : const SizedBox();
-        }
-        return SizedBox();
-        }
+      decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(12)),
     );
   }
 
+  // ===========================================================================
+  // LOW STOCK ALERT SECTION
+  // ===========================================================================
+  Widget _buildLowStockAlertSection() {
+    return Consumer<AdminService>(
+        builder: (context, adminService, _) {
+          if (adminService.isLoading) {
+            return const SizedBox(
+                height: 100, width: double.infinity,
+                child: Center(child: CircularProgressIndicator()));
+          }
+          if (adminService.dashboardStats != null && (adminService.dashboardStats!.lowStockCount ?? 0) > 0) {
+            return Container(
+              margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              decoration: BoxDecoration(
+                gradient: LinearGradient(colors: [Colors.red.shade100, Colors.red.shade50]),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: Colors.red.shade300),
+              ),
+              child: ListTile(
+                leading: Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(color: Colors.red.shade200, borderRadius: BorderRadius.circular(8)),
+                  child: Icon(Icons.warning, color: Colors.red.shade700),
+                ),
+                title: Text(
+                  '${adminService.dashboardStats!.lowStockCount} Low Stock Alert${adminService.dashboardStats!.lowStockCount! > 1 ? 's' : ''}',
+                  style: simple_text_style(fontWeight: FontWeight.bold, color: Colors.red.shade700),
+                ),
+                subtitle: Text('Products need restocking', style: simple_text_style(color: Colors.red.shade600, fontSize: 12)),
+                trailing: Icon(Icons.arrow_forward_ios, color: Colors.red.shade400, size: 16),
+                onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const LowStockAlertScreen())),
+              ),
+            );
+          }
+          return const SizedBox.shrink();
+        }
+    );
+  }
 }

@@ -7,7 +7,7 @@ class ProductReview {
   final int? id;
   final String? userId;
   final String? userName;
-  final int? productId;
+  final String? productId;
   final double? rating;
   final String? reviewText;
   final DateTime? createdAt;

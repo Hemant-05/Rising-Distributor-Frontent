@@ -402,14 +402,14 @@ abstract class RestClient {
   // --- Reviews (Admin) ---
 
   @GET("/reviews/order/{orderId}")
-  Future<ApiResponse<AdminOrderReviewDto>> getReviewByOrder(
+  Future<ApiResponse<OrderReviewDto>> getReviewByOrder(
     @Path("orderId") int orderId,
   );
 
   // Note: Ensure you have a Dart model for 'Page<T>' that matches Spring's Page structure
   // (fields: content, totalPages, totalElements, etc.)
   @GET("/reviews/all")
-  Future<ApiResponse<Page<AdminOrderReviewDto>>> getAllReviews(
+  Future<ApiResponse<Page<OrderReviewDto>>> getAllReviews(
     @Query("page") int page,
     @Query("size") int size,
     @Query("keyword") String? keyword,

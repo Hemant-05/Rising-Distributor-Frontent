@@ -5,6 +5,7 @@ TextStyle simple_text_style({
   bool isLineThrough = false,
   bool isEllipsisAble = true,
   double letterSpacing = 1.0,
+  double height = 1.0,
   double fontSize = 16,
   FontWeight fontWeight = FontWeight.w400,
 }) {
