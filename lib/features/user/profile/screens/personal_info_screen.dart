@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:firebase_auth/firebase_auth.dart'; // ✅ Added Firebase Auth
+
 import 'package:raising_india/comman/back_button.dart';
 import 'package:raising_india/comman/simple_text_style.dart';
 import 'package:raising_india/constant/AppColour.dart';
@@ -15,6 +17,7 @@ class PersonalInfoScreen extends StatefulWidget {
 }
 
 class _PersonalInfoScreenState extends State<PersonalInfoScreen> {
+  String? _firebaseVerificationId; // ✅ Store Firebase Session ID
 
   // --- 1. EDIT PROFILE BOTTOM SHEET ---
   void _showEditProfileSheet(BuildContext context, Customer user) {
@@ -23,7 +26,7 @@ class _PersonalInfoScreenState extends State<PersonalInfoScreen> {
 
     showModalBottomSheet(
       context: context,
-      isScrollControlled: true, // Allows sheet to move up with keyboard
+      isScrollControlled: true,
       backgroundColor: Colors.white,
       shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(24))),
       builder: (ctx) => StatefulBuilder(
@@ -32,7 +35,7 @@ class _PersonalInfoScreenState extends State<PersonalInfoScreen> {
 
           return Padding(
             padding: EdgeInsets.only(
-              bottom: MediaQuery.of(context).viewInsets.bottom, // Avoid keyboard overlapping
+              bottom: MediaQuery.of(context).viewInsets.bottom,
               left: 24, right: 24, top: 24,
             ),
             child: Column(
@@ -48,15 +51,11 @@ class _PersonalInfoScreenState extends State<PersonalInfoScreen> {
                 ),
                 const SizedBox(height: 16),
 
-                // Name Field
                 _buildInputField(nameController, "Full Name", Icons.person_outline),
                 const SizedBox(height: 16),
-
-                // Email Field
                 _buildInputField(emailController, "Email Address", Icons.email_outlined),
                 const SizedBox(height: 24),
 
-                // Save Button
                 SizedBox(
                   width: double.infinity,
                   height: 50,
@@ -100,7 +99,7 @@ class _PersonalInfoScreenState extends State<PersonalInfoScreen> {
     );
   }
 
-  // --- 2. ADD / VERIFY MOBILE BOTTOM SHEET ---
+  // --- 2. ADD / VERIFY MOBILE BOTTOM SHEET (✅ UPDATED FOR FIREBASE) ---
   void _showAddMobileSheet(BuildContext context, String? currentNumber) {
     final phoneController = TextEditingController(text: currentNumber);
 
@@ -145,24 +144,36 @@ class _PersonalInfoScreenState extends State<PersonalInfoScreen> {
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                     ),
                     onPressed: isSending ? null : () async {
-                      if (phoneController.text.isEmpty) return;
+                      if (phoneController.text.isEmpty || phoneController.text.length < 10) {
+                        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Enter a valid 10-digit number"), backgroundColor: Colors.red));
+                        return;
+                      }
 
                       setSheetState(() => isSending = true);
 
-                      String number = phoneController.text.trim();
-                      // Request OTP
-                      final error = await context.read<UserService>().registerMobile('+91$number');
+                      String fullPhoneNumber = '+91${phoneController.text.trim()}';
 
-                      setSheetState(() => isSending = false);
-
-                      if (error == null) {
-                        Navigator.pop(context); // Close phone sheet
-                        _showOtpSheet(context); // Open OTP sheet
-                      } else {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(content: Text(error), backgroundColor: Colors.red),
-                        );
-                      }
+                      // ✅ Trigger Firebase SMS
+                      await FirebaseAuth.instance.verifyPhoneNumber(
+                        phoneNumber: fullPhoneNumber,
+                        verificationCompleted: (PhoneAuthCredential credential) async {
+                          // Auto-resolution handling (optional, but good practice)
+                        },
+                        verificationFailed: (FirebaseAuthException e) {
+                          setSheetState(() => isSending = false);
+                          ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.message ?? "Verification failed"), backgroundColor: Colors.red));
+                        },
+                        codeSent: (String verificationId, int? resendToken) {
+                          _firebaseVerificationId = verificationId;
+                          if (mounted) {
+                            Navigator.pop(context); // Close phone sheet
+                            _showOtpSheet(context); // Open OTP sheet
+                          }
+                        },
+                        codeAutoRetrievalTimeout: (String verificationId) {
+                          _firebaseVerificationId = verificationId;
+                        },
+                      );
                     },
                     child: isSending
                         ? const SizedBox(width: 24, height: 24, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
@@ -178,7 +189,7 @@ class _PersonalInfoScreenState extends State<PersonalInfoScreen> {
     );
   }
 
-  // --- 3. ENTER OTP BOTTOM SHEET ---
+  // --- 3. ENTER OTP BOTTOM SHEET (✅ UPDATED FOR FIREBASE) ---
   void _showOtpSheet(BuildContext context) {
     final otpController = TextEditingController();
 
@@ -223,29 +234,44 @@ class _PersonalInfoScreenState extends State<PersonalInfoScreen> {
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                     ),
                     onPressed: isVerifying ? null : () async {
-                      if (otpController.text.isEmpty) return;
+                      if (otpController.text.isEmpty || _firebaseVerificationId == null) return;
 
                       setSheetState(() => isVerifying = true);
 
-                      // Verify OTP
-                      final error = await context.read<UserService>().verifyMobile(otpController.text.trim());
-
-                      setSheetState(() => isVerifying = false);
-
-                      if (error == null) {
-                        // Refresh the AuthService to update the green badge globally!
-                        await context.read<AuthService>().loadUserFromStorage();
-
-                        if (mounted) {
-                          Navigator.pop(context);
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(content: Text("Phone Verified!"), backgroundColor: Colors.green),
-                          );
-                        }
-                      } else {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(content: Text(error), backgroundColor: Colors.red),
+                      try {
+                        // 1. Create credential from Firebase OTP
+                        PhoneAuthCredential credential = PhoneAuthProvider.credential(
+                          verificationId: _firebaseVerificationId!,
+                          smsCode: otpController.text.trim(),
                         );
+
+                        // 2. Sign in to Firebase to verify
+                        UserCredential userCredential = await FirebaseAuth.instance.signInWithCredential(credential);
+                        String? idToken = await userCredential.user?.getIdToken();
+
+                        if (idToken != null) {
+                          // 3. Send token to Spring Boot backend
+                          final error = await context.read<UserService>().verifyFirebaseToken(idToken);
+
+                          if (error == null) {
+                            // Refresh AuthService to update UI globally
+                            await context.read<AuthService>().loadUserFromStorage();
+
+                            if (mounted) {
+                              Navigator.pop(context);
+                              ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Phone Verified successfully!"), backgroundColor: Colors.green));
+                            }
+                          } else {
+                            setSheetState(() => isVerifying = false);
+                            ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(error), backgroundColor: Colors.red));
+                          }
+                        }
+                      } on FirebaseAuthException catch (e) {
+                        setSheetState(() => isVerifying = false);
+                        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Invalid OTP code. Please try again."), backgroundColor: Colors.red));
+                      } catch (e) {
+                        setSheetState(() => isVerifying = false);
+                        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("An error occurred."), backgroundColor: Colors.red));
                       }
                     },
                     child: isVerifying
@@ -262,7 +288,7 @@ class _PersonalInfoScreenState extends State<PersonalInfoScreen> {
     );
   }
 
-  // Helper UI component for TextFields
+  // --- Helper UI Component ---
   Widget _buildInputField(TextEditingController controller, String hint, IconData icon, {bool isNumber = false}) {
     return Container(
       decoration: BoxDecoration(
@@ -301,7 +327,6 @@ class _PersonalInfoScreenState extends State<PersonalInfoScreen> {
           ],
         ),
         actions: [
-          // EDIT BUTTON IN APP BAR
           Consumer<AuthService>(
             builder: (context, authService, _) {
               if (authService.customer != null) {
@@ -330,7 +355,6 @@ class _PersonalInfoScreenState extends State<PersonalInfoScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.center,
               children: [
-                // Profile Avatar
                 Container(
                   height: 100,
                   width: 100,
@@ -368,7 +392,6 @@ class _PersonalInfoScreenState extends State<PersonalInfoScreen> {
                 ),
                 const SizedBox(height: 16),
 
-                // Phone Card (Interactive)
                 _buildPhoneCard(
                   context: context,
                   icon: Icons.phone_android_rounded,
@@ -422,7 +445,7 @@ class _PersonalInfoScreenState extends State<PersonalInfoScreen> {
     required String title,
     required String value,
     required bool isVerified,
-    required VoidCallback onVerifyTap, // Triggers BottomSheet
+    required VoidCallback onVerifyTap,
   }) {
     return Container(
       padding: const EdgeInsets.all(16),
@@ -449,9 +472,8 @@ class _PersonalInfoScreenState extends State<PersonalInfoScreen> {
               ],
             ),
           ),
-          // Interactive Verification Badge
           InkWell(
-            onTap: isVerified ? null : onVerifyTap, // Only tappable if NOT verified
+            onTap: isVerified ? null : onVerifyTap,
             borderRadius: BorderRadius.circular(20),
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),

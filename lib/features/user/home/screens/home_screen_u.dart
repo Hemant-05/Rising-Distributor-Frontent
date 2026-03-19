@@ -13,17 +13,15 @@ import 'package:raising_india/data/services/cart_service.dart';
 import 'package:raising_india/data/services/category_service.dart';
 import 'package:raising_india/data/services/order_service.dart';
 import 'package:raising_india/data/services/product_service.dart';
-import 'package:raising_india/data/services/user_service.dart';
 import 'package:raising_india/data/services/wishlist_service.dart';
 
 // Screens & Widgets
 import 'package:raising_india/features/user/address/screens/select_address_screen.dart';
 import 'package:raising_india/features/user/home/widgets/add_banner_widget.dart';
-import 'package:raising_india/features/user/home/widgets/categories_section.dart';
+import 'package:raising_india/features/user/home/widgets/category_showing_widget.dart';
 import 'package:raising_india/features/user/home/widgets/product_grid.dart';
 import 'package:raising_india/features/user/home/widgets/search_bar_widget.dart';
 import 'package:raising_india/features/user/order/screens/order_tracking_screen.dart';
-import 'package:raising_india/models/model/address.dart';
 import 'package:raising_india/models/model/order.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../widgets/product_card.dart';
@@ -86,78 +84,78 @@ class _HomeScreenUState extends State<HomeScreenU> {
       if (authService.isCustomer) cartService.fetchCart(),
       orderService.fetchMyOrders(),
       addressService.fetchAddresses(),
+      cartService.fetchCart(),
       wishlistService.fetchWishlist(authService.customer!.uid!),
     ]);
   }
 
   @override
   Widget build(BuildContext context) {
-    // Access User Data
-    final authService = context.watch<AuthService>();
-    final user = authService.customer;
-    String nameDisplay = 'there';
-
-    if (user != null) {
-      nameDisplay = user.name?.split(' ').first ?? 'User';
-    }
-
     return Scaffold(
-      backgroundColor: AppColour.white,
+      backgroundColor: Colors.white,
       appBar: buildModernAppBar(context),
       body: RefreshIndicator(
         color: AppColour.primary,
         backgroundColor: AppColour.white,
         onRefresh: _onRefresh,
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-          child: CustomScrollView(
-            physics: const BouncingScrollPhysics(),
-            slivers: [
-              SliverToBoxAdapter(child: _buildGreetingSection(nameDisplay)),
-              const SliverToBoxAdapter(child: SizedBox(height: 10)),
-              SliverToBoxAdapter(child: search_bar_widget(context)),
-              const SliverToBoxAdapter(child: SizedBox(height: 14)),
-              const SliverToBoxAdapter(child: AddBannerWidget()),
-              const SliverToBoxAdapter(child: SizedBox(height: 10)),
-              SliverToBoxAdapter(child: categories_section(context)),
-              const SliverToBoxAdapter(child: SizedBox(height: 10)),
-              SliverToBoxAdapter(child: _buildOngoingOrdersSection()),
-              const SliverToBoxAdapter(child: SizedBox(height: 10)),
-              SliverToBoxAdapter(child: _bestProductsHeader()),
-              const SliverToBoxAdapter(child: SizedBox(height: 10)),
-              SliverToBoxAdapter(child: buildBestProductsHorizontal(context)),
-              const SliverToBoxAdapter(child: SizedBox(height: 18)),
-              SliverToBoxAdapter(child: allProductsHeader()),
-
-              // All Products Grid
-              Consumer<ProductService>(
-                builder: (context, productService, _) {
-                  if (productService.isLoading &&
-                      productService.products.isEmpty) {
-                    return SliverToBoxAdapter(
-                      child: SizedBox(
-                        height: 180,
-                        child: Center(
-                          child: CircularProgressIndicator(
-                            color: AppColour.primary,
-                          ),
-                        ),
-                      ),
-                    );
-                  }
-                  if (productService.products.isEmpty) {
-                    return const SliverToBoxAdapter(
-                      child: Center(child: Text('No products available')),
-                    );
-                  }
-                  return SliverToBoxAdapter(
-                    child: ProductGrid(products: productService.products),
-                  );
-                },
+        child: CustomScrollView(
+          physics: const BouncingScrollPhysics(),
+          slivers: [
+            // Sticky Search Bar Background wrapper
+            SliverToBoxAdapter(
+              child: Container(
+                color: Colors.white,
+                padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+                child: search_bar_widget(context),
               ),
-              const SliverToBoxAdapter(child: SizedBox(height: 20)),
-            ],
-          ),
+            ),
+
+            // ✅ New: Explore Categories Horizontal Strip
+            SliverToBoxAdapter(child: _buildCategoriesSection()),
+
+            const SliverToBoxAdapter(child: SizedBox(height: 16)),
+            const SliverToBoxAdapter(child: AddBannerWidget()),
+
+            const SliverToBoxAdapter(child: SizedBox(height: 24)),
+            SliverToBoxAdapter(child: _buildOngoingOrdersSection()),
+
+            // Best Sellers Shelf
+            SliverToBoxAdapter(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text('Bestsellers', style: simple_text_style(fontSize: 18, fontWeight: FontWeight.bold)),
+                    Text('See All', style: simple_text_style(color: AppColour.primary, fontWeight: FontWeight.bold, fontSize: 13)),
+                  ],
+                ),
+              ),
+            ),
+            SliverToBoxAdapter(child: buildBestProductsHorizontal(context)),
+
+            const SliverToBoxAdapter(child: SizedBox(height: 24)),
+
+            // All Products Grid
+            SliverToBoxAdapter(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                child: Text('More to Explore', style: simple_text_style(fontSize: 18, fontWeight: FontWeight.bold)),
+              ),
+            ),
+            Consumer<ProductService>(
+              builder: (context, productService, _) {
+                if (productService.isLoading && productService.products.isEmpty) {
+                  return SliverToBoxAdapter(child: SizedBox(height: 180, child: Center(child: CircularProgressIndicator(color: AppColour.primary))));
+                }
+                return SliverPadding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  sliver: SliverToBoxAdapter(child: ProductGrid(products: productService.products)),
+                );
+              },
+            ),
+            const SliverToBoxAdapter(child: SizedBox(height: 100)), // Space for cart banner
+          ],
         ),
       ),
     );
@@ -165,72 +163,81 @@ class _HomeScreenUState extends State<HomeScreenU> {
 
   AppBar buildModernAppBar(BuildContext context) {
     return AppBar(
-      backgroundColor: AppColour.white,
+      backgroundColor: Colors.white,
       elevation: 0,
-      titleSpacing: 12,
+      titleSpacing: 16,
       automaticallyImplyLeading: false,
       title: GestureDetector(
-        onTap: () => PersistentNavBarNavigator.pushNewScreen(
-          context,
-          screen: const SelectAddressScreen(isFromProfile: true),
-          withNavBar: false,
-          pageTransitionAnimation:
-          PageTransitionAnimation.cupertino,
-        ),
+        onTap: () => PersistentNavBarNavigator.pushNewScreen(context, screen: const SelectAddressScreen(isFromProfile: true), withNavBar: false),
         child: Row(
           children: [
-            CircleAvatar(
-              radius: 16,
-              backgroundColor: AppColour.primary,
-              child: const Icon(
-                Icons.location_on_outlined,
-                size: 16,
-                color: Colors.white,
-              ),
-            ),
-            const SizedBox(width: 10),
+            Icon(Icons.location_on, color: AppColour.primary, size: 28),
+            const SizedBox(width: 8),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
-                    'DELIVER TO',
-                    style: simple_text_style(
-                      color: AppColour.primary,
-                      fontSize: 11,
-                      fontWeight: FontWeight.bold,
-                    ),
+                  Row(
+                    children: [
+                      Text('Delivery in 15 mins', style: simple_text_style(fontSize: 14, fontWeight: FontWeight.bold, color: Colors.black87)),
+                      const Icon(Icons.keyboard_arrow_down, size: 20, color: Colors.black87),
+                    ],
                   ),
                   Consumer<AddressService>(
                     builder: (context, addressService, state) {
-                      if (addressService.isLoading) {
-                        return Text(
-                          'Loading...',
-                          style: simple_text_style(
-                            fontSize: 14,
-                            fontWeight: FontWeight.w700,
-                          ),
-                        );
-                      }
                       var list = addressService.addresses;
-                      final address = list.isNotEmpty ? formatFullAddress(list.first) : 'Add Address';
-                      return Text(
-                        address,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: simple_text_style(
-                          fontSize: 14,
-                          fontWeight: FontWeight.w700,
-                        ),
-                      );
+                      final address = list.isNotEmpty ? formatFullAddress(list.first) : 'Select a location to see products';
+                      return Text(address, maxLines: 1, overflow: TextOverflow.ellipsis, style: simple_text_style(fontSize: 12, color: Colors.grey.shade600));
                     },
                   ),
                 ],
               ),
             ),
+            CircleAvatar(
+              backgroundColor: Colors.grey.shade100,
+              child: Icon(Icons.person_outline, color: Colors.grey.shade800),
+            )
           ],
         ),
       ),
+    );
+  }
+
+  Widget _buildCategoriesSection() {
+    return Consumer<CategoryService>(
+      builder: (context, categoryService, _) {
+        if (categoryService.isLoading && categoryService.categories.isEmpty)
+          return const SizedBox.shrink();
+
+        final rootCategories = categoryService.categories.where((c) =>
+        c.parentCategory == null).toList();
+        if (rootCategories.isEmpty) return const SizedBox.shrink();
+
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: Text('Explore by Category', style: simple_text_style(
+                  fontSize: 16, fontWeight: FontWeight.bold)),
+            ),
+            const SizedBox(height: 12),
+            SizedBox(
+              height: 110,
+              child: ListView.builder(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                scrollDirection: Axis.horizontal,
+                physics: const BouncingScrollPhysics(),
+                itemCount: rootCategories.length,
+                itemBuilder: (context, index) {
+                  return category_showing_widget(context,
+                      rootCategories[index]); // Using your existing widget!
+                },
+              ),
+            ),
+          ],
+        );
+      },
     );
   }
 
@@ -258,32 +265,22 @@ class _HomeScreenUState extends State<HomeScreenU> {
 
   Widget buildBestProductsHorizontal(BuildContext context) {
     return SizedBox(
-      height: 250,
+      height: 240, // Taller to fit the new card design
       child: Consumer<ProductService>(
         builder: (context, productService, _) {
-          if (productService.isLoading && productService.bestSelling.isEmpty) {
-            if (productService.isLoading) {
-              return SizedBox(
-                height: 150,
-                child: Center(
-                  child: CircularProgressIndicator(color: AppColour.primary),
-                ),
-              );
-            }
-          }
           final list = productService.bestSelling;
-          if (list.isEmpty) {
-            return const Center(child: Text('No Best Selling Products'));
-          }
+          if (list.isEmpty) return const SizedBox.shrink();
+
           return ListView.separated(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
             physics: const BouncingScrollPhysics(),
             scrollDirection: Axis.horizontal,
             itemCount: list.length,
             separatorBuilder: (_, __) => const SizedBox(width: 12),
             itemBuilder: (context, i) {
               return SizedBox(
-                width: 180,
-                child: product_card(product: list[i], isBig: true),
+                width: 140, // Standard quick commerce card width
+                child: product_card(product: list[i], isBig: false),
               );
             },
           );
@@ -334,30 +331,33 @@ class _HomeScreenUState extends State<HomeScreenU> {
 
         if (ongoingOrders.isEmpty) return const SizedBox();
 
-        return Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'Ongoing Orders',
-              style: simple_text_style(
-                color: AppColour.black,
-                fontSize: 22,
-                fontWeight: FontWeight.bold,
+        return Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 12),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Ongoing Orders',
+                style: simple_text_style(
+                  color: AppColour.black,
+                  fontSize: 22,
+                  fontWeight: FontWeight.bold,
+                ),
               ),
-            ),
-            const SizedBox(height: 12),
-            SizedBox(
-              height: 120,
-              child: ListView.separated(
-                scrollDirection: Axis.horizontal,
-                itemCount: ongoingOrders.length,
-                separatorBuilder: (_, __) => const SizedBox(width: 12),
-                itemBuilder: (context, index) {
-                  return _buildOrderCard(ongoingOrders[index]);
-                },
+              const SizedBox(height: 12),
+              SizedBox(
+                height: 120,
+                child: ListView.separated(
+                  scrollDirection: Axis.horizontal,
+                  itemCount: ongoingOrders.length,
+                  separatorBuilder: (_, __) => const SizedBox(width: 12),
+                  itemBuilder: (context, index) {
+                    return _buildOrderCard(ongoingOrders[index]);
+                  },
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         );
       },
     );

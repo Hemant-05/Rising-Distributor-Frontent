@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:raising_india/data/repositories/user_repo.dart';
 import 'package:raising_india/error/exceptions.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 import '../../../models/dto/user_profile_response.dart';
 
 class UserService extends ChangeNotifier {
@@ -19,36 +18,37 @@ class UserService extends ChangeNotifier {
     }
   }
 
-  Future<String?> registerMobile(String mobile) async {
+  Future<String?> verifyFirebaseToken(String idToken) async {
     try {
-      await _repo.saveMobile(mobile);
-      return null;
-    } on AppError catch (e) {
-      return e.message;
-    } catch (e) {
-      return "Failed to send OTP.";
-    }
-  }
-
-  Future<String?> verifyMobile(String otp) async {
-    try {
-      await _repo.verifyMobile(otp);
+      await _repo.verifyFirebaseToken(idToken);
       await loadProfile(); // Refresh profile status
       return null;
     } on AppError catch (e) {
       return e.message;
     } catch (e) {
-      return "Failed to verify OTP.";
+      return "Failed to verify with server.";
     }
   }
 
-  Future<String?> updateFCM(String token)async{
-    try{
+  Future<String?> verifyTruecaller(String authCode, String codeVerifier) async {
+    try {
+      await _repo.verifyTruecaller(authCode, codeVerifier);
+      await loadProfile(); // Refresh profile status
+      return null;
+    } on AppError catch (e) {
+      return e.message;
+    } catch (e) {
+      return "Failed to verify with Truecaller.";
+    }
+  }
+
+  Future<String?> updateFCM(String token) async {
+    try {
       String? res = await _repo.updateFcm(token);
       return res;
-    } on AppError catch(e){
+    } on AppError catch (e) {
       return e.message;
-    } catch(e){
+    } catch (e) {
       return e.toString();
     }
   }

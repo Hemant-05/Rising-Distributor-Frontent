@@ -1,6 +1,4 @@
 import 'package:raising_india/error/exceptions.dart';
-import 'package:raising_india/models/dto/auth_dtos.dart';
-
 import '../../../data/rest_client.dart';
 import '../../../services/service_locator.dart';
 import '../../../models/dto/user_profile_response.dart';
@@ -17,17 +15,20 @@ class UserRepository with RepoErrorHandler {
     }
   }
 
-  Future<void> saveMobile(String mobile) async {
+  Future<void> verifyFirebaseToken(String token) async {
     try {
-      await _client.saveMobileNumber(MobileRequest(mobileNumber: mobile));
+      await _client.verifyFirebaseToken({"token": token});
     } catch (e) {
       throw handleError(e);
     }
   }
 
-  Future<void> verifyMobile(String otp) async {
+  Future<void> verifyTruecaller(String authCode, String codeVerifier) async {
     try {
-      await _client.verifyMobile(OtpVerificationRequest(otp: otp));
+      await _client.verifyTruecaller({
+        "authCode": authCode,
+        "codeVerifier": codeVerifier
+      });
     } catch (e) {
       throw handleError(e);
     }

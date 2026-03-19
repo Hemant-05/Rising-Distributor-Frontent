@@ -7,6 +7,7 @@ import 'package:raising_india/data/services/category_service.dart';
 import 'package:raising_india/features/user/categories/widgets/category_widget.dart';
 import 'package:raising_india/features/user/categories/screens/category_product_screen.dart';
 import 'package:raising_india/models/model/category.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 
 class AllCategoriesScreen extends StatefulWidget {
   const AllCategoriesScreen({super.key});
@@ -16,7 +17,10 @@ class AllCategoriesScreen extends StatefulWidget {
 }
 
 class _AllCategoriesScreenState extends State<AllCategoriesScreen> {
-  final List<Category> _breadcrumb = [];
+  Category? _selectedRootCategory;
+
+  // This stack keeps track of how deep the user has clicked inside the right pane
+  final List<Category> _rightPanePath = [];
 
   @override
   void initState() {
@@ -26,34 +30,23 @@ class _AllCategoriesScreenState extends State<AllCategoriesScreen> {
     });
   }
 
-  // Handle Android Hardware Back Button to go up the tree instead of exiting app
-  Future<bool> _onWillPop() async {
-    if (_breadcrumb.isNotEmpty) {
-      setState(() {
-        _breadcrumb.removeLast();
-      });
-      return false; // Stay on screen, just went up one level
+  // Helper to safely get child categories
+  List<Category> _getChildren(Category parent, List<Category> allCategories) {
+    if (parent.subCategories != null && parent.subCategories!.isNotEmpty) {
+      return parent.subCategories!;
     }
-    return true; // Actually pop the screen
+    return allCategories
+        .where((c) => c.parentCategory?.id == parent.id)
+        .toList();
   }
 
-  // Helper to get the current list of categories to display
-  List<Category> _getCurrentCategories(List<Category> allCategories) {
-    if (_breadcrumb.isEmpty) {
-      // Show Root Categories (Items with no parent)
-      return allCategories.where((c) => c.parentCategory == null).toList();
-    } else {
-      // Show Subcategories of the current active breadcrumb
-      final currentCategory = _breadcrumb.last;
-
-      // If the backend provides nested children natively
-      if (currentCategory.subCategories != null && currentCategory.subCategories!.isNotEmpty) {
-        return currentCategory.subCategories!;
-      }
-
-      // Fallback: If backend provides a flat list, filter by parent ID manually
-      return allCategories.where((c) => c.parentCategory?.id == currentCategory.id).toList();
+  // Handle hardware back button
+  Future<bool> _onWillPop() async {
+    if (_rightPanePath.isNotEmpty) {
+      setState(() => _rightPanePath.removeLast());
+      return false; // Stay on screen, just went up one level in the right pane
     }
+    return true; // Actually pop the screen
   }
 
   @override
@@ -61,139 +54,262 @@ class _AllCategoriesScreenState extends State<AllCategoriesScreen> {
     return WillPopScope(
       onWillPop: _onWillPop,
       child: Scaffold(
-        backgroundColor: Colors.grey.shade50,
+        backgroundColor: Colors.white,
         appBar: AppBar(
           backgroundColor: AppColour.white,
           automaticallyImplyLeading: false,
           elevation: 0,
-          title: Row(
-            children: [
-              // Custom Back Button logic
-              IconButton(
-                icon: const Icon(Icons.arrow_back_ios_new_rounded, color: Colors.black, size: 20),
-                onPressed: () async {
-                  if (await _onWillPop()) {
-                    Navigator.pop(context);
-                  }
-                },
-              ),
-              const SizedBox(width: 8),
-              Text('Categories', style: simple_text_style(fontSize: 20, fontWeight: FontWeight.bold)),
-            ],
+          title: Text(
+            'All Categories',
+            style: simple_text_style(fontSize: 20, fontWeight: FontWeight.bold),
           ),
+          actions: [
+            IconButton(
+              icon: const Icon(Icons.search, color: Colors.black, size: 28),
+              onPressed: () {
+                // TODO: Navigate to search screen
+              },
+            ),
+            const SizedBox(width: 8),
+          ],
         ),
         body: Consumer<CategoryService>(
           builder: (context, categoryService, child) {
-            if (categoryService.isLoading && categoryService.categories.isEmpty) {
-              return Center(child: CircularProgressIndicator(color: AppColour.primary));
+            if (categoryService.isLoading &&
+                categoryService.categories.isEmpty) {
+              return Center(
+                child: CircularProgressIndicator(color: AppColour.primary),
+              );
             }
 
-            final displayList = _getCurrentCategories(categoryService.categories);
+            final allCategories = categoryService.categories;
+            final rootCategories = allCategories
+                .where((c) => c.parentCategory == null)
+                .toList();
 
-            return Column(
+            if (rootCategories.isEmpty) {
+              return Center(
+                child: Text(
+                  'No Categories Found',
+                  style: simple_text_style(color: Colors.grey.shade600),
+                ),
+              );
+            }
+
+            // Auto-select the first category if none is selected
+            _selectedRootCategory ??= rootCategories.first;
+
+            // Determine what to show in the right pane
+            Category currentParent = _rightPanePath.isEmpty
+                ? _selectedRootCategory!
+                : _rightPanePath.last;
+            List<Category> displayList = _getChildren(
+              currentParent,
+              allCategories,
+            );
+
+            return Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // --- BREADCRUMB ROUTE UI ---
+                // ==========================================
+                // LEFT SIDEBAR
+                // ==========================================
                 Container(
-                  width: double.infinity,
-                  color: AppColour.white,
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                  child: SingleChildScrollView(
-                    scrollDirection: Axis.horizontal,
-                    child: Row(
-                      children: [
-                        // Root "All" Button
-                        GestureDetector(
-                          onTap: () => setState(() => _breadcrumb.clear()),
-                          child: Text(
-                              "All",
-                              style: simple_text_style(
-                                color: _breadcrumb.isEmpty ? AppColour.primary : Colors.grey.shade600,
-                                fontWeight: _breadcrumb.isEmpty ? FontWeight.bold : FontWeight.w500,
-                              )
+                  width: 90,
+                  color: Colors.grey.shade50, // Slight off-white for sidebar
+                  child: ListView.builder(
+                    physics: const BouncingScrollPhysics(),
+                    itemCount: rootCategories.length,
+                    itemBuilder: (context, index) {
+                      final category = rootCategories[index];
+                      final isSelected =
+                          category.id == _selectedRootCategory?.id;
+
+                      return GestureDetector(
+                        onTap: () {
+                          setState(() {
+                            _selectedRootCategory = category;
+                            _rightPanePath
+                                .clear(); // Reset right pane when changing root
+                          });
+                        },
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                            vertical: 16,
+                            horizontal: 8,
                           ),
-                        ),
-
-                        // Dynamic Path Segments
-                        ..._breadcrumb.asMap().entries.map((entry) {
-                          int idx = entry.key;
-                          Category cat = entry.value;
-                          bool isLast = idx == _breadcrumb.length - 1;
-
-                          return Row(
+                          decoration: BoxDecoration(
+                            color: isSelected
+                                ? Colors.white
+                                : Colors.transparent,
+                            border: Border(
+                              left: BorderSide(
+                                color: isSelected
+                                    ? AppColour.primary
+                                    : Colors.transparent,
+                                width: 4, // The blue active indicator line
+                              ),
+                            ),
+                          ),
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
                             children: [
-                              Icon(Icons.chevron_right, size: 18, color: Colors.grey.shade400),
-                              GestureDetector(
-                                onTap: () {
-                                  // Jump back to this specific level in the tree
-                                  setState(() {
-                                    _breadcrumb.removeRange(idx + 1, _breadcrumb.length);
-                                  });
-                                },
-                                child: Text(
-                                  cat.name ?? "Unknown",
-                                  style: simple_text_style(
-                                    color: isLast ? AppColour.primary : Colors.grey.shade600,
-                                    fontWeight: isLast ? FontWeight.bold : FontWeight.w500,
-                                  ),
+                              Container(
+                                width: 40,
+                                height: 40,
+                                decoration: BoxDecoration(
+                                  color: isSelected
+                                      ? AppColour.primary.withOpacity(0.1)
+                                      : Colors.grey.shade200,
+                                  shape: BoxShape.circle,
+                                ),
+                                child:
+                                    category.imageUrl != null &&
+                                        category.imageUrl!.isNotEmpty
+                                    ? ClipOval(
+                                        child: CachedNetworkImage(
+                                          imageUrl: category.imageUrl!,
+                                          fit: BoxFit.cover,
+                                        ),
+                                      )
+                                    : Icon(
+                                        Icons.category,
+                                        color: isSelected
+                                            ? AppColour.primary
+                                            : Colors.grey.shade500,
+                                        size: 20,
+                                      ),
+                              ),
+                              const SizedBox(height: 8),
+                              Text(
+                                category.name ?? 'Unknown',
+                                textAlign: TextAlign.center,
+                                maxLines: 2,
+                                overflow: TextOverflow.ellipsis,
+                                style: simple_text_style(
+                                  fontSize: 11,
+                                  fontWeight: isSelected
+                                      ? FontWeight.bold
+                                      : FontWeight.w500,
+                                  color: isSelected
+                                      ? AppColour.primary
+                                      : Colors.grey.shade700,
                                 ),
                               ),
                             ],
-                          );
-                        }),
-                      ],
-                    ),
+                          ),
+                        ),
+                      );
+                    },
                   ),
                 ),
 
-                const Divider(height: 1),
+                // Vertical Divider
+                Container(width: 1, color: Colors.grey.shade200),
 
-                // --- CATEGORY GRID ---
+                // ==========================================
+                // RIGHT CONTENT AREA
+                // ==========================================
                 Expanded(
-                  child: displayList.isEmpty
-                      ? Center(
-                    child: Text(
-                      'No Categories Found',
-                      style: simple_text_style(color: Colors.grey.shade600, fontSize: 16),
-                    ),
-                  )
-                      : GridView.builder(
-                    padding: const EdgeInsets.all(16),
-                    itemCount: displayList.length,
-                    gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                      crossAxisCount: 3,
-                      crossAxisSpacing: 16,
-                      mainAxisSpacing: 16,
-                      childAspectRatio: 0.8, // Adjusted to fit the new widget shape
-                    ),
-                    itemBuilder: (context, index) {
-                      final category = displayList[index];
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // Header / Back Button for deep linking
+                      Container(
+                        padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+                        child: Row(
+                          children: [
+                            if (_rightPanePath.isNotEmpty)
+                              GestureDetector(
+                                onTap: () =>
+                                    setState(() => _rightPanePath.removeLast()),
+                                child: Padding(
+                                  padding: const EdgeInsets.only(right: 8.0),
+                                  child: Icon(
+                                    Icons.arrow_back_ios_new,
+                                    size: 18,
+                                    color: AppColour.primary,
+                                  ),
+                                ),
+                              ),
+                            Expanded(
+                              child: Text(
+                                currentParent.name ?? 'Categories',
+                                style: simple_text_style(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
 
-                      return category_widget(
-                        context,
-                        category,
-                        onTap: () {
-                          // Check if this category has children
-                          final hasChildren = (category.subCategories != null && category.subCategories!.isNotEmpty) ||
-                              categoryService.categories.any((c) => c.parentCategory?.id == category.id);
+                      // Grid of Subcategories
+                      Expanded(
+                        child: displayList.isEmpty
+                            ? Center(
+                                child: Text(
+                                  "No items here",
+                                  style: simple_text_style(
+                                    color: Colors.grey.shade400,
+                                  ),
+                                ),
+                              )
+                            : GridView.builder(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 12,
+                                  vertical: 8,
+                                ),
+                                physics: const BouncingScrollPhysics(),
+                                itemCount: displayList.length,
+                                gridDelegate:
+                                    const SliverGridDelegateWithFixedCrossAxisCount(
+                                      crossAxisCount:
+                                          3, // 3 items per row in the remaining space
+                                      crossAxisSpacing: 10,
+                                      mainAxisSpacing: 16,
+                                      childAspectRatio:
+                                          0.70, // Taller boxes for image + text
+                                    ),
+                                itemBuilder: (context, index) {
+                                  final childCategory = displayList[index];
 
-                          if (hasChildren) {
-                            // DRILL DOWN: Add to breadcrumb and show children
-                            setState(() {
-                              _breadcrumb.add(category);
-                            });
-                          } else {
-                            // LEAF NODE: Navigate to products screen!
-                            PersistentNavBarNavigator.pushNewScreen(
-                              context,
-                              screen: CategoryProductScreen(category: category.name ?? ''),
-                              withNavBar: false,
-                              pageTransitionAnimation: PageTransitionAnimation.cupertino,
-                            );
-                          }
-                        },
-                      );
-                    },
+                                  return category_widget(
+                                    context,
+                                    childCategory,
+                                    onTap: () {
+                                      final children = _getChildren(
+                                        childCategory,
+                                        allCategories,
+                                      );
+
+                                      if (children.isNotEmpty) {
+                                        // It has children, drill down!
+                                        setState(
+                                          () =>
+                                              _rightPanePath.add(childCategory),
+                                        );
+                                      } else {
+                                        // It's a leaf node, go to products!
+                                        PersistentNavBarNavigator.pushNewScreen(
+                                          context,
+                                          screen: CategoryProductScreen(
+                                            category: childCategory.name ?? '',
+                                          ),
+                                          withNavBar: false,
+                                          pageTransitionAnimation:
+                                              PageTransitionAnimation.cupertino,
+                                        );
+                                      }
+                                    },
+                                  );
+                                },
+                              ),
+                      ),
+                    ],
                   ),
                 ),
               ],

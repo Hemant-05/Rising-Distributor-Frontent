@@ -28,24 +28,3 @@ class RegistrationRequest {
   Map<String, dynamic> toJson() => _$RegistrationRequestToJson(this);
 }
 
-// 3. Mobile Request
-@JsonSerializable()
-class MobileRequest {
-  final String? mobileNumber;
-
-  MobileRequest({this.mobileNumber});
-
-  factory MobileRequest.fromJson(Map<String, dynamic> json) => _$MobileRequestFromJson(json);
-  Map<String, dynamic> toJson() => _$MobileRequestToJson(this);
-}
-
-// 4. OTP Verification Request
-@JsonSerializable()
-class OtpVerificationRequest {
-  final String? otp;
-
-  OtpVerificationRequest({this.otp});
-
-  factory OtpVerificationRequest.fromJson(Map<String, dynamic> json) => _$OtpVerificationRequestFromJson(json);
-  Map<String, dynamic> toJson() => _$OtpVerificationRequestToJson(this);
-}

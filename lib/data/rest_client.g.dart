@@ -2592,58 +2592,46 @@ class _RestClient implements RestClient {
   }
 
   @override
-  Future<ApiResponse<void>> saveMobileNumber(MobileRequest request) async {
+  Future<dynamic> verifyFirebaseToken(Map<String, dynamic> body) async {
     final _extra = <String, dynamic>{};
     final queryParameters = <String, dynamic>{};
     final _headers = <String, dynamic>{};
     final _data = <String, dynamic>{};
-    _data.addAll(request.toJson());
-    final _options = _setStreamType<ApiResponse<void>>(
+    _data.addAll(body);
+    final _options = _setStreamType<dynamic>(
       Options(method: 'POST', headers: _headers, extra: _extra)
           .compose(
             _dio.options,
-            '/users/mobile',
+            '/users/verify-firebase',
             queryParameters: queryParameters,
             data: _data,
           )
           .copyWith(baseUrl: _combineBaseUrls(_dio.options.baseUrl, baseUrl)),
     );
-    final _result = await _dio.fetch<Map<String, dynamic>>(_options);
-    late ApiResponse<void> _value;
-    try {
-      _value = ApiResponse<void>.fromJson(_result.data!, (json) => () {}());
-    } on Object catch (e, s) {
-      errorLogger?.logError(e, s, _options, response: _result);
-      rethrow;
-    }
+    final _result = await _dio.fetch(_options);
+    final _value = _result.data;
     return _value;
   }
 
   @override
-  Future<ApiResponse<void>> verifyMobile(OtpVerificationRequest request) async {
+  Future<dynamic> verifyTruecaller(Map<String, dynamic> body) async {
     final _extra = <String, dynamic>{};
     final queryParameters = <String, dynamic>{};
     final _headers = <String, dynamic>{};
     final _data = <String, dynamic>{};
-    _data.addAll(request.toJson());
-    final _options = _setStreamType<ApiResponse<void>>(
+    _data.addAll(body);
+    final _options = _setStreamType<dynamic>(
       Options(method: 'POST', headers: _headers, extra: _extra)
           .compose(
             _dio.options,
-            '/users/mobile/verify',
+            '/users/verify-truecaller',
             queryParameters: queryParameters,
             data: _data,
           )
           .copyWith(baseUrl: _combineBaseUrls(_dio.options.baseUrl, baseUrl)),
     );
-    final _result = await _dio.fetch<Map<String, dynamic>>(_options);
-    late ApiResponse<void> _value;
-    try {
-      _value = ApiResponse<void>.fromJson(_result.data!, (json) => () {}());
-    } on Object catch (e, s) {
-      errorLogger?.logError(e, s, _options, response: _result);
-      rethrow;
-    }
+    final _result = await _dio.fetch(_options);
+    final _value = _result.data;
     return _value;
   }
 

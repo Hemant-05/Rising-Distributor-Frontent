@@ -30,7 +30,7 @@ Map<String, dynamic> _$ReviewRequestDtoToJson(ReviewRequestDto instance) =>
 
 ProductRatingDto _$ProductRatingDtoFromJson(Map<String, dynamic> json) =>
     ProductRatingDto(
-      productId: (json['productId'] as String?),
+      productId: json['productId'] as String?,
       rating: (json['rating'] as num?)?.toDouble(),
       reviewText: json['reviewText'] as String?,
     );

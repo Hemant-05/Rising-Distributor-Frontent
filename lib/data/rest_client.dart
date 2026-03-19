@@ -430,13 +430,12 @@ abstract class RestClient {
   @GET("/users/me")
   Future<ApiResponse<UserProfileResponse>> getCurrentUserProfile();
 
-  @POST("/users/mobile")
-  Future<ApiResponse<void>> saveMobileNumber(@Body() MobileRequest request);
+  // Add these two new endpoints
+  @POST("/users/verify-firebase")
+  Future<dynamic> verifyFirebaseToken(@Body() Map<String, dynamic> body);
 
-  @POST("/users/mobile/verify")
-  Future<ApiResponse<void>> verifyMobile(
-    @Body() OtpVerificationRequest request,
-  );
+  @POST("/users/verify-truecaller")
+  Future<dynamic> verifyTruecaller(@Body() Map<String, dynamic> body);
 
   @POST("/users/update-fcm-token")
   Future<ApiResponse<String>> updateFcmToken(@Query("token") String token);

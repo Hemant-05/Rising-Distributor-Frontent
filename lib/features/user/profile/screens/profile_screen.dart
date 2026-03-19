@@ -155,15 +155,6 @@ class ProfileScreen extends StatelessWidget {
                   customContainer(
                     Column(
                       children: [
-                        optionListTile(receipt_svg, 'My Orders', () {
-                          PersistentNavBarNavigator.pushNewScreen(
-                            context,
-                            screen: const OrderScreen(),
-                            withNavBar: false,
-                            pageTransitionAnimation:
-                                PageTransitionAnimation.cupertino,
-                          );
-                        }),
                         optionListTile(border_heart_svg, 'Wishlist', () {
                           PersistentNavBarNavigator.pushNewScreen(
                             context,

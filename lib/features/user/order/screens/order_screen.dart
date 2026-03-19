@@ -34,9 +34,7 @@ class _OrderScreenState extends State<OrderScreen> {
         elevation: 0,
         title: Row(
           children: [
-            back_button(),
-            const SizedBox(width: 12),
-            Text('My Orders', style: simple_text_style(fontSize: 22, fontWeight: FontWeight.bold)),
+            Text('My Orders', style: simple_text_style(fontSize: 20, fontWeight: FontWeight.bold)),
           ],
         ),
       ),

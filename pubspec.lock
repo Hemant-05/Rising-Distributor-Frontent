@@ -1621,6 +1621,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "0.10.1"
+  truecaller_sdk:
+    dependency: "direct main"
+    description:
+      name: truecaller_sdk
+      sha256: b768649da7d0de88dccb673e19d1108ab4cec4ee4c7242c8c3b9501bc306c4b5
+      url: "https://pub.dev"
+    source: hosted
+    version: "1.2.0"
   typed_data:
     dependency: transitive
     description:

@@ -29,7 +29,7 @@
         <activity
             android:name="com.rising.narmada_mart.MainActivity"
             android:exported="true"
-            android:launchMode="singleTop"
+            android:launchMode="singleTask"
             android:taskAffinity=""
             android:theme="@style/LaunchTheme"
             android:configChanges="orientation|keyboardHidden|keyboard|screenSize|smallestScreenSize|locale|layoutDirection|fontScale|screenLayout|density|uiMode"
@@ -56,6 +56,9 @@
         <meta-data
             android:name="com.google.android.geo.API_KEY"
             android:value="AIzaSyDqKoJPlll2KRqfa11a3vvBPsPy0ZLwnkw"/>
+        <meta-data
+            android:name="com.truecaller.android.sdk.ClientId"
+            android:value="2e4jpkrpbfzggpq4cuvnvsi_a7oasfetkccidh90ese"/>
     </application>
     <!-- Required to query activities that can process text, see:
          https://developer.android.com/training/package-visibility and

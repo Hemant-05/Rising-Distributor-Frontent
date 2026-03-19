@@ -1,10 +1,12 @@
 import 'dart:async';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter_svg/svg.dart';
+import 'package:truecaller_sdk/truecaller_sdk.dart';
+
 import 'package:raising_india/constant/ConString.dart';
-import 'package:raising_india/data/services/auth_service.dart';
 import 'package:raising_india/data/services/user_service.dart';
 import 'package:raising_india/features/admin/home/screens/home_screen_a.dart';
 import 'package:raising_india/features/user/main_screen_u.dart';
@@ -27,16 +29,23 @@ class _VerificationCodeScreenState extends State<VerificationCodeScreen> {
   String? _error;
   final _verificationCodeController = TextEditingController();
   final _numberController = TextEditingController();
+  bool isTruecallerUsable = false;
 
-  bool isNumberVerified = false; // "OTP Sent" status
+  bool isNumberVerified = false;
   bool isLoading = false;
   Timer? timer;
   int t = 30;
+
+  // --- Truecaller & Firebase Variables ---
+  StreamSubscription? _truecallerSub;
+  String _codeVerifier = '';
+  String? _firebaseVerificationId;
 
   @override
   void initState() {
     super.initState();
     setStatusBarColor();
+    _initTruecaller();
   }
 
   void setStatusBarColor() {
@@ -45,6 +54,192 @@ class _VerificationCodeScreenState extends State<VerificationCodeScreen> {
         statusBarIconBrightness: Brightness.light,
         statusBarColor: Colors.transparent,
       ),
+    );
+  }
+
+  // ===========================================================================
+  // ✅ 1. TRUECALLER OAUTH 2.0 LOGIC (FIXED)
+  // ===========================================================================
+  void _initTruecaller() async {
+    TcSdk.initializeSDK(sdkOption: TcSdkOptions.OPTION_VERIFY_ONLY_TC_USERS);
+
+    bool usable = await TcSdk.isOAuthFlowUsable;
+    if (mounted) {
+      setState(() {
+        isTruecallerUsable = usable;
+      });
+    }
+
+    _truecallerSub = TcSdk.streamCallbackData.listen((event) async {
+      if (event.result == TcSdkCallbackResult.success) {
+        setState(() => isLoading = true);
+
+        // The OAuth token from Truecaller
+        String authCode = event.tcOAuthData?.authorizationCode ?? '';
+
+        // Call the service to send AuthCode and CodeVerifier to Spring Boot
+        final error = await context.read<UserService>().verifyTruecaller(authCode, _codeVerifier);
+
+        if (!mounted) return;
+        setState(() => isLoading = false);
+
+        if (error == null || error == 'success') {
+          _navigateHome();
+        } else {
+          setState(() => _error = error);
+        }
+      } else if (event.result == TcSdkCallbackResult.failure || event.result == TcSdkCallbackResult.verification) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Truecaller verification failed. Please use SMS.')),
+        );
+      }
+    });
+  }
+
+  Future<void> _triggerTruecaller() async {
+    try {
+      // 1. Generate the Verifier using Truecaller's built-in tool
+      String? codeVerifier = await TcSdk.generateRandomCodeVerifier;
+
+      if (codeVerifier != null) {
+        _codeVerifier = codeVerifier; // Save to send to backend later
+
+        // 2. Generate the Challenge
+        String? codeChallenge = await TcSdk.generateCodeChallenge(codeVerifier);
+
+        if (codeChallenge != null) {
+          // 3. Configure the OAuth request
+          TcSdk.setOAuthState(DateTime.now().millisecondsSinceEpoch.toString());
+
+          // ✅ FIX 1: Removed 'openid' to prevent scope errors.
+          TcSdk.setOAuthScopes(['profile', 'phone']);
+
+          // 4. Set the challenge
+          await TcSdk.setCodeChallenge(codeChallenge);
+
+          // 5. Trigger the bottom sheet
+          TcSdk.getAuthorizationCode;
+        }
+      }
+    } on PlatformException catch (e) {
+      // ✅ FIX 2: Catch the exception if Truecaller is missing or unsupported
+      setState(() => isLoading = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Truecaller app not found or unsupported on this device. Please use SMS OTP.'),
+          backgroundColor: Colors.redAccent,
+        ),
+      );
+    } catch (e) {
+      setState(() => isLoading = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('An error occurred with Truecaller.'), backgroundColor: Colors.red),
+      );
+    }
+  }
+
+  // ===========================================================================
+  // ✅ 2. FIREBASE SMS OTP LOGIC (Fallback)
+  // ===========================================================================
+  Future<void> sendFirebaseOTP() async {
+    if (_numberController.text.isEmpty || _numberController.text.length < 10) {
+      setState(() => _error = 'Please enter a valid 10-digit number');
+      return;
+    }
+
+    setState(() {
+      isLoading = true;
+      _error = null;
+    });
+
+    String fullPhoneNumber = "+91${_numberController.text.trim()}";
+
+    await FirebaseAuth.instance.verifyPhoneNumber(
+      phoneNumber: fullPhoneNumber,
+      verificationCompleted: (PhoneAuthCredential credential) async {
+        await _verifyFirebaseCredential(credential);
+      },
+      verificationFailed: (FirebaseAuthException e) {
+        setState(() {
+          isLoading = false;
+          _error = e.message ?? "Verification failed";
+        });
+      },
+      codeSent: (String verificationId, int? resendToken) {
+        setState(() {
+          isLoading = false;
+          _firebaseVerificationId = verificationId;
+          isNumberVerified = true;
+          startTimer();
+        });
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('OTP sent to ${_numberController.text}'), backgroundColor: AppColour.primary),
+        );
+      },
+      codeAutoRetrievalTimeout: (String verificationId) {
+        _firebaseVerificationId = verificationId;
+      },
+    );
+  }
+
+  Future<void> verifyFirebaseOTP() async {
+    if (_verificationCodeController.text.isEmpty) {
+      setState(() => _error = 'Please enter OTP');
+      return;
+    }
+
+    setState(() {
+      isLoading = true;
+      _error = null;
+    });
+
+    try {
+      PhoneAuthCredential credential = PhoneAuthProvider.credential(
+        verificationId: _firebaseVerificationId!,
+        smsCode: _verificationCodeController.text.trim(),
+      );
+      await _verifyFirebaseCredential(credential);
+    } on FirebaseAuthException catch (e) {
+      setState(() {
+        isLoading = false;
+        _error = "Invalid OTP code. Please try again.";
+      });
+    }
+  }
+
+  Future<void> _verifyFirebaseCredential(PhoneAuthCredential credential) async {
+    try {
+      UserCredential userCredential = await FirebaseAuth.instance.signInWithCredential(credential);
+      String? idToken = await userCredential.user?.getIdToken();
+
+      if (idToken != null) {
+        final error = await context.read<UserService>().verifyFirebaseToken(idToken);
+
+        if (!mounted) return;
+        setState(() => isLoading = false);
+
+        if (error == null || error == 'success') {
+          _navigateHome();
+        } else {
+          setState(() => _error = error);
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          isLoading = false;
+          _error = "Failed to authenticate with Firebase.";
+        });
+      }
+    }
+  }
+
+  // --- Helpers ---
+  void _navigateHome() {
+    Navigator.pushAndRemoveUntil(
+      context,
+      MaterialPageRoute(builder: (context) => widget.role == admin ? const HomeScreenA() : const MainScreenU()),
+          (route) => false,
     );
   }
 
@@ -64,88 +259,13 @@ class _VerificationCodeScreenState extends State<VerificationCodeScreen> {
     });
   }
 
-  // --- LOGIC: Send OTP ---
-  Future<void> sendOTP() async {
-    if (_numberController.text.isEmpty) {
-      setState(() => _error = 'Please enter number');
-      return;
-    }
-
-    setState(() {
-      isLoading = true;
-      _error = null;
-    });
-
-    final error = await context.read<UserService>().registerMobile(
-      "+91${_numberController.text.trim()}",
-    );
-
-    if (!mounted) return;
-
-    setState(() {
-      isLoading = false;
-    });
-
-    if (error == null || error == 'success') {
-      // Success: OTP Sent
-      setState(() {
-        isNumberVerified = true; // Flag changes to "OTP Sent"
-        startTimer();
-      });
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('OTP sent to ${_numberController.text}'),
-          backgroundColor: AppColour.primary,
-        ),
-      );
-    } else {
-      setState(() => _error = error);
-    }
-  }
-
-  Future<void> skip() async {
-    Navigator.pushAndRemoveUntil(
-      context,
-      MaterialPageRoute(builder: (context) => const MainScreenU()),
-      (route) => false,
-    );
-  }
-
-  // --- LOGIC: Verify OTP ---
-  Future<void> verifyOTP() async {
-    if (_verificationCodeController.text.isEmpty) {
-      setState(() => _error = 'Please enter OTP');
-      return;
-    }
-
-    setState(() {
-      isLoading = true;
-      _error = null;
-    });
-
-    final error = await context.read<UserService>().verifyMobile(
-      _verificationCodeController.text.trim(),
-    );
-
-    if (!mounted) return;
-
-    setState(() {
-      isLoading = false;
-    });
-
-    if (error == null || error == 'success') {
-      // Success: Navigate Home
-      Navigator.pushAndRemoveUntil(
-        context,
-        MaterialPageRoute(
-          builder: (context) =>
-              widget.role == admin ? const HomeScreenA() : const MainScreenU(),
-        ),
-        (route) => false,
-      );
-    } else {
-      setState(() => _error = error);
-    }
+  @override
+  void dispose() {
+    _truecallerSub?.cancel();
+    timer?.cancel();
+    _verificationCodeController.dispose();
+    _numberController.dispose();
+    super.dispose();
   }
 
   @override
@@ -175,38 +295,24 @@ class _VerificationCodeScreenState extends State<VerificationCodeScreen> {
                       Row(
                         children: [
                           Container(
-                            height: 40,
-                            width: 40,
+                            height: 40, width: 40,
                             margin: const EdgeInsets.only(top: 20, left: 20),
-                            decoration: BoxDecoration(
-                              color: AppColour.white,
-                              borderRadius: BorderRadius.circular(20),
-                            ),
+                            decoration: BoxDecoration(color: AppColour.white, borderRadius: BorderRadius.circular(20)),
                             child: InkWell(
                               onTap: () => Navigator.pop(context),
-                              child: Icon(
-                                Icons.arrow_back_ios_rounded,
-                                size: 16,
-                                color: AppColour.black,
-                              ),
+                              child: Icon(Icons.arrow_back_ios_rounded, size: 16, color: AppColour.black),
                             ),
                           ),
                           const Spacer(),
-                          TextButton(onPressed: ()=> skip(), child: Text('SKIP', style: simple_text_style(color: AppColour.white, fontWeight: FontWeight.bold),)),
-                          SizedBox(width: 10,),
+                          TextButton(onPressed: _navigateHome, child: Text('SKIP', style: simple_text_style(color: AppColour.white, fontWeight: FontWeight.bold))),
+                          const SizedBox(width: 10),
                         ],
                       ),
                       Column(
                         children: [
-                          Text(
-                            'Verification',
-                            style: bold_text_style(AppColour.white),
-                          ),
+                          Text('Verification', style: bold_text_style(AppColour.white)),
                           const SizedBox(height: 10),
-                          Text(
-                            'Verify your mobile number with otp',
-                            style: simple_text_style(color: AppColour.white),
-                          ),
+                          Text('Verify your mobile number', style: simple_text_style(color: AppColour.white)),
                         ],
                       ),
                     ],
@@ -218,32 +324,52 @@ class _VerificationCodeScreenState extends State<VerificationCodeScreen> {
                   child: Container(
                     decoration: BoxDecoration(
                       color: AppColour.white,
-                      borderRadius: const BorderRadius.only(
-                        topLeft: Radius.circular(22),
-                        topRight: Radius.circular(22),
-                      ),
+                      borderRadius: const BorderRadius.vertical(top: Radius.circular(22)),
                     ),
-                    padding: const EdgeInsets.symmetric(
-                      vertical: 4,
-                      horizontal: 22,
-                    ),
+                    padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 22),
                     child: SingleChildScrollView(
                       child: Column(
                         children: [
-                          const SizedBox(height: 10),
+                          const SizedBox(height: 24),
+
+                          // 1. Truecaller Button
+                          if (isTruecallerUsable && !isNumberVerified) ...[
+                            ElevatedButton(
+                              onPressed: isLoading ? null : _triggerTruecaller,
+                              style: elevated_button_style().copyWith(
+                                backgroundColor: WidgetStateProperty.all(Colors.blue.shade700),
+                              ),
+                              child: isLoading
+                                  ? SizedBox(height: 24, width: 24, child: CircularProgressIndicator(color: AppColour.white))
+                                  : Row(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  const Icon(Icons.verified_user, color: Colors.white, size: 20),
+                                  const SizedBox(width: 8),
+                                  Text('1-Tap Verify with True caller', style: simple_text_style(color: Colors.white, fontWeight: FontWeight.bold)),
+                                ],
+                              ),
+                            ),
+                            const Padding(
+                              padding: EdgeInsets.symmetric(vertical: 24),
+                              child: Text("OR", style: TextStyle(color: Colors.grey, fontWeight: FontWeight.bold)),
+                            ),
+                          ],
+
+                          // 2. Firebase Fallback Input
                           cus_text_field(
                             label: 'NUMBER',
                             controller: _numberController,
                             hintText: '9987456225',
                             isNumber: true,
-                            // Disable editing number after OTP is sent
                           ),
                           const SizedBox(height: 20),
+
                           if (isNumberVerified) ...{
                             cus_text_field(
                               label: 'OTP',
                               controller: _verificationCodeController,
-                              hintText: '1234',
+                              hintText: '123456',
                               isNumber: true,
                             ),
                             const SizedBox(height: 20),
@@ -251,15 +377,10 @@ class _VerificationCodeScreenState extends State<VerificationCodeScreen> {
                               mainAxisAlignment: MainAxisAlignment.end,
                               children: [
                                 InkWell(
-                                  onTap: (t == 0) ? sendOTP : null,
+                                  onTap: (t == 0) ? sendFirebaseOTP : null,
                                   child: Text(
                                     'Resend OTP ${t > 0 ? t.toString() : ''}',
-                                    style: simple_text_style(
-                                      color: (t == 0)
-                                          ? AppColour.primary
-                                          : AppColour.grey,
-                                      fontWeight: FontWeight.bold,
-                                    ),
+                                    style: simple_text_style(color: (t == 0) ? AppColour.primary : AppColour.grey, fontWeight: FontWeight.bold),
                                   ),
                                 ),
                               ],
@@ -267,37 +388,17 @@ class _VerificationCodeScreenState extends State<VerificationCodeScreen> {
                             const SizedBox(height: 20),
                           },
                           if (_error != null) ...{
-                            Text(
-                              _error!,
-                              style: TextStyle(
-                                fontFamily: 'Sen',
-                                color: AppColour.red,
-                              ),
-                            ),
+                            Text(_error!, style: TextStyle(fontFamily: 'Sen', color: AppColour.red)),
                             const SizedBox(height: 20),
                           },
+
+                          // Proceed Button
                           ElevatedButton(
-                            onPressed: isLoading
-                                ? null
-                                : (isNumberVerified ? verifyOTP : sendOTP),
+                            onPressed: isLoading ? null : (isNumberVerified ? verifyFirebaseOTP : sendFirebaseOTP),
                             style: elevated_button_style(),
                             child: isLoading
-                                ? SizedBox(
-                                    height: 30,
-                                    width: 30,
-                                    child: CircularProgressIndicator(
-                                      color: AppColour.white,
-                                    ),
-                                  )
-                                : Text(
-                                    isNumberVerified
-                                        ? 'VERIFY OTP'
-                                        : 'VERIFY NUMBER',
-                                    style: simple_text_style(
-                                      color: AppColour.white,
-                                      fontWeight: FontWeight.bold,
-                                    ),
-                                  ),
+                                ? SizedBox(height: 30, width: 30, child: CircularProgressIndicator(color: AppColour.white))
+                                : Text(isNumberVerified ? 'VERIFY OTP' : 'SEND SMS OTP', style: simple_text_style(color: AppColour.white, fontWeight: FontWeight.bold)),
                           ),
                         ],
                       ),
