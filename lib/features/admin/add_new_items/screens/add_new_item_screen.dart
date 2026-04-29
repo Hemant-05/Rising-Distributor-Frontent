@@ -617,7 +617,7 @@ class _AddNewItemScreenState extends State<AddNewItemScreen>
         price: double.tryParse(_priceController.text.trim()),
         mrp: double.tryParse(_mrpController.text.trim()),
         categoryId: selectedCategory!.id,
-        brandId : selectedBrand != null ? selectedBrand!.id : null,
+        brandId : selectedBrand?.id,
         quantity: int.parse(_quantityController.text.trim()), // e.g. "1" or "500"
         measurement: _measurementController.text.trim(), // e.g. "kg"
         stockQuantity: int.tryParse(_stockQuantityController.text.trim()),

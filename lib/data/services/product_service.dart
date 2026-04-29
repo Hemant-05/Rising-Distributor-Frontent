@@ -125,8 +125,9 @@ class ProductService extends ChangeNotifier {
       for(String url in imageUrls){
         imageService.deleteImage(url);
       }
-      if (e is AppError)
-      _error = e.toString();
+      if (e is AppError) {
+        _error = e.toString();
+      }
     } finally {
       _isLoading = false;
       notifyListeners();

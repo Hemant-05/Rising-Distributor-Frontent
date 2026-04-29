@@ -226,7 +226,7 @@ class _AdminCreateCouponScreenState extends State<AdminCreateCouponScreen> {
                   _buildLabel('Coupon Status (Active)'),
                   Switch(
                     value: _isActive,
-                    activeColor: AppColour.primary,
+                    activeThumbColor: AppColour.primary,
                     onChanged: (val) => setState(() => _isActive = val),
                   ),
                 ],

@@ -9,7 +9,7 @@ import 'package:raising_india/models/model/product.dart';
 class AdminService extends ChangeNotifier {
   final AdminRepository _repo = AdminRepository();
 
-  List<Order> _orders = [];
+  final List<Order> _orders = [];
   List<Order> get orders => _orders;
 
   List<Order> _filteredOrders = [];

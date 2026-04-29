@@ -73,30 +73,28 @@ class _ReviewScreenState extends State<ReviewScreen> with TickerProviderStateMix
         final existingReview = await reviewService.getReviewByOrder(foundOrder.id!);
 
         // If the backend returns data, populate our state and lock the screen!
-        if (existingReview != null) {
-          _hasExistingReview = true;
+        _hasExistingReview = true;
 
-          // Populate Service Review
-          if (existingReview.serviceReview != null) {
-            _serviceRating = existingReview.serviceReview!.rating ?? 0.0;
-            _serviceCommentController.text = existingReview.serviceReview!.reviewText ?? '';
-          }
+        // Populate Service Review
+        if (existingReview.serviceReview != null) {
+          _serviceRating = existingReview.serviceReview!.rating ?? 0.0;
+          _serviceCommentController.text = existingReview.serviceReview!.reviewText ?? '';
+        }
 
-          // Populate Product Reviews
-          if (existingReview.productReviews != null) {
-            for (var pr in existingReview.productReviews!) {
-              // Ensure we map the DTO ID back to our String PID
-              // (Adjust 'pr.productId' or 'pr.product?.pid' based on your exact DTO structure)
-              String pid = pr.productId?.toString() ?? '';
+        // Populate Product Reviews
+        if (existingReview.productReviews != null) {
+          for (var pr in existingReview.productReviews!) {
+            // Ensure we map the DTO ID back to our String PID
+            // (Adjust 'pr.productId' or 'pr.product?.pid' based on your exact DTO structure)
+            String pid = pr.productId?.toString() ?? '';
 
-              if (_productRatings.containsKey(pid)) {
-                _productRatings[pid] = pr.rating ?? 0.0;
-                _productComments[pid]!.text = pr.reviewText ?? '';
-              }
+            if (_productRatings.containsKey(pid)) {
+              _productRatings[pid] = pr.rating ?? 0.0;
+              _productComments[pid]!.text = pr.reviewText ?? '';
             }
           }
         }
-      } catch (e) {
+            } catch (e) {
         // Backend threw an error (likely a 404 Not Found).
         // This is perfectly fine! It just means they haven't reviewed it yet.
         debugPrint("No existing review found for this order.");

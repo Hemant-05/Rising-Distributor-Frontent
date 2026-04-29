@@ -62,6 +62,9 @@ cd raising_india
 # Install dependencies
 flutter pub get
 
+1. Connect to firebase (OTP)
+2. create .env file and place your razor pay id
+3. create key.properties file in android folder according to key.properties.example file
 # Run the app
 flutter run
 

@@ -1453,8 +1453,9 @@ class _AdminProductDetailScreenState extends State<AdminProductDetailScreen>
               }
             },
             validator: (value) {
-              if (value == null || value.isEmpty)
+              if (value == null || value.isEmpty) {
                 return 'Please select a measurement unit';
+              }
               return null;
             },
           ),

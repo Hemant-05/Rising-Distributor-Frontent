@@ -121,7 +121,7 @@ class _VerificationCodeScreenState extends State<VerificationCodeScreen> {
           TcSdk.getAuthorizationCode;
         }
       }
-    } on PlatformException catch (e) {
+    } on PlatformException {
       // ✅ FIX 2: Catch the exception if Truecaller is missing or unsupported
       setState(() => isLoading = false);
       ScaffoldMessenger.of(context).showSnackBar(
@@ -199,7 +199,7 @@ class _VerificationCodeScreenState extends State<VerificationCodeScreen> {
         smsCode: _verificationCodeController.text.trim(),
       );
       await _verifyFirebaseCredential(credential);
-    } on FirebaseAuthException catch (e) {
+    } on FirebaseAuthException {
       setState(() {
         isLoading = false;
         _error = "Invalid OTP code. Please try again.";

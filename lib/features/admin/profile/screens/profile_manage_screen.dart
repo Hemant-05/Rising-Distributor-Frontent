@@ -4,7 +4,6 @@ import 'package:provider/provider.dart';
 import 'package:raising_india/comman/simple_text_style.dart';
 import 'package:raising_india/constant/AppColour.dart';
 import 'package:raising_india/constant/ConPath.dart';
-import 'package:raising_india/data/services/auth_service.dart';
 import 'package:raising_india/data/services/banner_service.dart';
 import 'package:raising_india/features/admin/banner/screen/all_banner_screen.dart';
 import 'package:raising_india/features/admin/brand/admin_brand_screen.dart';
@@ -14,12 +13,9 @@ import 'package:raising_india/features/admin/notification/screens/admin_broadcas
 import 'package:raising_india/features/admin/product/screens/archived_products_screen.dart';
 import 'package:raising_india/features/admin/profile/screens/admin_profile_screen.dart';
 import 'package:raising_india/features/admin/profile/widgets/option_list_tile_widget.dart';
-import 'package:raising_india/features/admin/profile/widgets/upper_widget.dart';
 import 'package:raising_india/features/admin/review/screens/admin_reviews_screen.dart';
 import 'package:raising_india/features/admin/sales_analytics/screens/sales_analytics_screen.dart';
 import 'package:raising_india/features/admin/stock_management/screens/low_stock_alert_screen.dart';
-import 'package:raising_india/features/auth/screens/login_screen.dart';
-import 'package:raising_india/features/auth/screens/signup_screen.dart';
 
 class ProfileManageScreen extends StatefulWidget {
   const ProfileManageScreen({super.key});

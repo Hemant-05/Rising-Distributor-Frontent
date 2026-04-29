@@ -4,7 +4,6 @@ import 'package:persistent_bottom_nav_bar/persistent_bottom_nav_bar.dart';
 import 'package:raising_india/comman/simple_text_style.dart';
 import 'package:raising_india/constant/AppColour.dart';
 import 'package:raising_india/features/user/categories/screens/all_categories_screen.dart';
-import 'package:raising_india/features/user/categories/screens/category_product_screen.dart';
 import 'package:raising_india/models/model/category.dart';
 
 Widget category_showing_widget(BuildContext context, Category category) {

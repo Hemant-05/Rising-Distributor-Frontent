@@ -1,4 +1,3 @@
-import 'package:raising_india/constant/ConString.dart';
 import 'package:raising_india/error/exceptions.dart';
 import 'package:raising_india/models/model/notification.dart';
 import '../../../data/rest_client.dart';

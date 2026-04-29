@@ -8,7 +8,6 @@ import 'package:raising_india/data/services/review_service.dart';
 import 'package:raising_india/models/dto/admin_order_review_dto.dart';
 import 'package:raising_india/models/model/product_review.dart';
 import 'package:raising_india/models/model/service_review.dart';
-import 'package:cached_network_image/cached_network_image.dart';
 
 class AdminReviewsScreen extends StatefulWidget {
   const AdminReviewsScreen({super.key});

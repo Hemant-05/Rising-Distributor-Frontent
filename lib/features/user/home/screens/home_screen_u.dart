@@ -206,8 +206,9 @@ class _HomeScreenUState extends State<HomeScreenU> {
   Widget _buildCategoriesSection() {
     return Consumer<CategoryService>(
       builder: (context, categoryService, _) {
-        if (categoryService.isLoading && categoryService.categories.isEmpty)
+        if (categoryService.isLoading && categoryService.categories.isEmpty) {
           return const SizedBox.shrink();
+        }
 
         final rootCategories = categoryService.categories.where((c) =>
         c.parentCategory == null).toList();

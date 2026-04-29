@@ -100,8 +100,8 @@ class _MapScreenState extends State<MapScreen> {
               initialCenter: _currentLatLng!,
               initialZoom: 16.0,
               onPositionChanged: (position, hasGesture) {
-                if (hasGesture && position.center != null) {
-                  _currentLatLng = position.center!;
+                if (hasGesture) {
+                  _currentLatLng = position.center;
                 }
               },
               onMapEvent: (event) {

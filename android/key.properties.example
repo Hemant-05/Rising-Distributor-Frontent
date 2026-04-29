@@ -1,0 +1,4 @@
+storePassword=sample123
+keyPassword=sample123
+keyAlias=upload
+storeFile=c:/Users/jarvis/upload-keystore.jks

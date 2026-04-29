@@ -5,8 +5,6 @@ import 'package:persistent_bottom_nav_bar/persistent_bottom_nav_bar.dart';
 import 'package:raising_india/comman/simple_text_style.dart';
 import 'package:raising_india/constant/AppColour.dart';
 import 'package:raising_india/data/services/cart_service.dart';
-import 'package:raising_india/data/services/category_service.dart';
-import 'package:raising_india/data/services/product_service.dart';
 import 'package:raising_india/features/user/product_details/screens/product_details_screen.dart';
 import 'package:raising_india/models/model/product.dart';
 

@@ -116,7 +116,7 @@ Widget onGoingWidget(List<Order> list) {
                           final error = await context.read<OrderService>().cancelOrder(order.id!, reason);
                           if (context.mounted) {
                             ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-                              content: Text(error == null ? "Order Cancelled" : error),
+                              content: Text(error ?? "Order Cancelled"),
                               backgroundColor: error == null ? Colors.green : Colors.red,
                             ));
                           }

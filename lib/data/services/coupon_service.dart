@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:raising_india/error/exceptions.dart';
-import 'package:raising_india/models/model/cart.dart';
 import 'package:raising_india/models/model/coupon.dart';
 
 import '../repositories/coupon_repo.dart';

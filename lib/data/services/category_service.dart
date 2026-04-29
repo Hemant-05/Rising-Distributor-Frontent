@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:raising_india/data/repositories/category_repo.dart';
 import 'package:raising_india/data/services/image_service.dart';
-import 'package:raising_india/error/exceptions.dart';
 import 'package:raising_india/models/model/category.dart';
 
 /*
@@ -82,9 +81,6 @@ class CategoryService extends ChangeNotifier {
 }*/
 
 import 'dart:io';
-import 'package:flutter/material.dart';
-import 'package:raising_india/data/repositories/category_repo.dart';
-import 'package:raising_india/models/model/category.dart';
 
 class CategoryService extends ChangeNotifier {
   final CategoryRepository _repo = CategoryRepository();

@@ -266,7 +266,7 @@ class _PersonalInfoScreenState extends State<PersonalInfoScreen> {
                             ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(error), backgroundColor: Colors.red));
                           }
                         }
-                      } on FirebaseAuthException catch (e) {
+                      } on FirebaseAuthException {
                         setSheetState(() => isVerifying = false);
                         ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Invalid OTP code. Please try again."), backgroundColor: Colors.red));
                       } catch (e) {

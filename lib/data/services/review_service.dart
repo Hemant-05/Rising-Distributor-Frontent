@@ -62,7 +62,7 @@ class ReviewService extends ChangeNotifier {
     } catch (e) {
       _error = e.toString();
       debugPrint("Error fetching review by order: $e");
-      throw e;
+      rethrow;
     }
   }
 

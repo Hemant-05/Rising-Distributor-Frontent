@@ -55,7 +55,7 @@ class _ForgotPassScreenState extends State<ForgotPassScreen> {
       _isLoading = false;
     });
 
-    if (error == 'ok' || error == null) {
+    if (error == 'ok') {
       setState(() => success = true);
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(

@@ -1,6 +1,4 @@
 import 'package:dio/dio.dart';
-import 'package:raising_india/error/exceptions.dart';
-import 'package:raising_india/services/service_locator.dart';
 
 abstract class BaseRepository {
   /// Standard error handler to convert DioExceptions into UI messages.

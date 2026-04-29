@@ -9,7 +9,7 @@ import '../../../../comman/elevated_button_style.dart';
 import '../../../../comman/simple_text_style.dart';
 
 class FillAddressDetailsScreen extends StatefulWidget {
-  FillAddressDetailsScreen({super.key, required this.data});
+  const FillAddressDetailsScreen({super.key, required this.data});
   final Map<String, dynamic> data;
 
   @override

@@ -3,7 +3,6 @@ import 'package:firebase_messaging/firebase_messaging.dart';
 import 'dart:developer';
 
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
-import 'package:raising_india/data/services/auth_service.dart';
 import 'package:raising_india/data/services/user_service.dart';
 import 'package:raising_india/services/service_locator.dart';
 
