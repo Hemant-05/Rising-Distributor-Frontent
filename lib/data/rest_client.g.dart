@@ -12,7 +12,7 @@ part of 'rest_client.dart';
 
 class _RestClient implements RestClient {
   _RestClient(this._dio, {this.baseUrl, this.errorLogger}) {
-    baseUrl ??= 'https://rising-distributor.onrender.com/api';
+    baseUrl ??= '';
   }
 
   final Dio _dio;

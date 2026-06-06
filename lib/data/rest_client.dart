@@ -29,8 +29,7 @@ import 'package:retrofit/retrofit.dart' hide CancelRequest;
 import 'package:raising_india/models/dto/cancel_request.dart';
 part 'rest_client.g.dart';
 
-@RestApi(baseUrl: "https://rising-distributor.onrender.com/api")
-// @RestApi(baseUrl: ConString.baseUrl)
+@RestApi()
 abstract class RestClient {
   factory RestClient(Dio dio, {String baseUrl}) = _RestClient;
 
@@ -254,12 +253,12 @@ abstract class RestClient {
   // ===========================================================================
   // 10. NOTIFICATION CONTROLLER (Admin)
   // ===========================================================================
-// 1. Admin Broadcast
+  // 1. Admin Broadcast
   @POST("/notifications/admin/broadcast")
   Future<ApiResponse<String>> sendBroadcast(
-      @Query("title") String title,
-      @Query("body") String body
-      );
+    @Query("title") String title,
+    @Query("body") String body,
+  );
 
   // 2. Get Admin Notifications
   @GET("/notifications/admin/history")
@@ -268,14 +267,12 @@ abstract class RestClient {
   // 3. Get User Notifications
   @GET("/notifications/user/{userId}")
   Future<ApiResponse<List<NotificationModel>>> getUserNotifications(
-      @Path("userId") String userId
-      );
+    @Path("userId") String userId,
+  );
 
   // 4. Mark Notification as Read (Shared)
   @PUT("/notifications/{id}/read")
-  Future<ApiResponse<void>> markNotificationRead(
-      @Path("id") String id
-      );
+  Future<ApiResponse<void>> markNotificationRead(@Path("id") String id);
 
   // ===========================================================================
   // 11. ORDER CONTROLLER
@@ -300,20 +297,24 @@ abstract class RestClient {
 
   @POST("/orders/cancel/{orderId}")
   Future<ApiResponse<Order>> cancelOrder(
-      @Path("orderId") int orderId,
-      @Body() CancelRequest request,
-      );
+    @Path("orderId") int orderId,
+    @Body() CancelRequest request,
+  );
 
   @PUT("/orders/{id}/refund")
   Future<ApiResponse<Order>> refundOrder(@Path("id") int id);
 
   @PUT("/orders/{id}/update-payment")
-  Future<ApiResponse<Order>> updatePaymentStatus(@Path("id")int id, @Query("paymentStatus") String paymentStatus);
+  Future<ApiResponse<Order>> updatePaymentStatus(
+    @Path("id") int id,
+    @Query("paymentStatus") String paymentStatus,
+  );
 
   @PUT("/orders/{id}")
   Future<ApiResponse<Order>> updateOrderStatus(
     @Path("id") int id,
-    @Query("status") String status);
+    @Query("status") String status,
+  );
 
   @GET("/orders/{id}/invoice")
   @DioResponseType(ResponseType.bytes)

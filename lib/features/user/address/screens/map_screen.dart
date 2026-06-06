@@ -7,7 +7,6 @@ import 'package:raising_india/comman/elevated_button_style.dart';
 import 'package:raising_india/comman/simple_text_style.dart';
 import 'package:raising_india/constant/AppColour.dart';
 import 'package:raising_india/features/services/location_service.dart';
-import 'package:raising_india/features/user/address/screens/fill_address_details_screen.dart';
 
 class MapScreen extends StatefulWidget {
   const MapScreen({super.key, required this.userId});

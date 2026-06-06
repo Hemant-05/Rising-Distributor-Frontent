@@ -27,13 +27,17 @@ final getIt = GetIt.instance;
 bool _isServerDownScreenShowing = false;
 
 void setupServiceLocator() {
+  final apiBaseUrl = ConString.baseUrl;
+
   // 1. Register Dio (The Engine)
-  final dio = Dio(BaseOptions(
-    baseUrl: ConString.baseUrl, // Ensure you set your Base URL here
-    contentType: "application/json",
-    receiveTimeout: const Duration(seconds: 15),
-    connectTimeout: const Duration(seconds: 15),
-  ));
+  final dio = Dio(
+    BaseOptions(
+      baseUrl: apiBaseUrl,
+      contentType: "application/json",
+      receiveTimeout: const Duration(seconds: 15),
+      connectTimeout: const Duration(seconds: 15),
+    ),
+  );
 
   // 2. Add Interceptors
   // Note: Order matters. AuthInterceptor should often be first to add headers.
@@ -46,17 +50,19 @@ void setupServiceLocator() {
         if (e.type == DioExceptionType.connectionTimeout ||
             e.type == DioExceptionType.receiveTimeout ||
             e.type == DioExceptionType.connectionError) {
-
           // If the screen isn't already showing, show it!
-          if (!_isServerDownScreenShowing && navigatorKey.currentState != null) {
+          if (!_isServerDownScreenShowing &&
+              navigatorKey.currentState != null) {
             _isServerDownScreenShowing = true;
 
-            navigatorKey.currentState?.push(
-              MaterialPageRoute(builder: (_) => const ServerDownScreen()),
-            ).then((_) {
-              // When the user taps "Try Again" and the screen pops, reset the flag
-              _isServerDownScreenShowing = false;
-            });
+            navigatorKey.currentState
+                ?.push(
+                  MaterialPageRoute(builder: (_) => const ServerDownScreen()),
+                )
+                .then((_) {
+                  // When the user taps "Try Again" and the screen pops, reset the flag
+                  _isServerDownScreenShowing = false;
+                });
           }
         }
         return handler.next(e);
@@ -65,7 +71,9 @@ void setupServiceLocator() {
   );
 
   getIt.registerLazySingleton<Dio>(() => dio);
-  getIt.registerLazySingleton<RestClient>(() => RestClient(getIt<Dio>()));
+  getIt.registerLazySingleton<RestClient>(
+    () => RestClient(getIt<Dio>(), baseUrl: apiBaseUrl),
+  );
 
   // 3. Register Services
   getIt.registerLazySingleton(() => AuthService());
@@ -86,7 +94,9 @@ void setupServiceLocator() {
   getIt.registerLazySingleton(() => ImageService());
   getIt.registerLazySingleton(() => AdminImageService());
   getIt.registerLazySingleton(() => NotificationService());
-  getIt.registerLazySingleton(() => AnalyticsService()); // Added AnalyticsService
+  getIt.registerLazySingleton(
+    () => AnalyticsService(),
+  ); // Added AnalyticsService
 }
 
 // --- UPDATED AUTH INTERCEPTOR ---
@@ -94,13 +104,15 @@ void setupServiceLocator() {
 class AuthInterceptor extends Interceptor {
   // We use a separate Dio instance for the refresh call to avoid
   // the main Dio interceptor catching this request and causing an infinite loop.
-  final Dio _tokenDio = Dio(BaseOptions(
-    baseUrl: ConString.baseUrl, // Must match your API Base URL
-    contentType: "application/json",
-  ));
+  final Dio _tokenDio = Dio(
+    BaseOptions(baseUrl: ConString.baseUrl, contentType: "application/json"),
+  );
 
   @override
-  void onRequest(RequestOptions options, RequestInterceptorHandler handler) async {
+  void onRequest(
+    RequestOptions options,
+    RequestInterceptorHandler handler,
+  ) async {
     final authService = getIt<AuthService>();
     final token = await authService.getAccessToken();
 
@@ -122,12 +134,12 @@ class AuthInterceptor extends Interceptor {
       if (refreshToken != null) {
         try {
           // 2. Call Refresh API
-          final response = await _tokenDio.post('/auth/refresh', data: {
-            'refresh_token': refreshToken,
-          });
+          final response = await _tokenDio.post(
+            '/auth/refresh',
+            data: {'refresh_token': refreshToken},
+          );
 
           if (response.statusCode == 200 && response.data != null) {
-
             // ✅ FIX: Parse from the nested 'data' object
             final responseData = response.data['data'];
             final newAccessToken = responseData['access_token'];
@@ -150,9 +162,13 @@ class AuthInterceptor extends Interceptor {
           }
         } catch (e) {
           // Refresh failed or parsing crashed -> Log out user
-          print('🚨 Refresh Token Error: $e'); // Added print to help you debug future crashes
+          print(
+            '🚨 Refresh Token Error: $e',
+          ); // Added print to help you debug future crashes
           await authService.signOut();
-          return handler.next(err); // Reject the request so the UI knows it failed
+          return handler.next(
+            err,
+          ); // Reject the request so the UI knows it failed
         }
       }
     }

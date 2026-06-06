@@ -15,7 +15,7 @@ class ImageService extends ChangeNotifier {
     try {
       final url = await _repo.uploadImage(file);
       return url; // Return the URL on success
-    } on AppError catch (e) {
+    } on AppError {
       rethrow; // Rethrow to let UI handle message
     } catch (e) {
       throw Exception("Image upload failed");
