@@ -30,17 +30,28 @@ final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
-  await dotenv.load(fileName: '.env');
+
+  // Load .env file, but don't fail if it doesn't exist (for web builds)
+  try {
+    await dotenv.load(fileName: '.env');
+  } catch (e){
+    print('Warning: Could not load .env file: $e');
+  }
 
   setupServiceLocator();
 
-  await NotificationBackgroundService.initialize();
+  try {
+    await NotificationBackgroundService.initialize();
+  } catch (e) {
+    print('Warning: Could not initialize notification service: $e');
+  }
+
   runApp(MyApp(navigatorKey: navigatorKey));
 }
 
 class MyApp extends StatelessWidget {
   final GlobalKey<NavigatorState> navigatorKey;
-  const MyApp({super.key,required this.navigatorKey});
+  const MyApp({super.key, required this.navigatorKey});
 
   @override
   Widget build(BuildContext context) {
@@ -68,19 +79,21 @@ class MyApp extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => getIt<AnalyticsService>()),
       ],
       child: MaterialApp(
-          navigatorKey: navigatorKey,
-          title: 'Rising Distributor',
-          debugShowCheckedModeBanner: false,
-          theme : ThemeData(
-            textSelectionTheme: TextSelectionThemeData(
-              cursorColor: AppColour.primary, // Cursor color
-              selectionColor: AppColour.primary.withOpacity(0.5), // Highlight background
-              selectionHandleColor: AppColour.primary, // This changes the handle color
-            ),
+        navigatorKey: navigatorKey,
+        title: 'Rising Distributor',
+        debugShowCheckedModeBanner: false,
+        theme: ThemeData(
+          textSelectionTheme: TextSelectionThemeData(
+            cursorColor: AppColour.primary, // Cursor color
+            selectionColor: AppColour.primary.withOpacity(
+              0.5,
+            ), // Highlight background
+            selectionHandleColor:
+                AppColour.primary, // This changes the handle color
           ),
-          home: const SplashScreen(),
         ),
-
+        home: const SplashScreen(),
+      ),
     );
   }
 }

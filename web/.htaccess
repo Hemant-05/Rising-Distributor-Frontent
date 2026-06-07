@@ -1,0 +1,53 @@
+<IfModule mod_rewrite.c>
+  RewriteEngine On
+  
+  # Redirect HTTP to HTTPS (uncomment if using HTTPS)
+  # RewriteCond %{HTTPS} off
+  # RewriteRule ^(.*)$ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
+  
+  # Handle Flutter web routing - redirect all requests to index.html
+  RewriteBase /
+  RewriteRule ^index\.html$ - [L]
+  RewriteCond %{REQUEST_FILENAME} !-f
+  RewriteCond %{REQUEST_FILENAME} !-d
+  RewriteRule . index.html [L]
+</IfModule>
+
+<IfModule mod_deflate.c>
+  # Enable GZIP compression
+  AddOutputFilterByType DEFLATE text/html text/plain text/xml text/css text/javascript application/javascript application/json
+</IfModule>
+
+<IfModule mod_expires.c>
+  # Set cache expiration
+  ExpiresActive On
+  
+  # Cache JavaScript and CSS files for 30 days
+  ExpiresByType text/css "access plus 30 days"
+  ExpiresByType application/javascript "access plus 30 days"
+  ExpiresByType text/javascript "access plus 30 days"
+  
+  # Cache images for 60 days
+  ExpiresByType image/jpeg "access plus 60 days"
+  ExpiresByType image/gif "access plus 60 days"
+  ExpiresByType image/png "access plus 60 days"
+  ExpiresByType image/webp "access plus 60 days"
+  ExpiresByType image/svg+xml "access plus 60 days"
+  
+  # Don't cache HTML files
+  ExpiresByType text/html "access plus 0 days"
+  
+  # Cache font files
+  ExpiresByType application/font-woff "access plus 60 days"
+  ExpiresByType application/font-woff2 "access plus 60 days"
+  ExpiresByType application/vnd.ms-fontobject "access plus 60 days"
+  ExpiresByType application/x-font-ttf "access plus 60 days"
+</IfModule>
+
+# Disable directory listing
+Options -Indexes
+
+# Add CORS headers for fonts and other resources
+<FilesMatch "\.(woff|woff2|ttf|eot|svg)$">
+  Header set Access-Control-Allow-Origin "*"
+</FilesMatch>

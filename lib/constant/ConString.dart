@@ -1,5 +1,4 @@
-import 'dart:io' show Platform;
-
+import 'package:flutter/foundation.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 final String welcome = 'Welcome';
@@ -21,9 +20,12 @@ String get baseUrl {
   return _withoutTrailingSlash(resolvedUrl);
 }
 
-String get _defaultBaseUrl => Platform.isAndroid
-    ? 'http://10.0.2.2:3000/api'
-    : 'http://localhost:3000/api';
+String get _defaultBaseUrl {
+  if (kIsWeb) return 'https://risingmart.in/api';
+  return defaultTargetPlatform == TargetPlatform.android
+      ? 'http://10.0.2.2:3000/api'
+      : 'http://localhost:3000/api';
+}
 
 String _withoutTrailingSlash(String value) {
   final trimmed = value.trim();

@@ -146,7 +146,10 @@ class _PaymentCheckoutScreenState extends State<PaymentCheckoutScreen> with Tick
 
   // --- 2. OPEN RAZORPAY ---
   void _openCheckOut(String razorpayOrderId) {
-    final razorpayKeyId = dotenv.env['RAZORPAY_KEY_ID'] ?? "";
+    const dartDefineRazorpayKeyId = String.fromEnvironment('RAZORPAY_KEY_ID');
+    final razorpayKeyId = dartDefineRazorpayKeyId.trim().isNotEmpty
+        ? dartDefineRazorpayKeyId.trim()
+        : dotenv.env['RAZORPAY_KEY_ID'] ?? "";
     String amount = (_finalTotal * 100).toInt().toString();
 
     var options = {
