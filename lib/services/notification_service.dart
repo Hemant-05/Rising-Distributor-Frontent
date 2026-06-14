@@ -142,7 +142,10 @@ class NotificationBackgroundService {
   // ✅ NEW: Call this explicitly AFTER the user logs in
   static Future<void> syncFCMTokenWithServer() async {
     try {
-      String? token = await _firebaseMessaging.getToken();
+      String? token = await _firebaseMessaging.getToken().timeout(
+        const Duration(seconds: 5),
+        onTimeout: () => null,
+      );
       if (token != null) {
         final userService = getIt<UserService>();
         String? res = await userService.updateFCM(token);

@@ -95,20 +95,27 @@ class AuthService extends ChangeNotifier {
     // We are already loading by default.
 
     try {
+      print("DEBUG: loadUserFromStorage started");
       final prefs = await SharedPreferences.getInstance();
       final token = prefs.getString('access_token');
+      print("DEBUG: token from storage: $token");
 
       if (token != null) {
         _dio.options.headers['Authorization'] = 'Bearer $token';
         // This will verify the token and set the user roles
+        print("DEBUG: Fetching user profile...");
         await _fetchAndSetUser();
+        print("DEBUG: User profile fetched. Syncing FCM token...");
         await NotificationBackgroundService.syncFCMTokenWithServer();
+        print("DEBUG: FCM token synced.");
       }
     } catch (e) {
+      print("DEBUG: Exception in loadUserFromStorage: $e");
       // If anything fails during startup check, clear everything
       await signOut();
     } finally {
       // ✅ FIX 3: Only notify ONCE when the check is totally finished.
+      print("DEBUG: Setting _isLoading to false");
       _isLoading = false;
       notifyListeners();
     }

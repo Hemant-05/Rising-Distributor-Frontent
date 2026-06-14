@@ -142,6 +142,12 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
                                   borderRadius: BorderRadius.circular(10),
                                 ),
                               ),
+                              const SizedBox(height: 20),
+                              // 🐛 DEBUG TEXT 🐛
+                              Text(
+                                "Debug: Animating=${_mainController.isAnimating}, Loading=${authService.isLoading}",
+                                style: const TextStyle(fontSize: 12, color: Colors.grey),
+                              ),
                             ],
                           ),
                         ),

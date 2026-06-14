@@ -41,7 +41,8 @@ void main() async {
   setupServiceLocator();
 
   try {
-    await NotificationBackgroundService.initialize();
+    // DO NOT await this here. Requesting permissions before runApp() can cause a black screen on Android 13+
+    NotificationBackgroundService.initialize();
   } catch (e) {
     print('Warning: Could not initialize notification service: $e');
   }
