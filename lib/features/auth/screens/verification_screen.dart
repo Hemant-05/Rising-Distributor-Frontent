@@ -36,7 +36,7 @@ class _VerificationCodeScreenState extends State<VerificationCodeScreen> {
   Timer? timer;
   int t = 30;
 
-  // --- Truecaller & Firebase Variables ---
+  // --- Truecaller & SMS OTP Variables ---
   StreamSubscription? _truecallerSub;
   String _codeVerifier = '';
   String? _firebaseVerificationId;
@@ -142,7 +142,7 @@ class _VerificationCodeScreenState extends State<VerificationCodeScreen> {
   // ✅ 2. FIREBASE SMS OTP LOGIC (Fallback)
   // ===========================================================================
   Future<void> sendFirebaseOTP() async {
-    if (_numberController.text.isEmpty || _numberController.text.length < 10) {
+    if (_numberController.text.isEmpty || _numberController.text.length != 10) {
       setState(() => _error = 'Please enter a valid 10-digit number');
       return;
     }
@@ -231,6 +231,63 @@ class _VerificationCodeScreenState extends State<VerificationCodeScreen> {
           _error = "Failed to authenticate with Firebase.";
         });
       }
+    }
+  }
+
+  Future<void> sendSmsOTP() async {
+    if (_numberController.text.isEmpty || _numberController.text.length != 10) {
+      setState(() => _error = 'Please enter a valid 10-digit number');
+      return;
+    }
+
+    setState(() {
+      isLoading = true;
+      _error = null;
+    });
+
+    final error = await context.read<UserService>().sendMobileOtp(_numberController.text.trim());
+    if (!mounted) return;
+
+    setState(() {
+      isLoading = false;
+      if (error == null) {
+        isNumberVerified = true;
+        startTimer();
+      } else {
+        _error = error;
+      }
+    });
+
+    if (error == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('OTP sent to ${_numberController.text}'), backgroundColor: AppColour.primary),
+      );
+    }
+  }
+
+  Future<void> verifySmsOTP() async {
+    if (_verificationCodeController.text.isEmpty) {
+      setState(() => _error = 'Please enter OTP');
+      return;
+    }
+
+    setState(() {
+      isLoading = true;
+      _error = null;
+    });
+
+    final error = await context.read<UserService>().verifyMobileOtp(
+      _numberController.text.trim(),
+      _verificationCodeController.text.trim(),
+    );
+
+    if (!mounted) return;
+    setState(() => isLoading = false);
+
+    if (error == null || error == 'success') {
+      _navigateHome();
+    } else {
+      setState(() => _error = error);
     }
   }
 
@@ -377,7 +434,7 @@ class _VerificationCodeScreenState extends State<VerificationCodeScreen> {
                               mainAxisAlignment: MainAxisAlignment.end,
                               children: [
                                 InkWell(
-                                  onTap: (t == 0) ? sendFirebaseOTP : null,
+                                  onTap: (t == 0) ? sendSmsOTP : null,
                                   child: Text(
                                     'Resend OTP ${t > 0 ? t.toString() : ''}',
                                     style: simple_text_style(color: (t == 0) ? AppColour.primary : AppColour.grey, fontWeight: FontWeight.bold),
@@ -394,7 +451,7 @@ class _VerificationCodeScreenState extends State<VerificationCodeScreen> {
 
                           // Proceed Button
                           ElevatedButton(
-                            onPressed: isLoading ? null : (isNumberVerified ? verifyFirebaseOTP : sendFirebaseOTP),
+                            onPressed: isLoading ? null : (isNumberVerified ? verifySmsOTP : sendSmsOTP),
                             style: elevated_button_style(),
                             child: isLoading
                                 ? SizedBox(height: 30, width: 30, child: CircularProgressIndicator(color: AppColour.white))

@@ -8,8 +8,12 @@ class NotificationModel {
   final String? title;
   final String? message;
   final String? type;
+  @JsonKey(name: 'isRead', readValue: _readStatusValue, defaultValue: false)
   bool read;
   final String? createdAt;
+
+  static Object? _readStatusValue(Map json, String key) =>
+      json['isRead'] ?? json['read'];
 
   NotificationModel({
     this.id,
@@ -20,6 +24,7 @@ class NotificationModel {
     this.createdAt,
   });
 
-  factory NotificationModel.fromJson(Map<String, dynamic> json) => _$NotificationModelFromJson(json);
+  factory NotificationModel.fromJson(Map<String, dynamic> json) =>
+      _$NotificationModelFromJson(json);
   Map<String, dynamic> toJson() => _$NotificationModelToJson(this);
 }

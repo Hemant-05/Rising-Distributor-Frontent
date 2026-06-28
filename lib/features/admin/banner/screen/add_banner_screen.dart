@@ -1,7 +1,7 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:image_picker/image_picker.dart';
+import 'package:raising_india/comman/image_helper.dart';
 import 'package:raising_india/comman/back_button.dart';
 import 'package:raising_india/comman/elevated_button_style.dart';
 import 'package:raising_india/comman/simple_text_style.dart';
@@ -17,26 +17,23 @@ class AddBannerScreen extends StatefulWidget {
 }
 
 class _AddBannerScreenState extends State<AddBannerScreen> {
-  final ImagePicker _picker = ImagePicker();
   File? _imageFile;
   bool _isUploading = false; // Local loading state for this screen
 
   Future<void> _pickImage() async {
     try {
-      final XFile? pickedFile = await _picker.pickImage(
-        source: ImageSource.gallery,
-        maxWidth: 1024,
-        maxHeight: 1024,
-        imageQuality: 80,
+      final File? pickedFile = await ImageHelper.pickAndCropImage(
+        context: context,
+        fromCamera: false,
       );
 
       if (pickedFile != null) {
         setState(() {
-          _imageFile = File(pickedFile.path);
+          _imageFile = pickedFile;
         });
       }
     } catch (e) {
-      // Handle permission errors
+      // Handle errors
     }
   }
 

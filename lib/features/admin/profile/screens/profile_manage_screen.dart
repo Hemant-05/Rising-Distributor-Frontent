@@ -16,6 +16,7 @@ import 'package:raising_india/features/admin/profile/widgets/option_list_tile_wi
 import 'package:raising_india/features/admin/review/screens/admin_reviews_screen.dart';
 import 'package:raising_india/features/admin/sales_analytics/screens/sales_analytics_screen.dart';
 import 'package:raising_india/features/admin/stock_management/screens/low_stock_alert_screen.dart';
+import 'package:raising_india/comman/helper_functions.dart';
 
 class ProfileManageScreen extends StatefulWidget {
   const ProfileManageScreen({super.key});
@@ -29,214 +30,414 @@ class _ProfileManageScreenState extends State<ProfileManageScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: _buildStunningAppBar(),
-      body: Column(
-        children: [
-          // upper_widget(50), // Example balance, replace with actual data
-          Expanded(
-            flex: 3,
-            child: Container(
-              padding: EdgeInsets.all(16),
-              width: double.infinity,
-              decoration: BoxDecoration(color: AppColour.white),
-              child: SingleChildScrollView(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.start,
-                  children: [
-                    CusContainer(
-                      Column(
-                        children: [
-                          optionsListTileWidget(
-                            () {
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (_) => const AdminProfileScreen(),
-                                ),
-                              );
-                            },
-                            profile_svg,
-                            'Profile',
-                            Icon(
-                              Icons.arrow_forward_ios_rounded,
-                              color: AppColour.grey,
-                              size: 16,
-                            ),
+      body: isDesktop(context) ? _buildDesktopBody() : _buildMobileBody(),
+    );
+  }
+
+  Widget _buildDesktopBody() {
+    return Row(
+      children: [
+        Expanded(
+          flex: 1,
+          child: Container(
+            padding: const EdgeInsets.all(16),
+            color: AppColour.white,
+            child: SingleChildScrollView(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.start,
+                children: [
+                  CusContainer(
+                    Column(
+                      children: [
+                        optionsListTileWidget(
+                          () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) => const SalesAnalyticsScreen(),
+                              ),
+                            );
+                          },
+                          receipt_svg,
+                          'Sale Analytics',
+                          Icon(
+                            Icons.arrow_forward_ios_rounded,
+                            color: AppColour.grey,
+                            size: 16,
                           ),
-                          optionsListTileWidget(
-                            () {
-                             Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (_) => const SalesAnalyticsScreen(),
-                                ),
-                              );
-                            },
-                            receipt_svg,
-                            'Sale Analytics',
-                            Icon(
-                              Icons.arrow_forward_ios_rounded,
-                              color: AppColour.grey,
-                              size: 16,
-                            ),
-                          ),
-                        ],
-                      ),
+                        ),
+                      ],
                     ),
-                    SizedBox(height: 10),
-                    CusContainer(
-                      Column(
-                        children: [
-                          optionsListTileWidget(
-                            () {
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (_) => const AdminCategoriesScreen(),
-                                ),
-                              );
-                            },
-                            category_svg,
-                            'Categories',
-                            Icon(
-                              Icons.arrow_forward_ios_rounded,
-                              color: AppColour.grey,
-                              size: 16,
-                            ),
+                  ),
+                  const SizedBox(height: 10),
+                  CusContainer(
+                    Column(
+                      children: [
+                        optionsListTileWidget(
+                          () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) => const AdminCategoriesScreen(),
+                              ),
+                            );
+                          },
+                          category_svg,
+                          'Categories',
+                          Icon(
+                            Icons.arrow_forward_ios_rounded,
+                            color: AppColour.grey,
+                            size: 16,
                           ),
-                          optionsListTileWidget(
-                            () {
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (_) => const AdminBrandScreen(),
-                                ),
-                              );
-                            },
-                            category_svg,
-                            'Brands',
-                            Icon(
-                              Icons.arrow_forward_ios_rounded,
-                              color: AppColour.grey,
-                              size: 16,
-                            ),
+                        ),
+                        optionsListTileWidget(
+                          () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) => const AdminBrandScreen(),
+                              ),
+                            );
+                          },
+                          category_svg,
+                          'Brands',
+                          Icon(
+                            Icons.arrow_forward_ios_rounded,
+                            color: AppColour.grey,
+                            size: 16,
                           ),
-                          optionsListTileWidget(
-                            () {
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (_) => const AdminCouponsScreen(),
-                                ),
-                              );
-                            },
-                            category_svg,
-                            'Coupons',
-                            Icon(
-                              Icons.arrow_forward_ios_rounded,
-                              color: AppColour.grey,
-                              size: 16,
-                            ),
+                        ),
+                        optionsListTileWidget(
+                          () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) => const AdminCouponsScreen(),
+                              ),
+                            );
+                          },
+                          category_svg,
+                          'Coupons',
+                          Icon(
+                            Icons.arrow_forward_ios_rounded,
+                            color: AppColour.grey,
+                            size: 16,
                           ),
-                          optionsListTileWidget(
-                            () {
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (_) => const AdminReviewsScreen(),
-                                ),
-                              );
-                            },
-                            review_svg,
-                            'Reviews',
-                            Icon(
-                              Icons.arrow_forward_ios_rounded,
-                              color: AppColour.grey,
-                              size: 16,
-                            ),
+                        ),
+                        optionsListTileWidget(
+                          () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) => const AdminReviewsScreen(),
+                              ),
+                            );
+                          },
+                          review_svg,
+                          'Reviews',
+                          Icon(
+                            Icons.arrow_forward_ios_rounded,
+                            color: AppColour.grey,
+                            size: 16,
                           ),
-                        ],
-                      ),
+                        ),
+                      ],
                     ),
-                    SizedBox(height: 10),
-                    CusContainer(
-                      Column(
-                        children: [
-                          optionsListTileWidget(
-                            () {
-                              context.read<BannerService>().loadAdminBanners();
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (_) => const AllBannerScreen(),
-                                ),
-                              );
-                            },
-                            banner_svg,
-                            'Ad Banner',
-                            Icon(
-                              Icons.arrow_forward_ios_rounded,
-                              color: AppColour.grey,
-                              size: 16,
-                            ),
+                  ),
+                  const SizedBox(height: 10),
+                  CusContainer(
+                    Column(
+                      children: [
+                        optionsListTileWidget(
+                          () {
+                            context.read<BannerService>().loadAdminBanners();
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) => const AllBannerScreen(),
+                              ),
+                            );
+                          },
+                          banner_svg,
+                          'Ad Banner',
+                          Icon(
+                            Icons.arrow_forward_ios_rounded,
+                            color: AppColour.grey,
+                            size: 16,
                           ),
-                          optionsListTileWidget(
-                                () {
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(builder: (context) => const AdminBroadcastScreen()),
-                              );
-                            },
-                            notification_svg,
-                            'Broadcast Notification',
-                            Icon(
-                              Icons.arrow_forward_ios_rounded,
-                              color: AppColour.grey,
-                              size: 16,
-                            ),
+                        ),
+                        optionsListTileWidget(
+                          () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(builder: (context) => const AdminBroadcastScreen()),
+                            );
+                          },
+                          notification_svg,
+                          'Broadcast Notification',
+                          Icon(
+                            Icons.arrow_forward_ios_rounded,
+                            color: AppColour.grey,
+                            size: 16,
                           ),
-                          optionsListTileWidget(
-                                () {
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(builder: (context) => const ArchivedProductsScreen()),
-                              );
-                            },
-                            notification_svg,
-                            'Archived Products',
-                            Icon(
-                              Icons.arrow_forward_ios_rounded,
-                              color: AppColour.grey,
-                              size: 16,
-                            ),
+                        ),
+                        optionsListTileWidget(
+                          () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(builder: (context) => const ArchivedProductsScreen()),
+                            );
+                          },
+                          notification_svg,
+                          'Archived Products',
+                          Icon(
+                            Icons.arrow_forward_ios_rounded,
+                            color: AppColour.grey,
+                            size: 16,
                           ),
-                          optionsListTileWidget(
-                            () {
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (_) => const LowStockAlertScreen(),
-                                ),
-                              );
-                            },
-                            notification_svg,
-                            'Low Stock Alerts',
-                            Icon(
-                              Icons.arrow_forward_ios_rounded,
-                              color: AppColour.grey,
-                              size: 16,
-                            ),
+                        ),
+                        optionsListTileWidget(
+                          () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) => const LowStockAlertScreen(),
+                              ),
+                            );
+                          },
+                          notification_svg,
+                          'Low Stock Alerts',
+                          Icon(
+                            Icons.arrow_forward_ios_rounded,
+                            color: AppColour.grey,
+                            size: 16,
                           ),
-                        ],
-                      ),
+                        ),
+                      ],
                     ),
-                    SizedBox(height: 10),
-                  ],
-                ),
+                  ),
+                  const SizedBox(height: 10),
+                ],
               ),
             ),
           ),
-        ],
-      ),
+        ),
+        const Expanded(
+          flex: 1,
+          child: AdminProfileScreen(),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildMobileBody() {
+    return Column(
+      children: [
+        // upper_widget(50), // Example balance, replace with actual data
+        Expanded(
+          flex: 3,
+          child: Container(
+            padding: const EdgeInsets.all(16),
+            width: double.infinity,
+            decoration: BoxDecoration(color: AppColour.white),
+            child: SingleChildScrollView(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.start,
+                children: [
+                  CusContainer(
+                    Column(
+                      children: [
+                        optionsListTileWidget(
+                          () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) => const AdminProfileScreen(),
+                              ),
+                            );
+                          },
+                          profile_svg,
+                          'Profile',
+                          Icon(
+                            Icons.arrow_forward_ios_rounded,
+                            color: AppColour.grey,
+                            size: 16,
+                          ),
+                        ),
+                        optionsListTileWidget(
+                          () {
+                           Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) => const SalesAnalyticsScreen(),
+                              ),
+                            );
+                          },
+                          receipt_svg,
+                          'Sale Analytics',
+                          Icon(
+                            Icons.arrow_forward_ios_rounded,
+                            color: AppColour.grey,
+                            size: 16,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 10),
+                  CusContainer(
+                    Column(
+                      children: [
+                        optionsListTileWidget(
+                          () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) => const AdminCategoriesScreen(),
+                              ),
+                            );
+                          },
+                          category_svg,
+                          'Categories',
+                          Icon(
+                            Icons.arrow_forward_ios_rounded,
+                            color: AppColour.grey,
+                            size: 16,
+                          ),
+                        ),
+                        optionsListTileWidget(
+                          () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) => const AdminBrandScreen(),
+                              ),
+                            );
+                          },
+                          category_svg,
+                          'Brands',
+                          Icon(
+                            Icons.arrow_forward_ios_rounded,
+                            color: AppColour.grey,
+                            size: 16,
+                          ),
+                        ),
+                        optionsListTileWidget(
+                          () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) => const AdminCouponsScreen(),
+                              ),
+                            );
+                          },
+                          category_svg,
+                          'Coupons',
+                          Icon(
+                            Icons.arrow_forward_ios_rounded,
+                            color: AppColour.grey,
+                            size: 16,
+                          ),
+                        ),
+                        optionsListTileWidget(
+                          () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) => const AdminReviewsScreen(),
+                              ),
+                            );
+                          },
+                          review_svg,
+                          'Reviews',
+                          Icon(
+                            Icons.arrow_forward_ios_rounded,
+                            color: AppColour.grey,
+                            size: 16,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 10),
+                  CusContainer(
+                    Column(
+                      children: [
+                        optionsListTileWidget(
+                          () {
+                            context.read<BannerService>().loadAdminBanners();
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) => const AllBannerScreen(),
+                              ),
+                            );
+                          },
+                          banner_svg,
+                          'Ad Banner',
+                          Icon(
+                            Icons.arrow_forward_ios_rounded,
+                            color: AppColour.grey,
+                            size: 16,
+                          ),
+                        ),
+                        optionsListTileWidget(
+                              () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(builder: (context) => const AdminBroadcastScreen()),
+                            );
+                          },
+                          notification_svg,
+                          'Broadcast Notification',
+                          Icon(
+                            Icons.arrow_forward_ios_rounded,
+                            color: AppColour.grey,
+                            size: 16,
+                          ),
+                        ),
+                        optionsListTileWidget(
+                              () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(builder: (context) => const ArchivedProductsScreen()),
+                            );
+                          },
+                          notification_svg,
+                          'Archived Products',
+                          Icon(
+                            Icons.arrow_forward_ios_rounded,
+                            color: AppColour.grey,
+                            size: 16,
+                          ),
+                        ),
+                        optionsListTileWidget(
+                          () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) => const LowStockAlertScreen(),
+                              ),
+                            );
+                          },
+                          notification_svg,
+                          'Low Stock Alerts',
+                          Icon(
+                            Icons.arrow_forward_ios_rounded,
+                            color: AppColour.grey,
+                            size: 16,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 10),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ],
     );
   }
 

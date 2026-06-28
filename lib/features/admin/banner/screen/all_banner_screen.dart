@@ -5,6 +5,7 @@ import 'package:raising_india/comman/simple_text_style.dart';
 import 'package:raising_india/constant/AppColour.dart';
 import 'package:raising_india/data/services/banner_service.dart';
 import 'package:raising_india/features/admin/banner/screen/add_banner_screen.dart';
+import 'package:raising_india/comman/helper_functions.dart';
 
 class AllBannerScreen extends StatefulWidget {
   const AllBannerScreen({super.key});
@@ -69,76 +70,94 @@ class _AllBannerScreenState extends State<AllBannerScreen> {
             );
           }
 
+          if (isDesktop(context)) {
+            return GridView.builder(
+              padding: const EdgeInsets.all(16),
+              gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
+                maxCrossAxisExtent: 400,
+                crossAxisSpacing: 16,
+                mainAxisSpacing: 16,
+                mainAxisExtent: 220,
+              ),
+              itemCount: bannerService.banners.length,
+              itemBuilder: (context, index) {
+                return _buildBannerCard(context, bannerService.banners[index]);
+              },
+            );
+          }
+
           return ListView.builder(
             itemCount: bannerService.banners.length,
             itemBuilder: (context, index) {
-              final banner = bannerService.banners[index];
-              final imageUrl = banner.imageUrl;
-              final bannerId = banner.id;
-
-              return Container(
-                margin: const EdgeInsets.all(8),
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(20),
-                  border: Border.all(color: AppColour.grey, width: 1),
-                ),
-                child: Column(
-                  children: [
-                    Container(
-                      height: 150,
-                      width: double.infinity,
-                      decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(color: AppColour.black, width: 1),
-                      ),
-                      child: ClipRRect(
-                        borderRadius: BorderRadius.circular(12),
-                        child: Image.network(
-                          imageUrl!,
-                          fit: BoxFit.cover,
-                          loadingBuilder: (context, child, loadingProgress) {
-                            if (loadingProgress == null) return child;
-                            return Center(
-                              child: CircularProgressIndicator(
-                                color: AppColour.primary,
-                              ),
-                            );
-                          },
-                          errorBuilder: (context, error, stackTrace) =>
-                              const Icon(Icons.broken_image),
-                        ),
-                      ),
-                    ),
-                    SizedBox(
-                      height: 30,
-                      width: double.infinity,
-                      child: InkWell(
-                        onTap: () async {
-                          final error = await context
-                              .read<BannerService>()
-                              .deleteBanner(banner.id!);
-                          if (error != null) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(
-                                content: Text(error),
-                                backgroundColor: Colors.red,
-                              ),
-                            );
-                          }
-                        },
-                        child: Icon(
-                          Icons.delete_forever_outlined,
-                          color: AppColour.red,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              );
+              return _buildBannerCard(context, bannerService.banners[index]);
             },
           );
         },
+      ),
+    );
+  }
+
+  Widget _buildBannerCard(BuildContext context, dynamic banner) {
+    final imageUrl = banner.imageUrl;
+
+    return Container(
+      margin: const EdgeInsets.all(8),
+      padding: const EdgeInsets.all(8),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: AppColour.grey, width: 1),
+      ),
+      child: Column(
+        children: [
+          Container(
+            height: 150,
+            width: double.infinity,
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: AppColour.black, width: 1),
+            ),
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(12),
+              child: Image.network(
+                imageUrl!,
+                fit: BoxFit.cover,
+                loadingBuilder: (context, child, loadingProgress) {
+                  if (loadingProgress == null) return child;
+                  return Center(
+                    child: CircularProgressIndicator(
+                      color: AppColour.primary,
+                    ),
+                  );
+                },
+                errorBuilder: (context, error, stackTrace) =>
+                    const Icon(Icons.broken_image),
+              ),
+            ),
+          ),
+          SizedBox(
+            height: 30,
+            width: double.infinity,
+            child: InkWell(
+              onTap: () async {
+                final error = await context
+                    .read<BannerService>()
+                    .deleteBanner(banner.id!);
+                if (error != null) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text(error),
+                      backgroundColor: Colors.red,
+                    ),
+                  );
+                }
+              },
+              child: Icon(
+                Icons.delete_forever_outlined,
+                color: AppColour.red,
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }

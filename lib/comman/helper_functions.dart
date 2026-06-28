@@ -1,4 +1,7 @@
 import 'package:raising_india/models/model/address.dart';
+import 'package:flutter/material.dart';
+
+bool isDesktop(BuildContext context) => MediaQuery.of(context).size.width >= 1024;
 
 double calculatePercentage(double? mrp, double price){
   double percent = 0;

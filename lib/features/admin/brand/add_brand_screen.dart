@@ -1,7 +1,7 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:image_picker/image_picker.dart';
+import 'package:raising_india/comman/image_helper.dart';
 import 'package:raising_india/comman/back_button.dart';
 import 'package:raising_india/comman/simple_text_style.dart';
 import 'package:raising_india/constant/AppColour.dart';
@@ -10,7 +10,10 @@ import 'package:raising_india/data/services/image_service.dart';
 import 'package:raising_india/models/model/brand.dart';
 
 class AddBrandScreen extends StatefulWidget {
-  const AddBrandScreen({super.key});
+  final Brand? brand;
+  const AddBrandScreen({super.key, this.brand});
+
+  bool get isEdit => brand != null;
 
   @override
   State<AddBrandScreen> createState() => _AddBrandScreenState();
@@ -19,19 +22,26 @@ class AddBrandScreen extends StatefulWidget {
 class _AddBrandScreenState extends State<AddBrandScreen> {
   final _formKey = GlobalKey<FormState>();
   final _nameController = TextEditingController();
-  final ImagePicker _picker = ImagePicker();
 
   File? _imageFile;
   bool _isLoading = false;
 
+  @override
+  void initState() {
+    super.initState();
+    if (widget.isEdit) {
+      _nameController.text = widget.brand!.name ?? "";
+    }
+  }
+
   Future<void> _pickImage() async {
     try {
-      final XFile? pickedFile = await _picker.pickImage(
-        source: ImageSource.gallery,
-        imageQuality: 80,
+      final File? pickedFile = await ImageHelper.pickAndCropImage(
+        context: context,
+        fromCamera: false,
       );
       if (pickedFile != null) {
-        setState(() => _imageFile = File(pickedFile.path));
+        setState(() => _imageFile = pickedFile);
       }
     } catch (e) {
       debugPrint("Error picking image: $e");
@@ -40,7 +50,7 @@ class _AddBrandScreenState extends State<AddBrandScreen> {
 
   Future<void> _submitForm() async {
     if (!_formKey.currentState!.validate()) return;
-    if (_imageFile == null) {
+    if (_imageFile == null && !widget.isEdit) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text("Please select a brand logo"), backgroundColor: Colors.red),
       );
@@ -53,25 +63,40 @@ class _AddBrandScreenState extends State<AddBrandScreen> {
       final imageService = context.read<ImageService>();
       final brandService = context.read<BrandService>();
 
+      String? imageUrl;
+
       // 1. Upload Image
-      String? imageUrl = await imageService.uploadImage(_imageFile!);
+      if (_imageFile != null) {
+        imageUrl = await imageService.uploadImage(_imageFile!);
+        if (imageUrl == null) {
+          throw Exception("Image upload failed. Aborting brand update.");
+        }
+      } else {
+        imageUrl = widget.brand?.imageUrl;
+      }
 
-      if (imageUrl == null) throw Exception("Image upload failed");
+      String? error;
 
-      // 2. Create Brand Object
-      Brand newBrand = Brand(
-        name: _nameController.text.trim(),
-        imageUrl: imageUrl,
-      );
-
-      // 3. Save to Backend
-      String? error = await brandService.addBrand(newBrand);
+      if (widget.isEdit) {
+        Brand updatedBrand = Brand(
+          id: widget.brand!.id,
+          name: _nameController.text.trim(),
+          imageUrl: imageUrl,
+        );
+        error = await brandService.updateBrand(widget.brand!.id!, updatedBrand);
+      } else {
+        Brand newBrand = Brand(
+          name: _nameController.text.trim(),
+          imageUrl: imageUrl,
+        );
+        error = await brandService.addBrand(newBrand);
+      }
 
       if (mounted) {
         setState(() => _isLoading = false);
         if (error == null) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text("Brand Added Successfully!"), backgroundColor: Colors.green),
+            SnackBar(content: Text(widget.isEdit ? "Brand Updated Successfully!" : "Brand Added Successfully!"), backgroundColor: Colors.green),
           );
           Navigator.pop(context);
         } else {
@@ -102,7 +127,7 @@ class _AddBrandScreenState extends State<AddBrandScreen> {
           children: [
             back_button(),
             const SizedBox(width: 8),
-            Text('Add Brand', style: simple_text_style(fontSize: 20, fontWeight: FontWeight.bold)),
+            Text(widget.isEdit ? 'Edit Brand' : 'Add Brand', style: simple_text_style(fontSize: 20, fontWeight: FontWeight.bold)),
           ],
         ),
       ),
@@ -146,20 +171,59 @@ class _AddBrandScreenState extends State<AddBrandScreen> {
                 borderRadius: BorderRadius.circular(16),
                 border: Border.all(color: Colors.grey.shade300),
               ),
-              child: _imageFile != null
-                  ? ClipRRect(borderRadius: BorderRadius.circular(15), child: Image.file(_imageFile!, fit: BoxFit.cover))
-                  : Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(Icons.add_a_photo, size: 30, color: Colors.grey.shade400),
-                  const SizedBox(height: 8),
-                  Text("Upload Logo", style: simple_text_style(color: Colors.grey.shade500, fontSize: 12)),
-                ],
-              ),
+              child: _buildImageWidget(),
             ),
           ),
         ],
       ),
+    );
+  }
+
+  Widget _buildImageWidget() {
+    if (_imageFile != null) {
+      return ClipRRect(borderRadius: BorderRadius.circular(15), child: Image.file(_imageFile!, fit: BoxFit.cover));
+    } else if (widget.isEdit && widget.brand?.imageUrl != null) {
+      return Stack(
+        fit: StackFit.expand,
+        children: [
+          ClipRRect(borderRadius: BorderRadius.circular(15), child: Image.network(widget.brand!.imageUrl!, fit: BoxFit.cover, errorBuilder: (_,__,___) => _buildImagePlaceholder())),
+          Positioned(
+            top: 4,
+            right: 4,
+            child: GestureDetector(
+              onTap: () async {
+                final croppedImage = await ImageHelper.downloadAndCropImage(
+                  context: context,
+                  imageUrl: widget.brand!.imageUrl!,
+                );
+                if (croppedImage != null) {
+                  setState(() => _imageFile = croppedImage);
+                }
+              },
+              child: Container(
+                padding: const EdgeInsets.all(4),
+                decoration: BoxDecoration(
+                  color: Colors.white.withOpacity(0.8),
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(Icons.crop, color: Colors.blue, size: 20),
+              ),
+            ),
+          ),
+        ],
+      );
+    }
+    return _buildImagePlaceholder();
+  }
+
+  Widget _buildImagePlaceholder() {
+    return Column(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        Icon(Icons.add_a_photo, size: 30, color: Colors.grey.shade400),
+        const SizedBox(height: 8),
+        Text(widget.isEdit ? "Change Logo" : "Upload Logo", style: simple_text_style(color: Colors.grey.shade500, fontSize: 12)),
+      ],
     );
   }
 
@@ -196,7 +260,7 @@ class _AddBrandScreenState extends State<AddBrandScreen> {
         ),
         child: _isLoading
             ? const CircularProgressIndicator(color: Colors.white)
-            : Text('Create Brand', style: simple_text_style(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)),
+            : Text(widget.isEdit ? 'Save Changes' : 'Create Brand', style: simple_text_style(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)),
       ),
     );
   }

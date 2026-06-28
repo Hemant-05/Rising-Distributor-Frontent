@@ -7,6 +7,7 @@ import 'package:raising_india/data/services/category_service.dart';
 import 'package:raising_india/features/admin/category/screens/add_edit_category_screen.dart';
 import 'package:raising_india/features/admin/category/screens/category_products_screen.dart';
 import 'package:raising_india/models/model/category.dart';
+import 'package:raising_india/comman/helper_functions.dart';
 
 class AdminCategoriesScreen extends StatefulWidget {
   final Category? parentCategory; // ✅ Pass this to view sub-categories
@@ -75,6 +76,22 @@ class _AdminCategoriesScreenState extends State<AdminCategoriesScreen> {
 
           if (displayList.isEmpty) {
             return _buildEmptyState(context);
+          }
+
+          if (isDesktop(context)) {
+            return GridView.builder(
+              padding: const EdgeInsets.all(16),
+              gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
+                maxCrossAxisExtent: 400,
+                crossAxisSpacing: 16,
+                mainAxisSpacing: 16,
+                mainAxisExtent: 90,
+              ),
+              itemCount: displayList.length,
+              itemBuilder: (context, index) {
+                return _buildCategoryTile(context, displayList[index]);
+              },
+            );
           }
 
           return ListView.separated(

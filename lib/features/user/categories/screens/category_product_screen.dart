@@ -56,7 +56,8 @@ class _CategoryProductScreenState extends State<CategoryProductScreen> {
             return const Center(child: Text('No Product in this Category !!!'));
           }
 
-          return Padding(
+          return SingleChildScrollView(
+            physics: const BouncingScrollPhysics(),
             padding: const EdgeInsets.all(12.0),
             child: ProductGrid(products: productService.categoryProducts),
           );

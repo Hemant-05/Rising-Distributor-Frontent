@@ -8,6 +8,8 @@ import 'package:raising_india/features/user/categories/widgets/category_widget.d
 import 'package:raising_india/features/user/categories/screens/category_product_screen.dart';
 import 'package:raising_india/models/model/category.dart';
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:raising_india/data/services/product_service.dart';
+import 'package:raising_india/features/user/home/widgets/product_grid.dart';
 
 class AllCategoriesScreen extends StatefulWidget {
   const AllCategoriesScreen({super.key});
@@ -250,13 +252,8 @@ class _AllCategoriesScreenState extends State<AllCategoriesScreen> {
                       // Grid of Subcategories
                       Expanded(
                         child: displayList.isEmpty
-                            ? Center(
-                                child: Text(
-                                  "No items here",
-                                  style: simple_text_style(
-                                    color: Colors.grey.shade400,
-                                  ),
-                                ),
+                            ? CategoryProductsView(
+                                categoryName: currentParent.name ?? '',
                               )
                             : GridView.builder(
                                 padding: const EdgeInsets.symmetric(
@@ -317,6 +314,66 @@ class _AllCategoriesScreenState extends State<AllCategoriesScreen> {
           },
         ),
       ),
+    );
+  }
+}
+
+class CategoryProductsView extends StatefulWidget {
+  final String categoryName;
+  const CategoryProductsView({super.key, required this.categoryName});
+
+  @override
+  State<CategoryProductsView> createState() => _CategoryProductsViewState();
+}
+
+class _CategoryProductsViewState extends State<CategoryProductsView> {
+  @override
+  void initState() {
+    super.initState();
+    _fetchProducts();
+  }
+
+  @override
+  void didUpdateWidget(CategoryProductsView oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.categoryName != widget.categoryName) {
+      _fetchProducts();
+    }
+  }
+
+  void _fetchProducts() {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        context.read<ProductService>().fetchProductsByCategory(widget.categoryName);
+      }
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Consumer<ProductService>(
+      builder: (context, productService, child) {
+        if (productService.isLoading) {
+          return Center(
+            child: CircularProgressIndicator(color: AppColour.primary),
+          );
+        }
+
+        if (productService.categoryProducts.isEmpty) {
+          return Center(
+            child: Text(
+              'No products in this category',
+              style: simple_text_style(color: Colors.grey.shade500),
+            ),
+          );
+        }
+
+        return SingleChildScrollView(
+          physics: const BouncingScrollPhysics(),
+          padding: const EdgeInsets.all(12.0),
+          child: ProductGrid(products: productService.categoryProducts),
+        );
+      },
     );
   }
 }

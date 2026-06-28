@@ -1,6 +1,6 @@
 enum OrderFilterType {
   running,
-  created,
+  placed,
   confirmed,
   preparing,
   dispatch,

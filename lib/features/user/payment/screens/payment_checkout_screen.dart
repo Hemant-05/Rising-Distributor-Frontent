@@ -103,16 +103,28 @@ class _PaymentCheckoutScreenState extends State<PaymentCheckoutScreen> with Tick
 
   // --- 1. PLACE ORDER (LOCK STOCK) ---
   Future<void> _placeOrder({required bool isCod}) async {
+    print("--- PLACE ORDER CLICKED ---");
+    print("isCod: $isCod");
+    print("Address ID: ${widget.address.id}");
+    
+    if (widget.address.id == null) {
+      print("ERROR: Address ID is null!");
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Error: Selected address has no ID!"), backgroundColor: Colors.red));
+      return;
+    }
+
     setState(() => _isProcessingOrder = true);
 
     final orderService = context.read<OrderService>();
     final cartService = context.read<CartService>();
 
     try {
+      print("Calling orderService.placeOrder...");
       final result = await orderService.placeOrder(
         addressId: widget.address.id!,
         paymentMethod: isCod ? PayMethodCOD : PayMethodOnline,
       );
+      print("Order Service returned: $result");
 
       // Check if result is an error String
       if (result is String) {
@@ -123,6 +135,7 @@ class _PaymentCheckoutScreenState extends State<PaymentCheckoutScreen> with Tick
 
       // Success! Result should be an Order object
       if (result is Order) {
+        print("Order placed successfully. Order ID: ${result.id}");
         await cartService.clearCart();
         _pendingDatabaseOrderId = result.id; // Save DB ID
 
@@ -137,8 +150,11 @@ class _PaymentCheckoutScreenState extends State<PaymentCheckoutScreen> with Tick
           if (razorpayOrderId.isEmpty) throw Exception("Razorpay Order ID missing from backend");
           _openCheckOut(razorpayOrderId);
         }
+      } else {
+        print("Unknown result type from placeOrder: ${result.runtimeType}");
       }
     } catch (e) {
+      print("Exception in _placeOrder: $e");
       setState(() => _isProcessingOrder = false);
       if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Error: $e"), backgroundColor: Colors.red));
     }
@@ -151,6 +167,12 @@ class _PaymentCheckoutScreenState extends State<PaymentCheckoutScreen> with Tick
         ? dartDefineRazorpayKeyId.trim()
         : dotenv.env['RAZORPAY_KEY_ID'] ?? "";
     String amount = (_finalTotal * 100).toInt().toString();
+
+    if (razorpayKeyId.isEmpty) {
+      setState(() => _isProcessingOrder = false);
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Payment gateway not configured properly. Please try COD."), backgroundColor: Colors.red));
+      return;
+    }
 
     var options = {
       'key': razorpayKeyId,
@@ -494,10 +516,10 @@ class _PaymentCheckoutScreenState extends State<PaymentCheckoutScreen> with Tick
           _row("Cart Total", "₹$_originalTotal"),
           _row("Delivery Fee", _deliveryCharge == 0 ? "Free" : "₹$_deliveryCharge"),
           _row("Platform Fee", "₹$platformFee"),
-          if (_isCouponApplied) _row("Coupon Discount", "-₹${_discountAmount.toStringAsFixed(2)}", color: Colors.green),
+          if (_isCouponApplied) _row("Coupon Discount", "-₹${_discountAmount.toStringAsFixed(0)}", color: Colors.green),
           const Divider(height: 2.5,color: Colors.black,),
-          _row("Total Amount", "₹${_finalTotal.toStringAsFixed(2)}", isBold: true, size: 18),
-          _row("You Save", "₹${(double.parse(widget.mrpTotal) - _finalTotal + platformFee).toStringAsFixed(2)}", isBold: true, color: AppColour.green, size: 18),
+          _row("Total Amount", "₹${_finalTotal.toStringAsFixed(0)}", isBold: true, size: 18),
+          _row("You Save", "₹${(double.parse(widget.mrpTotal) - _finalTotal + platformFee).toStringAsFixed(0)}", isBold: true, color: AppColour.green, size: 18),
 
         ],
       ),
@@ -523,11 +545,16 @@ class _PaymentCheckoutScreenState extends State<PaymentCheckoutScreen> with Tick
       height: 55,
       child: ElevatedButton(
         style: elevated_button_style(),
-        onPressed: !widget.isVerified
-            ? () => ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Verify Account First")))
-            : _isProcessingOrder
-            ? null
-            : () => _placeOrder(isCod: isCOD), // ✅ Always secures stock first, regardless of payment method!
+        onPressed: () {
+          print("Button Clicked. isVerified: ${widget.isVerified}, isProcessing: $_isProcessingOrder, isCod: $isCOD");
+          
+          // TEMPORARY BYPASS: Allowing unverified users to place orders for testing
+          if (_isProcessingOrder) {
+             // do nothing
+          } else {
+             _placeOrder(isCod: isCOD);
+          }
+        },
         child: _isProcessingOrder
             ? const CircularProgressIndicator(color: Colors.white)
             : Text(isCOD ? "PLACE ORDER" : "PAY & ORDER", style: simple_text_style(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16)),

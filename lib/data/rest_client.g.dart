@@ -11,9 +11,7 @@ part of 'rest_client.dart';
 // ignore_for_file: unnecessary_brace_in_string_interps,no_leading_underscores_for_local_identifiers,unused_element,unnecessary_string_interpolations,unused_element_parameter,avoid_unused_constructor_parameters,unreachable_from_main
 
 class _RestClient implements RestClient {
-  _RestClient(this._dio, {this.baseUrl, this.errorLogger}) {
-    baseUrl ??= '';
-  }
+  _RestClient(this._dio, {this.baseUrl, this.errorLogger});
 
   final Dio _dio;
 
@@ -22,15 +20,55 @@ class _RestClient implements RestClient {
   final ParseErrorLogger? errorLogger;
 
   @override
-  Future<ApiResponse<Map<String, dynamic>>> registerUser(
-    RegistrationRequest request,
-  ) async {
+  Future<dynamic> getHealth() async {
+    final _extra = <String, dynamic>{};
+    final queryParameters = <String, dynamic>{};
+    final _headers = <String, dynamic>{};
+    const Map<String, dynamic>? _data = null;
+    final _options = _setStreamType<dynamic>(
+      Options(method: 'GET', headers: _headers, extra: _extra)
+          .compose(
+            _dio.options,
+            '/health',
+            queryParameters: queryParameters,
+            data: _data,
+          )
+          .copyWith(baseUrl: _combineBaseUrls(_dio.options.baseUrl, baseUrl)),
+    );
+    final _result = await _dio.fetch(_options);
+    final _value = _result.data;
+    return _value;
+  }
+
+  @override
+  Future<dynamic> getDatabaseHealth() async {
+    final _extra = <String, dynamic>{};
+    final queryParameters = <String, dynamic>{};
+    final _headers = <String, dynamic>{};
+    const Map<String, dynamic>? _data = null;
+    final _options = _setStreamType<dynamic>(
+      Options(method: 'GET', headers: _headers, extra: _extra)
+          .compose(
+            _dio.options,
+            '/health/db',
+            queryParameters: queryParameters,
+            data: _data,
+          )
+          .copyWith(baseUrl: _combineBaseUrls(_dio.options.baseUrl, baseUrl)),
+    );
+    final _result = await _dio.fetch(_options);
+    final _value = _result.data;
+    return _value;
+  }
+
+  @override
+  Future<ApiResponse<dynamic>> registerUser(RegistrationRequest request) async {
     final _extra = <String, dynamic>{};
     final queryParameters = <String, dynamic>{};
     final _headers = <String, dynamic>{};
     final _data = <String, dynamic>{};
     _data.addAll(request.toJson());
-    final _options = _setStreamType<ApiResponse<Map<String, dynamic>>>(
+    final _options = _setStreamType<ApiResponse<dynamic>>(
       Options(method: 'POST', headers: _headers, extra: _extra)
           .compose(
             _dio.options,
@@ -41,11 +79,11 @@ class _RestClient implements RestClient {
           .copyWith(baseUrl: _combineBaseUrls(_dio.options.baseUrl, baseUrl)),
     );
     final _result = await _dio.fetch<Map<String, dynamic>>(_options);
-    late ApiResponse<Map<String, dynamic>> _value;
+    late ApiResponse<dynamic> _value;
     try {
-      _value = ApiResponse<Map<String, dynamic>>.fromJson(
+      _value = ApiResponse<dynamic>.fromJson(
         _result.data!,
-        (json) => (json as Map<String, dynamic>),
+        (json) => json as dynamic,
       );
     } on Object catch (e, s) {
       errorLogger?.logError(e, s, _options, response: _result);
@@ -55,7 +93,7 @@ class _RestClient implements RestClient {
   }
 
   @override
-  Future<ApiResponse<Map<String, dynamic>>> registerAdmin(
+  Future<ApiResponse<dynamic>> registerAdmin(
     RegistrationRequest request,
   ) async {
     final _extra = <String, dynamic>{};
@@ -63,7 +101,7 @@ class _RestClient implements RestClient {
     final _headers = <String, dynamic>{};
     final _data = <String, dynamic>{};
     _data.addAll(request.toJson());
-    final _options = _setStreamType<ApiResponse<Map<String, dynamic>>>(
+    final _options = _setStreamType<ApiResponse<dynamic>>(
       Options(method: 'POST', headers: _headers, extra: _extra)
           .compose(
             _dio.options,
@@ -74,11 +112,11 @@ class _RestClient implements RestClient {
           .copyWith(baseUrl: _combineBaseUrls(_dio.options.baseUrl, baseUrl)),
     );
     final _result = await _dio.fetch<Map<String, dynamic>>(_options);
-    late ApiResponse<Map<String, dynamic>> _value;
+    late ApiResponse<dynamic> _value;
     try {
-      _value = ApiResponse<Map<String, dynamic>>.fromJson(
+      _value = ApiResponse<dynamic>.fromJson(
         _result.data!,
-        (json) => (json as Map<String, dynamic>),
+        (json) => json as dynamic,
       );
     } on Object catch (e, s) {
       errorLogger?.logError(e, s, _options, response: _result);
@@ -556,14 +594,12 @@ class _RestClient implements RestClient {
   }
 
   @override
-  Future<ApiResponse<Map<String, dynamic>>> getCartStatus(
-    String productId,
-  ) async {
+  Future<ApiResponse<dynamic>> getCartStatus(String productId) async {
     final _extra = <String, dynamic>{};
     final queryParameters = <String, dynamic>{};
     final _headers = <String, dynamic>{};
     const Map<String, dynamic>? _data = null;
-    final _options = _setStreamType<ApiResponse<Map<String, dynamic>>>(
+    final _options = _setStreamType<ApiResponse<dynamic>>(
       Options(method: 'GET', headers: _headers, extra: _extra)
           .compose(
             _dio.options,
@@ -574,11 +610,11 @@ class _RestClient implements RestClient {
           .copyWith(baseUrl: _combineBaseUrls(_dio.options.baseUrl, baseUrl)),
     );
     final _result = await _dio.fetch<Map<String, dynamic>>(_options);
-    late ApiResponse<Map<String, dynamic>> _value;
+    late ApiResponse<dynamic> _value;
     try {
-      _value = ApiResponse<Map<String, dynamic>>.fromJson(
+      _value = ApiResponse<dynamic>.fromJson(
         _result.data!,
-        (json) => (json as Map<String, dynamic>),
+        (json) => json as dynamic,
       );
     } on Object catch (e, s) {
       errorLogger?.logError(e, s, _options, response: _result);
@@ -1048,6 +1084,67 @@ class _RestClient implements RestClient {
                   )
                   .toList()
             : List.empty(),
+      );
+    } on Object catch (e, s) {
+      errorLogger?.logError(e, s, _options, response: _result);
+      rethrow;
+    }
+    return _value;
+  }
+
+  @override
+  Future<ApiResponse<Brand>> updateBrand(int id, Brand brand) async {
+    final _extra = <String, dynamic>{};
+    final queryParameters = <String, dynamic>{};
+    final _headers = <String, dynamic>{};
+    final _data = <String, dynamic>{};
+    _data.addAll(brand.toJson());
+    final _options = _setStreamType<ApiResponse<Brand>>(
+      Options(method: 'PUT', headers: _headers, extra: _extra)
+          .compose(
+            _dio.options,
+            '/brands/${id}/update',
+            queryParameters: queryParameters,
+            data: _data,
+          )
+          .copyWith(baseUrl: _combineBaseUrls(_dio.options.baseUrl, baseUrl)),
+    );
+    final _result = await _dio.fetch<Map<String, dynamic>>(_options);
+    late ApiResponse<Brand> _value;
+    try {
+      _value = ApiResponse<Brand>.fromJson(
+        _result.data!,
+        (json) => Brand.fromJson(json as Map<String, dynamic>),
+      );
+    } on Object catch (e, s) {
+      errorLogger?.logError(e, s, _options, response: _result);
+      rethrow;
+    }
+    return _value;
+  }
+
+  @override
+  Future<ApiResponse<bool>> deleteBrand(int id) async {
+    final _extra = <String, dynamic>{};
+    final queryParameters = <String, dynamic>{};
+    final _headers = <String, dynamic>{};
+    const Map<String, dynamic>? _data = null;
+    final _options = _setStreamType<ApiResponse<bool>>(
+      Options(method: 'DELETE', headers: _headers, extra: _extra)
+          .compose(
+            _dio.options,
+            '/brands/${id}/delete',
+            queryParameters: queryParameters,
+            data: _data,
+          )
+          .copyWith(baseUrl: _combineBaseUrls(_dio.options.baseUrl, baseUrl)),
+    );
+    final _result = await _dio.fetch<Map<String, dynamic>>(_options);
+    late ApiResponse<bool> _value;
+    try {
+      _value = ApiResponse<bool>.fromJson(
+        _result.data!,
+        (json) => json as bool,
       );
     } on Object catch (e, s) {
       errorLogger?.logError(e, s, _options, response: _result);
@@ -2240,7 +2337,7 @@ class _RestClient implements RestClient {
   }
 
   @override
-  Future<ApiResponse<Map<String, dynamic>>> searchProducts(
+  Future<ApiResponse<dynamic>> searchProducts(
     String? query,
     String? category,
     double? minPrice,
@@ -2262,7 +2359,7 @@ class _RestClient implements RestClient {
     queryParameters.removeWhere((k, v) => v == null);
     final _headers = <String, dynamic>{};
     const Map<String, dynamic>? _data = null;
-    final _options = _setStreamType<ApiResponse<Map<String, dynamic>>>(
+    final _options = _setStreamType<ApiResponse<dynamic>>(
       Options(method: 'GET', headers: _headers, extra: _extra)
           .compose(
             _dio.options,
@@ -2273,11 +2370,11 @@ class _RestClient implements RestClient {
           .copyWith(baseUrl: _combineBaseUrls(_dio.options.baseUrl, baseUrl)),
     );
     final _result = await _dio.fetch<Map<String, dynamic>>(_options);
-    late ApiResponse<Map<String, dynamic>> _value;
+    late ApiResponse<dynamic> _value;
     try {
-      _value = ApiResponse<Map<String, dynamic>>.fromJson(
+      _value = ApiResponse<dynamic>.fromJson(
         _result.data!,
-        (json) => (json as Map<String, dynamic>),
+        (json) => json as dynamic,
       );
     } on Object catch (e, s) {
       errorLogger?.logError(e, s, _options, response: _result);

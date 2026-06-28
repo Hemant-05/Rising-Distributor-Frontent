@@ -1,7 +1,7 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:image_picker/image_picker.dart';
+import 'package:raising_india/comman/image_helper.dart';
 import 'package:raising_india/comman/back_button.dart';
 import 'package:raising_india/comman/simple_text_style.dart';
 import 'package:raising_india/constant/AppColour.dart';
@@ -24,7 +24,6 @@ class AddEditCategoryScreen extends StatefulWidget {
 class _AddEditCategoryScreenState extends State<AddEditCategoryScreen> {
   final _formKey = GlobalKey<FormState>();
   final _nameController = TextEditingController();
-  final ImagePicker _picker = ImagePicker();
 
   File? _imageFile;
   bool _isLoading = false;
@@ -39,16 +38,14 @@ class _AddEditCategoryScreenState extends State<AddEditCategoryScreen> {
 
   Future<void> _pickImage() async {
     try {
-      final XFile? pickedFile = await _picker.pickImage(
-        source: ImageSource.gallery,
-        maxWidth: 1024,
-        maxHeight: 1024,
-        imageQuality: 80,
+      final File? pickedFile = await ImageHelper.pickAndCropImage(
+        context: context,
+        fromCamera: false,
       );
 
       if (pickedFile != null) {
         setState(() {
-          _imageFile = File(pickedFile.path);
+          _imageFile = pickedFile;
         });
       }
     } catch (e) {
@@ -199,7 +196,35 @@ class _AddEditCategoryScreenState extends State<AddEditCategoryScreen> {
     if (_imageFile != null) {
       return ClipRRect(borderRadius: BorderRadius.circular(14), child: Image.file(_imageFile!, fit: BoxFit.cover));
     } else if (widget.isEdit && widget.category?.imageUrl != null) {
-      return ClipRRect(borderRadius: BorderRadius.circular(14), child: Image.network(widget.category!.imageUrl!, fit: BoxFit.cover, errorBuilder: (_,__,___) => _buildImagePlaceholder()));
+      return Stack(
+        fit: StackFit.expand,
+        children: [
+          ClipRRect(borderRadius: BorderRadius.circular(14), child: Image.network(widget.category!.imageUrl!, fit: BoxFit.cover, errorBuilder: (_,__,___) => _buildImagePlaceholder())),
+          Positioned(
+            top: 4,
+            right: 4,
+            child: GestureDetector(
+              onTap: () async {
+                final croppedImage = await ImageHelper.downloadAndCropImage(
+                  context: context,
+                  imageUrl: widget.category!.imageUrl!,
+                );
+                if (croppedImage != null) {
+                  setState(() => _imageFile = croppedImage);
+                }
+              },
+              child: Container(
+                padding: const EdgeInsets.all(4),
+                decoration: BoxDecoration(
+                  color: Colors.white.withOpacity(0.8),
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(Icons.crop, color: Colors.blue, size: 20),
+              ),
+            ),
+          ),
+        ],
+      );
     }
     return _buildImagePlaceholder();
   }

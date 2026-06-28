@@ -98,7 +98,6 @@ class _CouponsScreenState extends State<CouponsScreen> {
   }
 
   Widget _buildCouponCard(Coupon coupon) {
-    // Determine status logic (assuming your model has isActive and expirationDate)
     bool isExpired = false;
     if (coupon.expirationDate != null) {
       isExpired = coupon.expirationDate!.isBefore(DateTime.now());
@@ -106,258 +105,238 @@ class _CouponsScreenState extends State<CouponsScreen> {
     bool isActive = (coupon.isActive ?? true) && !isExpired;
 
     final Color statusColor = isActive ? Colors.green : Colors.red;
-    final String statusText = isActive ? 'AVAILABLE' : 'EXPIRED';
 
-    return Container(
-      margin: const EdgeInsets.only(bottom: 16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: isActive
-              ? AppColour.primary.withOpacity(0.3)
-              : Colors.grey.shade300,
-          width: 1.5,
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.grey.shade200,
-            blurRadius: 8,
-            offset: const Offset(0, 2),
+    return GestureDetector(
+      onTap: () => _showCouponDetails(coupon, isActive, statusColor),
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 12),
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: isActive ? AppColour.primary.withOpacity(0.2) : Colors.grey.shade300,
           ),
-        ],
-      ),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(16),
-        child: Stack(
-          children: [
-            // Decorative background circle
-            Positioned(
-              right: -20,
-              top: -20,
-              child: Container(
-                width: 100,
-                height: 100,
-                decoration: BoxDecoration(
-                  color: AppColour.primary.withOpacity(0.05),
-                  shape: BoxShape.circle,
-                ),
-              ),
-            ),
-
-            Padding(
-              padding: const EdgeInsets.all(20),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // --- Header: Discount Tag & Status ---
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 12,
-                          vertical: 6,
-                        ),
-                        decoration: BoxDecoration(
-                          color: AppColour.primary.withOpacity(0.1),
-                          borderRadius: BorderRadius.circular(20),
-                        ),
-                        child: Text(
-                          // Show "50% OFF" or "₹100 OFF" based on type
-                          coupon.discountType == 'PERCENTAGE'
-                              ? '${coupon.discountValue?.toStringAsFixed(0)}% OFF'
-                              : '₹${coupon.discountValue?.toStringAsFixed(0)} OFF',
-                          style: simple_text_style(
-                            color: AppColour.primary,
-                            fontSize: 12,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ),
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 10,
-                          vertical: 4,
-                        ),
-                        decoration: BoxDecoration(
-                          color: statusColor.withOpacity(0.1),
-                          borderRadius: BorderRadius.circular(12),
-                          border: Border.all(
-                            color: statusColor.withOpacity(0.3),
-                          ),
-                        ),
-                        child: Text(
-                          statusText,
-                          style: simple_text_style(
-                            color: statusColor,
-                            fontSize: 10,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-
-                  const SizedBox(height: 16),
-
-                  // --- Coupon Code Section ---
-                  Container(
-                    width: double.infinity,
-                    padding: const EdgeInsets.all(16),
-                    decoration: BoxDecoration(
-                      color: Colors.grey.shade50,
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(
-                        color: Colors.grey.shade200,
-                      ),
-                    ),
-                    child: Column(
-                      children: [
-                        Text(
-                          'COUPON CODE',
-                          style: simple_text_style(
-                            color: Colors.grey.shade600,
-                            fontSize: 11,
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
-                        const SizedBox(height: 4),
-                        GestureDetector(
-                          onLongPress: () => _copyCouponCode(coupon.code ?? ""),
-                          child: Text(
-                            coupon.code ?? "NO CODE",
-                            style: simple_text_style(
-                              color: AppColour.black,
-                              fontSize: 20,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-
-                  const SizedBox(height: 16),
-
-                  // --- Description & Terms ---
-                  if (coupon.minOrderAmount != null)
-                    Padding(
-                      padding: const EdgeInsets.only(bottom: 8.0),
-                      child: Text(
-                        "Min Order: ₹${coupon.minOrderAmount}\nMax Discount: ₹${coupon.maxDiscountAmount}",
-                        style: simple_text_style(
-                          color: Colors.grey.shade700,
-                          fontSize: 14,
-                        ),
-                      ),
-                    ),
-
-                  // Terms Row
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      // Min Order
-                      if (coupon.minOrderAmount != null)
-                        Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              'Min Order',
-                              style: simple_text_style(
-                                color: Colors.grey.shade500,
-                                fontSize: 12,
-                              ),
-                            ),
-                            Text(
-                              '₹${coupon.minOrderAmount}',
-                              style: simple_text_style(
-                                color: AppColour.black,
-                                fontWeight: FontWeight.bold,
-                                fontSize: 14,
-                              ),
-                            ),
-                          ],
-                        ),
-
-                      // Max Discount (if Percentage)
-                      if (coupon.discountType == 'PERCENTAGE' && coupon.maxDiscountAmount != null)
-                        Column(
-                          crossAxisAlignment: CrossAxisAlignment.end,
-                          children: [
-                            Text(
-                              'Max Discount',
-                              style: simple_text_style(
-                                color: Colors.grey.shade500,
-                                fontSize: 12,
-                              ),
-                            ),
-                            Text(
-                              '₹${coupon.maxDiscountAmount}',
-                              style: simple_text_style(
-                                color: AppColour.black,
-                                fontWeight: FontWeight.bold,
-                                fontSize: 14,
-                              ),
-                            ),
-                          ],
-                        ),
-                    ],
-                  ),
-
-                  const SizedBox(height: 12),
-
-                  // Expiry Date
-                  if (coupon.expirationDate != null)
-                    Align(
-                      alignment: Alignment.centerRight,
-                      child: Text(
-                        'Expires: ${DateFormat('MMM d, yyyy').format(coupon.expirationDate!)}',
-                        style: simple_text_style(
-                          color: isExpired ? Colors.red : Colors.grey.shade600,
-                          fontSize: 12,
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
-                    ),
-
-                  // --- Action Button ---
-                  if (isActive) ...[
-                    const SizedBox(height: 16),
-                    SizedBox(
-                      width: double.infinity,
-                      child: ElevatedButton(
-                        onPressed: () {
-                          if (widget.isSelectionMode) {
-                            // Return the Code to the previous screen (Cart)
-                            Navigator.pop(context, coupon.code);
-                          } else {
-                            _copyCouponCode(coupon.code ?? "");
-                          }
-                        },
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: AppColour.primary,
-                          padding: const EdgeInsets.symmetric(vertical: 12),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                        ),
-                        child: Text(
-                          widget.isSelectionMode ? 'APPLY COUPON' : 'COPY CODE',
-                          style: simple_text_style(
-                            color: Colors.white,
-                            fontSize: 14,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                      ),
-                    ),
-                  ],
-                ],
-              ),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.02),
+              blurRadius: 4,
+              offset: const Offset(0, 2),
             ),
           ],
         ),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            // Icon
+            Container(
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(
+                color: AppColour.primary.withOpacity(0.1),
+                shape: BoxShape.circle,
+              ),
+              child: Icon(Icons.local_offer, color: AppColour.primary, size: 20),
+            ),
+            const SizedBox(width: 12),
+            // Details
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    coupon.code ?? "NO CODE",
+                    style: simple_text_style(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 16,
+                      color: AppColour.black,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    coupon.discountType == 'PERCENTAGE'
+                        ? '${coupon.discountValue?.toStringAsFixed(0)}% OFF'
+                        : '₹${coupon.discountValue?.toStringAsFixed(0)} OFF',
+                    style: simple_text_style(
+                      color: Colors.green.shade700,
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            // Apply Button
+            if (isActive)
+              InkWell(
+                onTap: () {
+                  if (widget.isSelectionMode) {
+                    Navigator.pop(context, coupon.code);
+                  } else {
+                    _copyCouponCode(coupon.code ?? "");
+                  }
+                },
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                  decoration: BoxDecoration(
+                    color: AppColour.primary.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(20),
+                    border: Border.all(color: AppColour.primary),
+                  ),
+                  child: Text(
+                    widget.isSelectionMode ? 'APPLY' : 'COPY',
+                    style: simple_text_style(
+                      color: AppColour.primary,
+                      fontSize: 12,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+              )
+            else
+              Text(
+                'EXPIRED',
+                style: simple_text_style(
+                  color: Colors.red,
+                  fontSize: 10,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _showCouponDetails(Coupon coupon, bool isActive, Color statusColor) {
+    showModalBottomSheet(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) {
+        return Padding(
+          padding: const EdgeInsets.all(20.0),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Center(
+                child: Container(
+                  width: 40,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: Colors.grey.shade300,
+                    borderRadius: BorderRadius.circular(4),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 20),
+              Text(
+                'Coupon Details',
+                style: simple_text_style(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              const SizedBox(height: 16),
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: Colors.grey.shade50,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: Colors.grey.shade200),
+                ),
+                child: Column(
+                  children: [
+                    Text(
+                      coupon.code ?? "NO CODE",
+                      style: simple_text_style(
+                        color: AppColour.primary,
+                        fontSize: 24,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      coupon.discountType == 'PERCENTAGE'
+                          ? '${coupon.discountValue?.toStringAsFixed(0)}% OFF'
+                          : '₹${coupon.discountValue?.toStringAsFixed(0)} OFF',
+                      style: simple_text_style(
+                        color: Colors.green.shade700,
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 16),
+              if (coupon.minOrderAmount != null)
+                _buildDetailRow('Min Order', '₹${coupon.minOrderAmount!.toStringAsFixed(0)}'),
+              if (coupon.discountType == 'PERCENTAGE' && coupon.maxDiscountAmount != null)
+                _buildDetailRow('Max Discount', '₹${coupon.maxDiscountAmount!.toStringAsFixed(0)}'),
+              if (coupon.expirationDate != null)
+                _buildDetailRow('Expires', DateFormat('MMM d, yyyy').format(coupon.expirationDate!)),
+              const SizedBox(height: 24),
+              if (isActive)
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton(
+                    onPressed: () {
+                      Navigator.pop(context); // Close bottom sheet
+                      if (widget.isSelectionMode) {
+                        Navigator.pop(context, coupon.code);
+                      } else {
+                        _copyCouponCode(coupon.code ?? "");
+                      }
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppColour.primary,
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                    ),
+                    child: Text(
+                      widget.isSelectionMode ? 'APPLY COUPON' : 'COPY CODE',
+                      style: simple_text_style(
+                        color: Colors.white,
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildDetailRow(String label, String value) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8.0),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(
+            label,
+            style: simple_text_style(
+              color: Colors.grey.shade600,
+              fontSize: 14,
+            ),
+          ),
+          Text(
+            value,
+            style: simple_text_style(
+              color: AppColour.black,
+              fontWeight: FontWeight.bold,
+              fontSize: 14,
+            ),
+          ),
+        ],
       ),
     );
   }

@@ -170,6 +170,8 @@ class CategoryService extends ChangeNotifier {
         final String? url = await imageService.uploadImage(newImageFile);
         if (url != null) {
           imageUrl = url;
+        } else {
+          throw Exception("Image upload failed. Aborting category update.");
         }
       }
 

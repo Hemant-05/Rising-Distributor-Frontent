@@ -7,6 +7,7 @@ import 'package:raising_india/constant/AppColour.dart';
 import 'package:raising_india/data/services/coupon_service.dart';
 import 'package:raising_india/models/model/coupon.dart';
 import 'admin_create_coupon_screen.dart'; // We will create this next
+import 'package:raising_india/comman/helper_functions.dart';
 
 class AdminCouponsScreen extends StatefulWidget {
   const AdminCouponsScreen({super.key});
@@ -95,6 +96,27 @@ class _AdminCouponsScreenState extends State<AdminCouponsScreen> {
                   const SizedBox(height: 16),
                   Text("No Coupons Found", style: simple_text_style(fontSize: 18, color: Colors.grey.shade700, fontWeight: FontWeight.bold)),
                 ],
+              ),
+            );
+          }
+
+          if (isDesktop(context)) {
+            return RefreshIndicator(
+              color: AppColour.primary,
+              onRefresh: () => couponService.fetchAllCoupons(),
+              child: GridView.builder(
+                padding: const EdgeInsets.all(16).copyWith(bottom: 80),
+                gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
+                  maxCrossAxisExtent: 450,
+                  crossAxisSpacing: 16,
+                  mainAxisSpacing: 16,
+                  mainAxisExtent: 140, // Ensure height accommodates the card
+                ),
+                itemCount: couponService.coupons.length,
+                itemBuilder: (context, index) {
+                  final coupon = couponService.coupons[index];
+                  return _buildCouponCard(coupon);
+                },
               ),
             );
           }

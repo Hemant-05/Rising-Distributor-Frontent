@@ -48,7 +48,7 @@ class AuthRepository with RepoErrorHandler {
         password: password,
       );
       final response = await _client.registerAdmin(request);
-      return response.data!;
+      return response.data as Map<String, dynamic>;
     } catch (e) {
       throw handleError(e);
     }
@@ -79,7 +79,7 @@ class AuthRepository with RepoErrorHandler {
         password: password,
       );
       final response = await _client.registerUser(request);
-      return response.data!;
+      return response.data as Map<String, dynamic>;
     } catch (e) {
       throw handleError(e);
     }

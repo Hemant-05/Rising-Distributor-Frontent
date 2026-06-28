@@ -10,12 +10,41 @@ import 'package:raising_india/services/service_locator.dart';
 @pragma('vm:entry-point')
 Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
   await Firebase.initializeApp();
-  log('🔔 Background message received: ${message.notification?.title}');
+  log('dY"" Background message received: ${message.data}');
+
+  // Show notification for data-only messages in background
+  if (message.notification == null) {
+    String? title = message.data['title'] ?? message.data['header'];
+    String? body = message.data['body'] ?? message.data['message'];
+
+    if (title != null || body != null) {
+      final FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin =
+          FlutterLocalNotificationsPlugin();
+      await flutterLocalNotificationsPlugin.show(
+        message.hashCode,
+        title,
+        body,
+        const NotificationDetails(
+          android: AndroidNotificationDetails(
+            'high_importance_channel',
+            'High Importance Notifications',
+            icon: '@mipmap/ic_launcher',
+            importance: Importance.max,
+            priority: Priority.high,
+          ),
+          iOS: DarwinNotificationDetails(),
+        ),
+      );
+    }
+  }
 }
 
 class NotificationBackgroundService {
-  static final FirebaseMessaging _firebaseMessaging = FirebaseMessaging.instance;
-  static final FlutterLocalNotificationsPlugin _flutterLocalNotificationsPlugin = FlutterLocalNotificationsPlugin();
+  static final FirebaseMessaging _firebaseMessaging =
+      FirebaseMessaging.instance;
+  static final FlutterLocalNotificationsPlugin
+  _flutterLocalNotificationsPlugin = FlutterLocalNotificationsPlugin();
+  static bool _tokenRefreshListenerRegistered = false;
 
   // Note: We don't instantiate AuthService in the constructor anymore to avoid startup crashes
 
@@ -26,18 +55,20 @@ class NotificationBackgroundService {
 
     // B. Setup Local Notifications (for foreground pop-ups)
     const AndroidInitializationSettings initializationSettingsAndroid =
-    AndroidInitializationSettings('@mipmap/ic_launcher');
+        AndroidInitializationSettings('@mipmap/ic_launcher');
 
-    const DarwinInitializationSettings initializationSettingsDarwin = DarwinInitializationSettings(
-      requestAlertPermission: true,
-      requestBadgePermission: true,
-      requestSoundPermission: true,
-    );
+    const DarwinInitializationSettings initializationSettingsDarwin =
+        DarwinInitializationSettings(
+          requestAlertPermission: true,
+          requestBadgePermission: true,
+          requestSoundPermission: true,
+        );
 
-    const InitializationSettings initializationSettings = InitializationSettings(
-      android: initializationSettingsAndroid,
-      iOS: initializationSettingsDarwin,
-    );
+    const InitializationSettings initializationSettings =
+        InitializationSettings(
+          android: initializationSettingsAndroid,
+          iOS: initializationSettingsDarwin,
+        );
 
     await _flutterLocalNotificationsPlugin.initialize(
       initializationSettings,
@@ -56,9 +87,12 @@ class NotificationBackgroundService {
     // E. Setup Foreground Listeners
     _setupForegroundListeners();
 
-    // F. Subscribe to topic (Fast operation, safe to await)
+    // F. Keep backend FCM tokens fresh when Firebase rotates them.
+    _setupTokenRefreshListener();
+
+    // G. Subscribe to topic (Fast operation, safe to await)
     await _firebaseMessaging.subscribeToTopic('all_users');
-    }
+  }
 
   // 2. Request Permission
   static Future<void> _requestPermission() async {
@@ -68,6 +102,14 @@ class NotificationBackgroundService {
       sound: true,
       provisional: false,
     );
+
+    // Explicitly request permission for Android 13+ via local notifications plugin
+    await _flutterLocalNotificationsPlugin
+        .resolvePlatformSpecificImplementation<
+          AndroidFlutterLocalNotificationsPlugin
+        >()
+        ?.requestNotificationsPermission();
+
     log('User granted permission: ${settings.authorizationStatus}');
   }
 
@@ -81,7 +123,9 @@ class NotificationBackgroundService {
     );
 
     await _flutterLocalNotificationsPlugin
-        .resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>()
+        .resolvePlatformSpecificImplementation<
+          AndroidFlutterLocalNotificationsPlugin
+        >()
         ?.createNotificationChannel(channel);
   }
 
@@ -90,9 +134,7 @@ class NotificationBackgroundService {
     // Foreground Message
     FirebaseMessaging.onMessage.listen((RemoteMessage message) {
       log('Got a message whilst in the foreground!');
-      if (message.notification != null) {
-        _showLocalNotification(message);
-      }
+      _showLocalNotification(message);
     });
 
     // App Opened from Background
@@ -102,17 +144,34 @@ class NotificationBackgroundService {
     });
   }
 
+  static void _setupTokenRefreshListener() {
+    if (_tokenRefreshListenerRegistered) return;
+    _tokenRefreshListenerRegistered = true;
+
+    _firebaseMessaging.onTokenRefresh.listen(
+      syncTokenInBackground,
+      onError: (Object error, StackTrace stackTrace) {
+        log('FCM token refresh listener failed: $error');
+      },
+    );
+  }
+
   // 5. Show Local Notification
   static void _showLocalNotification(RemoteMessage message) {
     RemoteNotification? notification = message.notification;
-    AndroidNotification? android = message.notification?.android;
 
-    if (notification != null && android != null) {
+    // Support for data-only payloads
+    String? title =
+        notification?.title ?? message.data['title'] ?? message.data['header'];
+    String? body =
+        notification?.body ?? message.data['body'] ?? message.data['message'];
+
+    if (title != null || body != null) {
       _flutterLocalNotificationsPlugin.show(
-        notification.hashCode,
-        notification.title,
-        notification.body,
-        NotificationDetails(
+        message.hashCode,
+        title,
+        body,
+        const NotificationDetails(
           android: AndroidNotificationDetails(
             'high_importance_channel',
             'High Importance Notifications',
@@ -120,7 +179,7 @@ class NotificationBackgroundService {
             importance: Importance.max,
             priority: Priority.high,
           ),
-          iOS: const DarwinNotificationDetails(),
+          iOS: DarwinNotificationDetails(),
         ),
         payload: message.data.toString(),
       );
@@ -139,7 +198,7 @@ class NotificationBackgroundService {
     }
   }
 
-  // ✅ NEW: Call this explicitly AFTER the user logs in
+  // Call this explicitly after the user logs in
   static Future<void> syncFCMTokenWithServer() async {
     try {
       String? token = await _firebaseMessaging.getToken().timeout(

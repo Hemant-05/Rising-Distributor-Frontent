@@ -42,34 +42,32 @@ class DefaultFirebaseOptions {
 
   static const FirebaseOptions web = FirebaseOptions(
     apiKey: 'AIzaSyBSMbXXoONc8Y1vygJ3BWtVczH7_RdNNHU',
-    appId: '1:462845774640:web:d4e9330f4573ddd026d6f5',
+    appId: '1:462845774640:web:ae9265d8cf08be1926d6f5',
     messagingSenderId: '462845774640',
     projectId: 'rising-distributor-44cb3',
     authDomain: 'rising-distributor-44cb3.firebaseapp.com',
     storageBucket: 'rising-distributor-44cb3.firebasestorage.app',
-    measurementId: 'G-E32QLCHXS0',
+    measurementId: 'G-F0E8KLSFNS',
   );
 
   static const FirebaseOptions android = FirebaseOptions(
     apiKey: 'AIzaSyBytVjMcfNK5s-S54nT15AKrzbyAI6be-U',
-    appId: '1:462845774640:android:4ed9b8884b0ed06526d6f5',
+    appId: '1:462845774640:android:07d3f2915592ce0226d6f5',
     messagingSenderId: '462845774640',
     projectId: 'rising-distributor-44cb3',
     storageBucket: 'rising-distributor-44cb3.firebasestorage.app',
   );
-
   static const FirebaseOptions ios = FirebaseOptions(
     apiKey: 'AIzaSyAz1hqR4hzGwvOsIrPlbxJmNW71STjTGo8',
-    appId: '1:462845774640:ios:6c3bf4720dec22c026d6f5',
+    appId: '1:462845774640:ios:54cf803cccae40f626d6f5',
     messagingSenderId: '462845774640',
     projectId: 'rising-distributor-44cb3',
     storageBucket: 'rising-distributor-44cb3.firebasestorage.app',
     iosBundleId: 'com.rising.raisingIndia',
   );
-
   static const FirebaseOptions macos = FirebaseOptions(
     apiKey: 'AIzaSyAz1hqR4hzGwvOsIrPlbxJmNW71STjTGo8',
-    appId: '1:462845774640:ios:63f0487a3601491d26d6f5',
+    appId: '1:462845774640:ios:9cf0c006eaed6ad926d6f5',
     messagingSenderId: '462845774640',
     projectId: 'rising-distributor-44cb3',
     storageBucket: 'rising-distributor-44cb3.firebasestorage.app',
@@ -78,12 +76,11 @@ class DefaultFirebaseOptions {
 
   static const FirebaseOptions windows = FirebaseOptions(
     apiKey: 'AIzaSyBSMbXXoONc8Y1vygJ3BWtVczH7_RdNNHU',
-    appId: '1:462845774640:web:1c8f0b93c5cfc44a26d6f5',
+    appId: '1:462845774640:web:68b233086cbac02526d6f5',
     messagingSenderId: '462845774640',
     projectId: 'rising-distributor-44cb3',
     authDomain: 'rising-distributor-44cb3.firebaseapp.com',
     storageBucket: 'rising-distributor-44cb3.firebasestorage.app',
-    measurementId: 'G-NTYFW2C0VZ',
+    measurementId: 'G-Q9H2VJE9KY',
   );
-
 }

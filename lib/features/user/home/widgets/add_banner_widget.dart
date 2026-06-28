@@ -22,11 +22,13 @@ class _AddBannerWidgetState extends State<AddBannerWidget> {
     return Consumer<BannerService>(
       builder: (context, bannerService, child) {
         if (bannerService.isLoading && bannerService.homeBanners.isEmpty) {
-          return SizedBox(
-            height: 150,
-            child: Center(child: CircularProgressIndicator(
-              color: AppColour.primary,
-            )),
+          return AspectRatio(
+            aspectRatio: 16 / 9,
+            child: Center(
+              child: CircularProgressIndicator(
+                color: AppColour.primary,
+              ),
+            ),
           );
         }
 
@@ -52,7 +54,7 @@ class _AddBannerWidgetState extends State<AddBannerWidget> {
                       children: [
                         CachedNetworkImage(
                           imageUrl: img,
-                          fit: BoxFit.cover,
+                          fit: BoxFit.fill,
                           placeholder: (_, __) => Container(color: Colors.grey.shade100),
                           errorWidget: (_, __, ___) => Container(
                             color: Colors.grey.shade200,
@@ -63,7 +65,7 @@ class _AddBannerWidgetState extends State<AddBannerWidget> {
                     );
                   },
                   options: CarouselOptions(
-                    height: 150,
+                    aspectRatio: 16 / 9,
                     viewportFraction: 0.92,
                     enlargeCenterPage: true,
                     enlargeFactor: 0.16,

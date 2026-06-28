@@ -30,6 +30,29 @@ class UserService extends ChangeNotifier {
     }
   }
 
+  Future<String?> sendMobileOtp(String mobileNumber) async {
+    try {
+      await _repo.sendMobileOtp(mobileNumber);
+      return null;
+    } on AppError catch (e) {
+      return e.message;
+    } catch (e) {
+      return "Failed to send OTP.";
+    }
+  }
+
+  Future<String?> verifyMobileOtp(String mobileNumber, String otp) async {
+    try {
+      await _repo.verifyMobileOtp(mobileNumber, otp);
+      await loadProfile();
+      return null;
+    } on AppError catch (e) {
+      return e.message;
+    } catch (e) {
+      return "Failed to verify OTP.";
+    }
+  }
+
   Future<String?> verifyTruecaller(String authCode, String codeVerifier) async {
     try {
       await _repo.verifyTruecaller(authCode, codeVerifier);

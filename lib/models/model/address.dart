@@ -2,7 +2,7 @@ import 'package:json_annotation/json_annotation.dart';
 
 part 'address.g.dart';
 
-@JsonSerializable()
+@JsonSerializable(includeIfNull: false)
 class Address {
   final int? id;
   final String? userId;
@@ -15,7 +15,10 @@ class Address {
   final double? latitude;
   final double? longitude;
   final String? zipCode;
+  
+  @JsonKey(name: 'isPrimary')
   final bool? primary;
+
 
   Address({
     this.id,

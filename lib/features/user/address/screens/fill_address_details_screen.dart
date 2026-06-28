@@ -20,8 +20,20 @@ class FillAddressDetailsScreen extends StatefulWidget {
 class _FillAddressDetailsScreenState extends State<FillAddressDetailsScreen> {
   final TextEditingController titleController = TextEditingController();
   final TextEditingController recipientNameController = TextEditingController();
-  final TextEditingController recipientPhoneController =
-      TextEditingController();
+  final TextEditingController recipientPhoneController = TextEditingController();
+  final TextEditingController streetController = TextEditingController();
+  final TextEditingController cityController = TextEditingController();
+  final TextEditingController stateController = TextEditingController();
+  final TextEditingController zipController = TextEditingController();
+
+  @override
+  void initState() {
+    super.initState();
+    streetController.text = widget.data['street'] ?? '';
+    cityController.text = widget.data['city'] ?? '';
+    stateController.text = widget.data['state'] ?? '';
+    zipController.text = widget.data['zipCode'] ?? '';
+  }
 
   bool _isLoading = false;
   bool _isPrimary = false;
@@ -49,15 +61,16 @@ class _FillAddressDetailsScreenState extends State<FillAddressDetailsScreen> {
     // Create Address Model Object
     // Assuming your AddressModel has a constructor or factory like this:
     final newAddress = Address(
+      userId: widget.data['userId'],
       title: title,
       latitude: widget.data['latitude'],
       longitude: widget.data['longitude'],
       recipientName: recipientName,
       phoneNumber: recipientPhone,
-      streetAddress: widget.data['street'],
-      city: widget.data['city'],
-      state: widget.data['state'],
-      zipCode: widget.data['zipCode'],
+      streetAddress: streetController.text.trim(),
+      city: cityController.text.trim(),
+      state: stateController.text.trim(),
+      zipCode: zipController.text.trim(),
       primary: _isPrimary,
     );
 
@@ -112,6 +125,18 @@ class _FillAddressDetailsScreenState extends State<FillAddressDetailsScreen> {
               const SizedBox(height: 10),
               _buildTextField(recipientPhoneController, 'Number'),
               const SizedBox(height: 10),
+              _buildTextField(streetController, 'Street Address (House No, Building, Area)'),
+              const SizedBox(height: 10),
+              Row(
+                children: [
+                  Expanded(child: _buildTextField(cityController, 'City')),
+                  const SizedBox(width: 10),
+                  Expanded(child: _buildTextField(stateController, 'State')),
+                ],
+              ),
+              const SizedBox(height: 10),
+              _buildTextField(zipController, 'Pincode / Zip Code'),
+              const SizedBox(height: 20),
               GestureDetector(
                 onTap: () {
                   setState(() => _isPrimary = !_isPrimary);

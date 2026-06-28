@@ -8,6 +8,7 @@ import 'package:raising_india/data/services/review_service.dart';
 import 'package:raising_india/models/dto/admin_order_review_dto.dart';
 import 'package:raising_india/models/model/product_review.dart';
 import 'package:raising_india/models/model/service_review.dart';
+import 'package:raising_india/comman/helper_functions.dart';
 
 class AdminReviewsScreen extends StatefulWidget {
   const AdminReviewsScreen({super.key});
@@ -116,15 +117,31 @@ class _AdminReviewsScreenState extends State<AdminReviewsScreen> with TickerProv
         opacity: _fadeAnimation,
         child: Column(
           children: [
-            _buildStatsHeader(list),
-            _buildSearchSection(),
+            isDesktop(context)
+                ? Center(child: ConstrainedBox(constraints: const BoxConstraints(maxWidth: 900), child: _buildStatsHeader(list)))
+                : _buildStatsHeader(list),
+            isDesktop(context)
+                ? Center(child: ConstrainedBox(constraints: const BoxConstraints(maxWidth: 900), child: _buildSearchSection()))
+                : _buildSearchSection(),
             Expanded(
-              child: ListView.builder(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                physics: const BouncingScrollPhysics(),
-                itemCount: list.length,
-                itemBuilder: (context, index) => _buildOrderReviewCard(list[index]),
-              ),
+              child: isDesktop(context)
+                  ? Center(
+                      child: ConstrainedBox(
+                        constraints: const BoxConstraints(maxWidth: 900),
+                        child: ListView.builder(
+                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                          physics: const BouncingScrollPhysics(),
+                          itemCount: list.length,
+                          itemBuilder: (context, index) => _buildOrderReviewCard(list[index]),
+                        ),
+                      ),
+                    )
+                  : ListView.builder(
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                      physics: const BouncingScrollPhysics(),
+                      itemCount: list.length,
+                      itemBuilder: (context, index) => _buildOrderReviewCard(list[index]),
+                    ),
             ),
           ],
         ),

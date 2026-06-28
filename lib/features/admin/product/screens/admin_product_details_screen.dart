@@ -11,6 +11,8 @@ import 'package:raising_india/data/services/image_service.dart';
 import 'package:raising_india/data/services/product_service.dart';
 import 'package:raising_india/data/services/admin_service.dart'; // ✅ Ensure AdminService is imported
 import 'package:raising_india/features/admin/services/admin_image_service.dart';
+import 'package:raising_india/features/admin/widgets/admin_responsive.dart';
+import 'package:raising_india/comman/image_helper.dart';
 import 'package:raising_india/models/model/product.dart';
 import '../../../../models/model/brand.dart';
 import '../../../../models/model/category.dart';
@@ -136,6 +138,26 @@ class _AdminProductDetailScreenState extends State<AdminProductDetailScreen>
         _hasUnsavedChanges = true;
       });
     }
+  }
+
+  void _moveExistingImage(int index, int direction) {
+    final newIndex = index + direction;
+    if (newIndex < 0 || newIndex >= photos_list.length) return;
+    setState(() {
+      final image = photos_list.removeAt(index);
+      photos_list.insert(newIndex, image);
+      _hasUnsavedChanges = true;
+    });
+  }
+
+  void _moveNewImage(int index, int direction) {
+    final newIndex = index + direction;
+    if (newIndex < 0 || newIndex >= photos_files_list.length) return;
+    setState(() {
+      final image = photos_files_list.removeAt(index);
+      photos_files_list.insert(newIndex, image);
+      _hasUnsavedChanges = true;
+    });
   }
 
   @override
@@ -411,11 +433,14 @@ class _AdminProductDetailScreenState extends State<AdminProductDetailScreen>
             leading: const Icon(Icons.photo),
             title: Text('Pick from gallery', style: simple_text_style()),
             onTap: () async {
-              final image = await adminImageService.pickFromGallery();
-              if (image != null) {
+              final images = await ImageHelper.pickAndCropMultipleImages(
+                context: context,
+                fromCamera: false,
+              );
+              if (images.isNotEmpty) {
                 setState(() {
                   _hasUnsavedChanges = true;
-                  photos_files_list.add(image);
+                  photos_files_list.addAll(images);
                 });
               }
               Navigator.pop(ctx);
@@ -425,11 +450,14 @@ class _AdminProductDetailScreenState extends State<AdminProductDetailScreen>
             leading: const Icon(Icons.camera_alt),
             title: Text('Take a photo', style: simple_text_style()),
             onTap: () async {
-              final image = await adminImageService.pickFromCamera();
-              if (image != null) {
+              final images = await ImageHelper.pickAndCropMultipleImages(
+                context: context,
+                fromCamera: true,
+              );
+              if (images.isNotEmpty) {
                 setState(() {
                   _hasUnsavedChanges = true;
-                  photos_files_list.add(image);
+                  photos_files_list.addAll(images);
                 });
               }
               Navigator.pop(ctx);
@@ -618,25 +646,61 @@ class _AdminProductDetailScreenState extends State<AdminProductDetailScreen>
       opacity: _fadeAnimation,
       child: ScaleTransition(
         scale: _scaleAnimation,
-        child: SingleChildScrollView(
-          physics: const BouncingScrollPhysics(),
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            children: [
-              _buildProductImagesSection(),
-              const SizedBox(height: 20),
-              _buildBasicInfoSection(),
-              const SizedBox(height: 20),
-              _buildPricingSection(),
-              const SizedBox(height: 20),
-              _buildStockManagementSection(),
-              const SizedBox(height: 20),
-              _buildStatusSection(),
-              const SizedBox(height: 32),
-              _buildSaveButton(),
-              const SizedBox(height: 20),
-            ],
-          ),
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            final isDesktop =
+                constraints.maxWidth >= AdminResponsive.desktopBreakpoint;
+            final leftColumn = Column(
+              children: [
+                _buildProductImagesSection(),
+                const SizedBox(height: 20),
+                _buildBasicInfoSection(),
+                const SizedBox(height: 20),
+                _buildStatusSection(),
+              ],
+            );
+            final rightColumn = Column(
+              children: [
+                _buildPricingSection(),
+                const SizedBox(height: 20),
+                _buildStockManagementSection(),
+                const SizedBox(height: 24),
+                _buildSaveButton(),
+              ],
+            );
+
+            return SingleChildScrollView(
+              physics: const BouncingScrollPhysics(),
+              child: AdminPageShell(
+                padding: EdgeInsets.all(isDesktop ? 24 : 16),
+                child: isDesktop
+                    ? Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Expanded(flex: 3, child: leftColumn),
+                          const SizedBox(width: 24),
+                          Expanded(flex: 2, child: rightColumn),
+                        ],
+                      )
+                    : Column(
+                        children: [
+                          _buildProductImagesSection(),
+                          const SizedBox(height: 20),
+                          _buildBasicInfoSection(),
+                          const SizedBox(height: 20),
+                          _buildPricingSection(),
+                          const SizedBox(height: 20),
+                          _buildStockManagementSection(),
+                          const SizedBox(height: 20),
+                          _buildStatusSection(),
+                          const SizedBox(height: 32),
+                          _buildSaveButton(),
+                          const SizedBox(height: 20),
+                        ],
+                      ),
+              ),
+            );
+          },
         ),
       ),
     );
@@ -770,6 +834,52 @@ class _AdminProductDetailScreenState extends State<AdminProductDetailScreen>
                               ),
                             ),
                             Positioned(
+                              top: 2,
+                              right: 2,
+                              child: InkWell(
+                                onTap: () async {
+                                  final croppedImage =
+                                      await ImageHelper.downloadAndCropImage(
+                                        context: context,
+                                        imageUrl: photos_list[index],
+                                      );
+                                  if (croppedImage != null) {
+                                    setState(() {
+                                      deleted_photos_list.add(
+                                        photos_list[index],
+                                      );
+                                      _hasUnsavedChanges = true;
+                                      photos_list.removeAt(index);
+                                      photos_files_list.add(croppedImage);
+                                    });
+                                  }
+                                },
+                                child: Container(
+                                  padding: const EdgeInsets.all(2),
+                                  decoration: BoxDecoration(
+                                    color: Colors.white.withOpacity(0.8),
+                                    shape: BoxShape.circle,
+                                  ),
+                                  child: const Icon(
+                                    Icons.crop,
+                                    color: Colors.blue,
+                                    size: 18,
+                                  ),
+                                ),
+                              ),
+                            ),
+                            Positioned(
+                              bottom: 0,
+                              left: 0,
+                              child: _buildImageReorderControls(
+                                index: index,
+                                itemCount: photos_list.length,
+                                onMoveLeft: () => _moveExistingImage(index, -1),
+                                onMoveRight: () => _moveExistingImage(index, 1),
+                              ),
+                            ),
+
+                            Positioned(
                               bottom: 0,
                               right: 0,
                               child: InkWell(
@@ -860,6 +970,16 @@ class _AdminProductDetailScreenState extends State<AdminProductDetailScreen>
                         ),
                         Positioned(
                           bottom: 0,
+                          left: 0,
+                          child: _buildImageReorderControls(
+                            index: index,
+                            itemCount: photos_files_list.length,
+                            onMoveLeft: () => _moveNewImage(index, -1),
+                            onMoveRight: () => _moveNewImage(index, 1),
+                          ),
+                        ),
+                        Positioned(
+                          bottom: 0,
                           right: 0,
                           child: InkWell(
                             onTap: () {
@@ -879,6 +999,51 @@ class _AdminProductDetailScreenState extends State<AdminProductDetailScreen>
             ),
           },
         ],
+      ),
+    );
+  }
+
+  Widget _buildImageReorderControls({
+    required int index,
+    required int itemCount,
+    required VoidCallback onMoveLeft,
+    required VoidCallback onMoveRight,
+  }) {
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white.withOpacity(0.9),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          _tinyMoveButton(
+            icon: Icons.chevron_left,
+            onPressed: index > 0 ? onMoveLeft : null,
+          ),
+          _tinyMoveButton(
+            icon: Icons.chevron_right,
+            onPressed: index < itemCount - 1 ? onMoveRight : null,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _tinyMoveButton({
+    required IconData icon,
+    required VoidCallback? onPressed,
+  }) {
+    return SizedBox(
+      width: 26,
+      height: 26,
+      child: IconButton(
+        padding: EdgeInsets.zero,
+        constraints: const BoxConstraints(),
+        icon: Icon(icon, size: 18),
+        color: AppColour.primary,
+        disabledColor: Colors.grey.shade300,
+        onPressed: onPressed,
       ),
     );
   }
@@ -1012,16 +1177,12 @@ class _AdminProductDetailScreenState extends State<AdminProductDetailScreen>
             Container(
               padding: const EdgeInsets.all(8),
               decoration: BoxDecoration(
-                color: available
-                    ? Colors.green.shade100
-                    : Colors.red.shade100,
+                color: available ? Colors.green.shade100 : Colors.red.shade100,
                 borderRadius: BorderRadius.circular(10),
               ),
               child: Icon(
                 available ? Icons.check_circle : Icons.cancel,
-                color: available
-                    ? Colors.green.shade600
-                    : Colors.red.shade600,
+                color: available ? Colors.green.shade600 : Colors.red.shade600,
                 size: 20,
               ),
             ),
@@ -1038,9 +1199,7 @@ class _AdminProductDetailScreenState extends State<AdminProductDetailScreen>
                     ),
                   ),
                   Text(
-                    available
-                        ? 'Available for sale'
-                        : 'Currently unavailable',
+                    available ? 'Available for sale' : 'Currently unavailable',
                     style: simple_text_style(
                       color: Colors.grey.shade600,
                       fontSize: 12,
@@ -1182,9 +1341,12 @@ class _AdminProductDetailScreenState extends State<AdminProductDetailScreen>
       builder: (context, categoryService, _) {
         if (categoryService.isLoading) {
           return Center(
-              child: LinearProgressIndicator(color: AppColour.primary));
+            child: LinearProgressIndicator(color: AppColour.primary),
+          );
         }
-        final leafNodeCategories = _getAllLeafCategories(categoryService.categories);
+        final leafNodeCategories = _getAllLeafCategories(
+          categoryService.categories,
+        );
         Category c = widget.product.category!;
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -1213,11 +1375,12 @@ class _AdminProductDetailScreenState extends State<AdminProductDetailScreen>
                   Expanded(
                     // 1. Specify the generic type <int> since your ID is an integer
                     child: DropdownMenu<int>(
-                      onSelected: (selectedId) { // 2. This is the ID, not the index!
+                      onSelected: (selectedId) {
+                        // 2. This is the ID, not the index!
                         if (selectedId != null) {
                           // 3. Find the category by matching the ID
                           selectedCategory = leafNodeCategories.firstWhere(
-                                (cat) => cat.id == selectedId,
+                            (cat) => cat.id == selectedId,
                             orElse: () => leafNodeCategories.first,
                           );
                         }
@@ -1245,11 +1408,13 @@ class _AdminProductDetailScreenState extends State<AdminProductDetailScreen>
                       initialSelection: c.id,
                       dropdownMenuEntries: leafNodeCategories
                           .map(
-                            (category) => DropdownMenuEntry<int>( // Specify type here too
-                          value: category.id!, // This is what gets passed to onSelected
-                          label: category.name!,
-                        ),
-                      )
+                            (category) => DropdownMenuEntry<int>(
+                              // Specify type here too
+                              value: category
+                                  .id!, // This is what gets passed to onSelected
+                              label: category.name!,
+                            ),
+                          )
                           .toList(),
                     ),
                   ),
@@ -1271,10 +1436,12 @@ class _AdminProductDetailScreenState extends State<AdminProductDetailScreen>
       builder: (context, brandService, _) {
         if (brandService.isLoading) {
           return Center(
-              child: LinearProgressIndicator(color: AppColour.primary));
+            child: LinearProgressIndicator(color: AppColour.primary),
+          );
         }
 
-        Brand? b = widget.product.brand ??
+        Brand? b =
+            widget.product.brand ??
             (brandService.brands.isNotEmpty ? brandService.brands.first : null);
 
         return Column(
@@ -1304,11 +1471,12 @@ class _AdminProductDetailScreenState extends State<AdminProductDetailScreen>
                   Expanded(
                     // 1. Specify the type <int> since your Brand ID is an integer
                     child: DropdownMenu<int>(
-                      onSelected: (selectedId) { // 2. This is the Brand ID!
+                      onSelected: (selectedId) {
+                        // 2. This is the Brand ID!
                         if (selectedId != null) {
                           // 3. Find the brand by matching the ID
                           selectedBrand = brandService.brands.firstWhere(
-                                (brand) => brand.id == selectedId,
+                            (brand) => brand.id == selectedId,
                             orElse: () => brandService.brands.first,
                           );
                         }
@@ -1336,11 +1504,13 @@ class _AdminProductDetailScreenState extends State<AdminProductDetailScreen>
                       initialSelection: b?.id,
                       dropdownMenuEntries: brandService.brands
                           .map(
-                            (brand) => DropdownMenuEntry<int>( // Specify type here too
-                          value: brand.id!, // This is what gets passed to onSelected
-                          label: brand.name!,
-                        ),
-                      )
+                            (brand) => DropdownMenuEntry<int>(
+                              // Specify type here too
+                              value: brand
+                                  .id!, // This is what gets passed to onSelected
+                              label: brand.name!,
+                            ),
+                          )
                           .toList(),
                     ),
                   ),

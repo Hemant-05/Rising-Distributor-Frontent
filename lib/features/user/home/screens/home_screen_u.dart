@@ -13,6 +13,7 @@ import 'package:raising_india/data/services/cart_service.dart';
 import 'package:raising_india/data/services/category_service.dart';
 import 'package:raising_india/data/services/order_service.dart';
 import 'package:raising_india/data/services/product_service.dart';
+import 'package:raising_india/data/services/brand_service.dart';
 import 'package:raising_india/data/services/wishlist_service.dart';
 
 // Screens & Widgets
@@ -44,6 +45,7 @@ class _HomeScreenUState extends State<HomeScreenU> {
       context.read<ProductService>().fetchBestSelling();
       context.read<BannerService>().loadHomeBanners();
       context.read<CategoryService>().loadCategories();
+      context.read<BrandService>().fetchBrands();
       var authService = context.read<AuthService>();
 
       // Load orders only if user is logged in
@@ -81,6 +83,7 @@ class _HomeScreenUState extends State<HomeScreenU> {
       productService.fetchAvailableProducts(),
       productService.fetchBestSelling(),
       categoryService.loadCategories(),
+      context.read<BrandService>().fetchBrands(),
       if (authService.isCustomer) cartService.fetchCart(),
       orderService.fetchMyOrders(),
       addressService.fetchAddresses(),
@@ -98,64 +101,85 @@ class _HomeScreenUState extends State<HomeScreenU> {
         color: AppColour.primary,
         backgroundColor: AppColour.white,
         onRefresh: _onRefresh,
-        child: CustomScrollView(
-          physics: const BouncingScrollPhysics(),
-          slivers: [
-            // Sticky Search Bar Background wrapper
-            SliverToBoxAdapter(
-              child: Container(
-                color: Colors.white,
-                padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
-                child: search_bar_widget(context),
-              ),
-            ),
-
-            // ✅ New: Explore Categories Horizontal Strip
-            SliverToBoxAdapter(child: _buildCategoriesSection()),
-
-            const SliverToBoxAdapter(child: SizedBox(height: 16)),
-            const SliverToBoxAdapter(child: AddBannerWidget()),
-
-            const SliverToBoxAdapter(child: SizedBox(height: 24)),
-            SliverToBoxAdapter(child: _buildOngoingOrdersSection()),
-
-            // Best Sellers Shelf
-            SliverToBoxAdapter(
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text('Bestsellers', style: simple_text_style(fontSize: 18, fontWeight: FontWeight.bold)),
-                    Text('See All', style: simple_text_style(color: AppColour.primary, fontWeight: FontWeight.bold, fontSize: 13)),
-                  ],
+        child: Consumer<ProductService>(
+          builder: (context, productService, _) {
+            if (!productService.isLoading && productService.products.isEmpty && productService.bestSelling.isEmpty) {
+              return SingleChildScrollView(
+                physics: const AlwaysScrollableScrollPhysics(),
+                child: Container(
+                  height: MediaQuery.of(context).size.height * 0.7,
+                  child: Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(Icons.inventory_2_outlined, size: 100, color: Colors.grey.shade300),
+                        const SizedBox(height: 16),
+                        Text('No items listed yet', style: simple_text_style(fontSize: 18, color: Colors.grey.shade600, fontWeight: FontWeight.bold)),
+                        const SizedBox(height: 8),
+                        Text('Check back later for new products', style: simple_text_style(fontSize: 14, color: Colors.grey)),
+                      ],
+                    ),
+                  ),
                 ),
-              ),
-            ),
-            SliverToBoxAdapter(child: buildBestProductsHorizontal(context)),
+              );
+            }
+            return CustomScrollView(
+              physics: const BouncingScrollPhysics(),
+              slivers: [
+                // Sticky Search Bar Background wrapper
+                SliverToBoxAdapter(
+                  child: Container(
+                    color: Colors.white,
+                    padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+                    child: search_bar_widget(context),
+                  ),
+                ),
 
-            const SliverToBoxAdapter(child: SizedBox(height: 24)),
+                // ✅ New: Explore Brands Horizontal Strip
+                SliverToBoxAdapter(child: _buildBrandsSection()),
 
-            // All Products Grid
-            SliverToBoxAdapter(
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                child: Text('More to Explore', style: simple_text_style(fontSize: 18, fontWeight: FontWeight.bold)),
-              ),
-            ),
-            Consumer<ProductService>(
-              builder: (context, productService, _) {
-                if (productService.isLoading && productService.products.isEmpty) {
-                  return SliverToBoxAdapter(child: SizedBox(height: 180, child: Center(child: CircularProgressIndicator(color: AppColour.primary))));
-                }
-                return SliverPadding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16),
-                  sliver: SliverToBoxAdapter(child: ProductGrid(products: productService.products)),
-                );
-              },
-            ),
-            const SliverToBoxAdapter(child: SizedBox(height: 100)), // Space for cart banner
-          ],
+                const SliverToBoxAdapter(child: SizedBox(height: 16)),
+                const SliverToBoxAdapter(child: AddBannerWidget()),
+
+                // Best Sellers Shelf
+                if (productService.bestSelling.isNotEmpty) ...[
+                  SliverToBoxAdapter(
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text('Bestsellers', style: simple_text_style(fontSize: 18, fontWeight: FontWeight.bold)),
+                          Text('See All', style: simple_text_style(color: AppColour.primary, fontWeight: FontWeight.bold, fontSize: 13)),
+                        ],
+                      ),
+                    ),
+                  ),
+                  SliverToBoxAdapter(child: buildBestProductsHorizontal(context)),
+                  const SliverToBoxAdapter(child: SizedBox(height: 24)),
+                ],
+
+                // All Products Grid
+                if (productService.products.isNotEmpty) ...[
+                  SliverToBoxAdapter(
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                      child: Text('More to Explore', style: simple_text_style(fontSize: 18, fontWeight: FontWeight.bold)),
+                    ),
+                  ),
+                  SliverPadding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    sliver: SliverToBoxAdapter(child: ProductGrid(products: productService.products)),
+                  ),
+                ],
+                
+                if (productService.isLoading && productService.products.isEmpty)
+                  SliverToBoxAdapter(child: SizedBox(height: 180, child: Center(child: CircularProgressIndicator(color: AppColour.primary)))),
+                  
+                const SliverToBoxAdapter(child: SizedBox(height: 100)), // Space for cart banner
+              ],
+            );
+          },
         ),
       ),
     );
@@ -203,23 +227,22 @@ class _HomeScreenUState extends State<HomeScreenU> {
     );
   }
 
-  Widget _buildCategoriesSection() {
-    return Consumer<CategoryService>(
-      builder: (context, categoryService, _) {
-        if (categoryService.isLoading && categoryService.categories.isEmpty) {
+  Widget _buildBrandsSection() {
+    return Consumer<BrandService>(
+      builder: (context, brandService, _) {
+        if (brandService.isLoading && brandService.brands.isEmpty) {
           return const SizedBox.shrink();
         }
 
-        final rootCategories = categoryService.categories.where((c) =>
-        c.parentCategory == null).toList();
-        if (rootCategories.isEmpty) return const SizedBox.shrink();
+        final brands = brandService.brands;
+        if (brands.isEmpty) return const SizedBox.shrink();
 
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16),
-              child: Text('Explore by Category', style: simple_text_style(
+              child: Text('Explore by Brand', style: simple_text_style(
                   fontSize: 16, fontWeight: FontWeight.bold)),
             ),
             const SizedBox(height: 12),
@@ -229,10 +252,39 @@ class _HomeScreenUState extends State<HomeScreenU> {
                 padding: const EdgeInsets.symmetric(horizontal: 16),
                 scrollDirection: Axis.horizontal,
                 physics: const BouncingScrollPhysics(),
-                itemCount: rootCategories.length,
+                itemCount: brands.length,
                 itemBuilder: (context, index) {
-                  return category_showing_widget(context,
-                      rootCategories[index]); // Using your existing widget!
+                  return Padding(
+                    padding: const EdgeInsets.only(right: 16.0),
+                    child: Column(
+                      children: [
+                        Container(
+                          width: 70,
+                          height: 70,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            color: Colors.grey.shade100,
+                            image: brands[index].imageUrl != null
+                                ? DecorationImage(
+                                    image: NetworkImage(brands[index].imageUrl!),
+                                    fit: BoxFit.cover,
+                                  )
+                                : null,
+                          ),
+                          child: brands[index].imageUrl == null
+                              ? const Icon(Icons.branding_watermark, color: Colors.grey)
+                              : null,
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          brands[index].name ?? "",
+                          style: simple_text_style(fontSize: 12, fontWeight: FontWeight.w500),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ],
+                    ),
+                  );
                 },
               ),
             ),
@@ -445,7 +497,7 @@ class _HomeScreenUState extends State<HomeScreenU> {
               ),
               const Spacer(),
               Text(
-                '₹${order.totalPrice?.toStringAsFixed(2) ?? "0.00"}',
+                '₹${order.totalPrice?.toStringAsFixed(0) ?? "0"}',
                 style: simple_text_style(
                   color: AppColour.black,
                   fontSize: 16,

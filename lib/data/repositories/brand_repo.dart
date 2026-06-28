@@ -38,4 +38,24 @@ class BrandRepository with RepoErrorHandler {
       throw handleError(e);
     }
   }
+
+  // 4. Update Brand
+  Future<Brand> updateBrand(int id, Brand brand) async {
+    try {
+      final response = await _client.updateBrand(id, brand);
+      return response.data!;
+    } catch (e) {
+      throw handleError(e);
+    }
+  }
+
+  // 5. Delete Brand
+  Future<bool> deleteBrand(int id) async {
+    try {
+      final response = await _client.deleteBrand(id);
+      return response.data ?? false;
+    } catch (e) {
+      throw handleError(e);
+    }
+  }
 }

@@ -68,7 +68,7 @@ class CartRepository with RepoErrorHandler {
   Future<Map<String, dynamic>> getCartStatus(String productId) async {
     try {
       final response = await _client.getCartStatus(productId);
-      return response.data ?? {};
+      return (response.data as Map<String, dynamic>?) ?? {};
     } catch (e) {
       return {};
     }

@@ -15,6 +15,7 @@ import '../data/services/cart_service.dart';
 import '../data/services/category_service.dart';
 import '../data/services/coupon_service.dart';
 import '../data/services/image_service.dart';
+import '../data/services/health_service.dart';
 import '../data/services/notification_service.dart';
 import '../data/services/order_service.dart';
 import '../data/services/product_service.dart';
@@ -34,8 +35,8 @@ void setupServiceLocator() {
     BaseOptions(
       baseUrl: apiBaseUrl,
       contentType: "application/json",
-      receiveTimeout: const Duration(seconds: 15),
-      connectTimeout: const Duration(seconds: 15),
+      receiveTimeout: const Duration(seconds: 60),
+      connectTimeout: const Duration(seconds: 60),
     ),
   );
 
@@ -92,6 +93,7 @@ void setupServiceLocator() {
   // Admin specific services
   getIt.registerLazySingleton(() => AdminService());
   getIt.registerLazySingleton(() => ImageService());
+  getIt.registerLazySingleton(() => HealthService());
   getIt.registerLazySingleton(() => AdminImageService());
   getIt.registerLazySingleton(() => NotificationService());
   getIt.registerLazySingleton(
@@ -140,7 +142,7 @@ class AuthInterceptor extends Interceptor {
           );
 
           if (response.statusCode == 200 && response.data != null) {
-            // ✅ FIX: Parse from the nested 'data' object
+            // âœ… FIX: Parse from the nested 'data' object
             final responseData = response.data['data'];
             final newAccessToken = responseData['access_token'];
             final newRefreshToken = responseData['refresh_token'];
@@ -163,7 +165,7 @@ class AuthInterceptor extends Interceptor {
         } catch (e) {
           // Refresh failed or parsing crashed -> Log out user
           print(
-            '🚨 Refresh Token Error: $e',
+            'ðŸš¨ Refresh Token Error: $e',
           ); // Added print to help you debug future crashes
           await authService.signOut();
           return handler.next(
@@ -181,40 +183,64 @@ class AuthInterceptor extends Interceptor {
 class LoggingInterceptor extends Interceptor {
   @override
   void onRequest(RequestOptions options, RequestInterceptorHandler handler) {
-    print('╔════════════════════════════════════════════════════════════╗');
-    print('║                    📤 API REQUEST                          ║');
-    print('╠════════════════════════════════════════════════════════════╣');
+    print(
+      'â•”â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•—',
+    );
+    print(
+      'â•‘                    ðŸ“¤ API REQUEST                          â•‘',
+    );
+    print(
+      'â• â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•£',
+    );
     print('Method: ${options.method}');
     print('URL: ${options.uri}');
     print('Headers: ${options.headers}');
     if (options.data != null) {
       print('Body: ${options.data}');
     }
-    print('╚════════════════════════════════════════════════════════════╝');
+    print(
+      'â•šâ•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•',
+    );
     handler.next(options);
   }
 
   @override
   void onResponse(Response response, ResponseInterceptorHandler handler) {
-    print('╔════════════════════════════════════════════════════════════╗');
-    print('║                    📥 API RESPONSE                         ║');
-    print('╠════════════════════════════════════════════════════════════╣');
+    print(
+      'â•”â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•—',
+    );
+    print(
+      'â•‘                    ðŸ“¥ API RESPONSE                         â•‘',
+    );
+    print(
+      'â• â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•£',
+    );
     print('Status Code: ${response.statusCode}');
     print('URL: ${response.requestOptions.path}');
     print('Response: ${response.data}');
-    print('╚════════════════════════════════════════════════════════════╝');
+    print(
+      'â•šâ•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•',
+    );
     handler.next(response);
   }
 
   @override
   void onError(DioException err, ErrorInterceptorHandler handler) {
-    print('╔════════════════════════════════════════════════════════════╗');
-    print('║                    ❌ API ERROR                            ║');
-    print('╠════════════════════════════════════════════════════════════╣');
+    print(
+      'â•”â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•—',
+    );
+    print(
+      'â•‘                    âŒ API ERROR                            â•‘',
+    );
+    print(
+      'â• â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•£',
+    );
     print('Type: ${err.type}');
     print('Message: ${err.message}');
     print('Status Code: ${err.response?.statusCode}');
-    print('╚════════════════════════════════════════════════════════════╝');
+    print(
+      'â•šâ•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•',
+    );
     handler.next(err);
   }
 }

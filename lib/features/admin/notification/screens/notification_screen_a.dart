@@ -186,9 +186,17 @@ class _NotificationScreenAState extends State<NotificationScreenA> {
                       final bool isUnread = !notif.read;
 
                       return InkWell(
-                        onTap: () {
-                          if (isUnread) {
-                            notificationService.markAsRead(notif.id!);
+                        onTap: () async {
+                          if (isUnread && notif.id != null) {
+                            final error = await notificationService.markAsRead(notif.id!);
+                            if (error != null && context.mounted) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: Text('Failed: $error'),
+                                  backgroundColor: Colors.red,
+                                ),
+                              );
+                            }
                           }
                         },
                         child: Container(

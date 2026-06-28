@@ -18,6 +18,9 @@ class CartService extends ChangeNotifier {
   bool _isLoading = false;
   bool get isLoading => _isLoading;
 
+  final Set<String> _processingProducts = {};
+  bool isProductProcessing(String productId) => _processingProducts.contains(productId);
+
   // --- 1. Fetch & Hydrate ---
   Future<void> fetchCart() async {
     _isLoading = true;
@@ -62,6 +65,8 @@ class CartService extends ChangeNotifier {
   // --- 2. Add / Update / Remove ---
 
   Future<String?> addToCart(String productId, int quantity) async {
+    _processingProducts.add(productId);
+    notifyListeners();
     try {
       await _cartRepo.addToCart(productId, quantity);
       await fetchCart(); // Refresh to see changes
@@ -70,10 +75,15 @@ class CartService extends ChangeNotifier {
       return e.message;
     } catch (e) {
       return "Failed to add item.";
+    } finally {
+      _processingProducts.remove(productId);
+      notifyListeners();
     }
   }
 
   Future<String?> updateQuantity(String productId, int quantity) async {
+    _processingProducts.add(productId);
+    notifyListeners();
     try {
       await _cartRepo.updateQuantity(productId, quantity);
 
@@ -86,7 +96,6 @@ class CartService extends ChangeNotifier {
           product: oldItem.product,
           quantity: quantity,
         );
-        notifyListeners();
       }
       return null;
     } on AppError catch (e) {
@@ -94,14 +103,18 @@ class CartService extends ChangeNotifier {
       return e.message;
     } catch (e) {
       return "Failed to update.";
+    } finally {
+      _processingProducts.remove(productId);
+      notifyListeners();
     }
   }
 
   Future<String?> removeFromCart(String productId) async {
+    _processingProducts.add(productId);
+    notifyListeners();
     try {
       // Optimistic Remove
       _cartItems.removeWhere((item) => item.product?.pid == productId);
-      notifyListeners();
 
       await _cartRepo.removeFromCart(productId);
       return null;
@@ -110,6 +123,9 @@ class CartService extends ChangeNotifier {
       return e.message;
     } catch (e) {
       return "Failed to remove.";
+    } finally {
+      _processingProducts.remove(productId);
+      notifyListeners();
     }
   }
 

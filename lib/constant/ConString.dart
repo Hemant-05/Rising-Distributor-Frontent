@@ -1,11 +1,10 @@
-import 'package:flutter/foundation.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 final String welcome = 'Welcome';
 final String admin = 'ADMIN';
 final String user = 'USER';
 
-final double deliveryFee = 12;
+final double deliveryFee = 19;
 final double platformFee = 3;
 
 String get baseUrl {
@@ -20,12 +19,7 @@ String get baseUrl {
   return _withoutTrailingSlash(resolvedUrl);
 }
 
-String get _defaultBaseUrl {
-  if (kIsWeb) return 'https://risingmart.in/api';
-  return defaultTargetPlatform == TargetPlatform.android
-      ? 'http://10.0.2.2:3000/api'
-      : 'http://localhost:3000/api';
-}
+String get _defaultBaseUrl => 'https://api.risingmart.in/api';
 
 String _withoutTrailingSlash(String value) {
   final trimmed = value.trim();
@@ -80,4 +74,4 @@ final String resetPasswordDescription =
     'A verification code has been sent to your given email address. Enter the code below to reset your password.';
 
 final String resetPasswordSuccessDescription =
-    'Your password has been reset. You’re all set to use Raising mart';
+    'Your password has been reset. You\'re all set to use Raising mart';

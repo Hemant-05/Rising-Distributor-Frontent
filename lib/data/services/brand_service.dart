@@ -78,4 +78,36 @@ class BrandService extends ChangeNotifier {
       notifyListeners();
     }
   }
+
+  // --- 4. Update Brand ---
+  Future<String?> updateBrand(int id, Brand brand) async {
+    try {
+      await _repo.updateBrand(id, brand);
+      _brands.clear();
+      await fetchBrands();
+      return null;
+    } on AppError catch (e) {
+      _error = e.toString();
+      return e.message;
+    } catch (e) {
+      _error = "Failed to update brand. ${e.toString()}";
+      return "Failed to update brand.";
+    }
+  }
+
+  // --- 5. Delete Brand ---
+  Future<String?> deleteBrand(int id) async {
+    try {
+      await _repo.deleteBrand(id);
+      _brands.removeWhere((b) => b.id == id);
+      notifyListeners();
+      return null;
+    } on AppError catch (e) {
+      _error = e.toString();
+      return e.message;
+    } catch (e) {
+      _error = "Failed to delete brand. ${e.toString()}";
+      return "Failed to delete brand.";
+    }
+  }
 }

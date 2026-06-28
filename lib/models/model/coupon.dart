@@ -2,7 +2,7 @@ import 'package:json_annotation/json_annotation.dart';
 
 part 'coupon.g.dart';
 
-@JsonSerializable()
+@JsonSerializable(includeIfNull: false)
 class Coupon {
   final int? id;
   final String? code;

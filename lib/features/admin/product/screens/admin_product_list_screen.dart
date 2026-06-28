@@ -9,6 +9,7 @@ import 'package:raising_india/constant/AppColour.dart';
 import 'package:raising_india/data/services/admin_service.dart';
 import 'package:raising_india/features/admin/product/screens/admin_product_details_screen.dart';
 import 'package:raising_india/models/model/product.dart';
+import 'package:raising_india/comman/helper_functions.dart';
 
 class AdminProductListScreen extends StatefulWidget {
   const AdminProductListScreen({super.key});
@@ -98,12 +99,25 @@ class _AdminProductListScreenState extends State<AdminProductListScreen>
                     padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                     sliver: filteredProducts.isEmpty
                         ? SliverToBoxAdapter(child: _buildEmptyState())
-                        : SliverList(
-                      delegate: SliverChildBuilderDelegate(
-                            (context, index) => _buildProductCard(filteredProducts[index], index),
-                        childCount: filteredProducts.length,
-                      ),
-                    ),
+                        : (isDesktop(context)
+                            ? SliverGrid(
+                                delegate: SliverChildBuilderDelegate(
+                                  (context, index) => _buildProductCard(filteredProducts[index], index),
+                                  childCount: filteredProducts.length,
+                                ),
+                                gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
+                                  maxCrossAxisExtent: 400,
+                                  crossAxisSpacing: 16,
+                                  mainAxisSpacing: 16,
+                                  mainAxisExtent: 100, // Fixed height for product card
+                                ),
+                              )
+                            : SliverList(
+                                delegate: SliverChildBuilderDelegate(
+                                  (context, index) => _buildProductCard(filteredProducts[index], index),
+                                  childCount: filteredProducts.length,
+                                ),
+                              )),
                   ),
                 ],
               ),
@@ -450,12 +464,25 @@ class _AdminProductListScreenState extends State<AdminProductListScreen>
           // Shimmer for Product List Cards
           SliverPadding(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-            sliver: SliverList(
-              delegate: SliverChildBuilderDelegate(
-                    (context, index) => _buildShimmerProductCard(),
-                childCount: 6, // Show 6 dummy skeleton cards
-              ),
-            ),
+            sliver: isDesktop(context)
+                ? SliverGrid(
+                    delegate: SliverChildBuilderDelegate(
+                      (context, index) => _buildShimmerProductCard(),
+                      childCount: 12,
+                    ),
+                    gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
+                      maxCrossAxisExtent: 400,
+                      crossAxisSpacing: 16,
+                      mainAxisSpacing: 16,
+                      mainAxisExtent: 100,
+                    ),
+                  )
+                : SliverList(
+                    delegate: SliverChildBuilderDelegate(
+                      (context, index) => _buildShimmerProductCard(),
+                      childCount: 6, // Show 6 dummy skeleton cards
+                    ),
+                  ),
           ),
         ],
       ),

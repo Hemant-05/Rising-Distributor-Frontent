@@ -15,6 +15,7 @@ import 'package:raising_india/features/admin/stock_management/screens/low_stock_
 import 'package:raising_india/models/dto/dashboard_response.dart';
 import 'package:shimmer/shimmer.dart';
 import '../../../../comman/simple_text_style.dart';
+import 'package:raising_india/comman/helper_functions.dart';
 
 class HomeScreenA extends StatefulWidget {
   const HomeScreenA({super.key});
@@ -107,23 +108,49 @@ class _HomeScreenAState extends State<HomeScreenA> with TickerProviderStateMixin
             onRefresh: _onRefresh,
             child: SingleChildScrollView(
               physics: const BouncingScrollPhysics(),
-              child: Column(
-                children: [
-                  // ✅ Order Statistics Section (Upgraded)
-                  _buildOrderStatsSection(),
-
-                  // ✅ Low Stock Section
-                  _buildLowStockAlertSection(),
-
-                  // ✅ Sales Analytics Section
-                  _buildSalesAnalyticsSection(),
-                  const SizedBox(height: 20),
-
-                  // ✅ Review Analytics Section
-                  _buildReviewAnalyticsSection(),
-                  const SizedBox(height: 20),
-                ],
-              ),
+              child: isDesktop(context)
+                  ? Center(
+                      child: ConstrainedBox(
+                        constraints: const BoxConstraints(maxWidth: 1200),
+                        child: Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Expanded(
+                              flex: 3,
+                              child: Column(
+                                children: [
+                                  _buildOrderStatsSection(),
+                                  _buildSalesAnalyticsSection(),
+                                  const SizedBox(height: 20),
+                                ],
+                              ),
+                            ),
+                            const SizedBox(width: 20),
+                            Expanded(
+                              flex: 2,
+                              child: Column(
+                                children: [
+                                  _buildLowStockAlertSection(),
+                                  const SizedBox(height: 16),
+                                  _buildReviewAnalyticsSection(),
+                                  const SizedBox(height: 20),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    )
+                  : Column(
+                      children: [
+                        _buildOrderStatsSection(),
+                        _buildLowStockAlertSection(),
+                        _buildSalesAnalyticsSection(),
+                        const SizedBox(height: 20),
+                        _buildReviewAnalyticsSection(),
+                        const SizedBox(height: 20),
+                      ],
+                    ),
             ),
           ),
         ),
@@ -380,19 +407,19 @@ class _HomeScreenAState extends State<HomeScreenA> with TickerProviderStateMixin
                       // Note: For navigation, using OrderFilterType.running as a fallback for active orders.
                       // If you add OrderFilterType.placed to your enum later, update it here!
                       _buildCompactStatusCard('NEW (PLACED)', placedCount, Icons.fiber_new_rounded, Colors.blue,
-                              () => navigateToOrderListScreen('Newly Placed', OrderFilterType.running)),
+                              () => navigateToOrderListScreen('Newly Placed', OrderFilterType.placed)),
 
                       _buildCompactStatusCard('CONFIRMED', confirmedCount, Icons.thumb_up_alt_outlined, Colors.indigo,
-                              () => navigateToOrderListScreen('Confirmed', OrderFilterType.running)),
+                              () => navigateToOrderListScreen('Confirmed', OrderFilterType.confirmed)),
 
                       _buildCompactStatusCard('PREPARING', preparingCount, Icons.inventory_2_outlined, Colors.orange,
-                              () => navigateToOrderListScreen('Preparing', OrderFilterType.running)),
+                              () => navigateToOrderListScreen('Preparing', OrderFilterType.preparing)),
 
                       _buildCompactStatusCard('DISPATCH', dispatchCount, Icons.local_shipping_outlined, Colors.purple,
-                              () => navigateToOrderListScreen('Dispatched', OrderFilterType.running)),
+                              () => navigateToOrderListScreen('Dispatched', OrderFilterType.dispatch)),
 
                       _buildCompactStatusCard('DELIVERED', deliveredCount, Icons.done_all_rounded, Colors.green,
-                              () => navigateToOrderListScreen('Delivered', OrderFilterType.all)), // Delivered is usually in "All"
+                              () => navigateToOrderListScreen('Delivered', OrderFilterType.delivered)), // Delivered is usually in "All"
 
                       _buildCompactStatusCard('CANCELLED', cancelledCount, Icons.cancel_outlined, Colors.red,
                               () => navigateToOrderListScreen('Cancelled', OrderFilterType.cancelled)),

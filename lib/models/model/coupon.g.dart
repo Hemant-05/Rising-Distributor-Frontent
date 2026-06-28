@@ -20,12 +20,12 @@ Coupon _$CouponFromJson(Map<String, dynamic> json) => Coupon(
 );
 
 Map<String, dynamic> _$CouponToJson(Coupon instance) => <String, dynamic>{
-  'id': instance.id,
-  'code': instance.code,
-  'discountValue': instance.discountValue,
-  'discountType': instance.discountType,
-  'minOrderAmount': instance.minOrderAmount,
-  'maxDiscountAmount': instance.maxDiscountAmount,
-  'expirationDate': instance.expirationDate?.toIso8601String(),
-  'isActive': instance.isActive,
+  'id': ?instance.id,
+  'code': ?instance.code,
+  'discountValue': ?instance.discountValue,
+  'discountType': ?instance.discountType,
+  'minOrderAmount': ?instance.minOrderAmount,
+  'maxDiscountAmount': ?instance.maxDiscountAmount,
+  'expirationDate': ?instance.expirationDate?.toIso8601String(),
+  'isActive': ?instance.isActive,
 };

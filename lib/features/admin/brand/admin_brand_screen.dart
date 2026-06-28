@@ -8,6 +8,7 @@ import 'package:raising_india/data/services/brand_service.dart';
 import 'package:raising_india/features/admin/brand/add_brand_screen.dart';
 import 'package:raising_india/features/admin/brand/brand_products_screen.dart';
 import 'package:raising_india/models/model/brand.dart';
+import 'package:raising_india/comman/helper_functions.dart';
 
 class AdminBrandScreen extends StatefulWidget {
   const AdminBrandScreen({super.key});
@@ -66,6 +67,26 @@ class _AdminBrandScreenState extends State<AdminBrandScreen> {
             return _buildEmptyState(context);
           }
 
+          if (isDesktop(context)) {
+            return RefreshIndicator(
+              onRefresh: () => brandService.fetchBrands(),
+              color: AppColour.primary,
+              child: GridView.builder(
+                padding: const EdgeInsets.all(16),
+                gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
+                  maxCrossAxisExtent: 400,
+                  crossAxisSpacing: 16,
+                  mainAxisSpacing: 16,
+                  mainAxisExtent: 90,
+                ),
+                itemCount: brandService.brands.length,
+                itemBuilder: (context, index) {
+                  return _buildBrandTile(context, brandService.brands[index]);
+                },
+              ),
+            );
+          }
+
           return RefreshIndicator(
             onRefresh: () => brandService.fetchBrands(),
             color: AppColour.primary,
@@ -117,7 +138,20 @@ class _AdminBrandScreenState extends State<AdminBrandScreen> {
           brand.name ?? "Unnamed Brand",
           style: simple_text_style(fontSize: 16, fontWeight: FontWeight.bold),
         ),
-        trailing: const Icon(Icons.chevron_right, color: Colors.grey),
+        trailing: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            IconButton(
+              icon: const Icon(Icons.edit, color: Colors.blue),
+              onPressed: () => _navigateToAddBrand(context, brand: brand),
+            ),
+            IconButton(
+              icon: const Icon(Icons.delete, color: Colors.red),
+              onPressed: () => _confirmDeleteBrand(context, brand),
+            ),
+            const Icon(Icons.chevron_right, color: Colors.grey),
+          ],
+        ),
         onTap: () => _navigateToBrandProducts(context, brand),
       ),
     );
@@ -193,10 +227,30 @@ class _AdminBrandScreenState extends State<AdminBrandScreen> {
     );
   }
 
-  void _navigateToAddBrand(BuildContext context) {
+  void _navigateToAddBrand(BuildContext context, {Brand? brand}) {
     Navigator.push(
       context,
-      MaterialPageRoute(builder: (_) => const AddBrandScreen()),
+      MaterialPageRoute(builder: (_) => AddBrandScreen(brand: brand)),
+    );
+  }
+
+  void _confirmDeleteBrand(BuildContext context, Brand brand) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Delete Brand'),
+        content: Text('Are you sure you want to delete ${brand.name}?'),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
+          TextButton(
+            onPressed: () {
+              Navigator.pop(ctx);
+              context.read<BrandService>().deleteBrand(brand.id!);
+            },
+            child: const Text('Delete', style: TextStyle(color: Colors.red)),
+          ),
+        ],
+      ),
     );
   }
 

@@ -7,6 +7,8 @@ import 'package:raising_india/constant/AppColour.dart';
 import 'package:raising_india/data/services/category_service.dart';
 import 'package:raising_india/data/services/product_service.dart';
 import 'package:raising_india/features/admin/category/screens/add_edit_category_screen.dart';
+import 'package:raising_india/features/admin/product/screens/admin_product_details_screen.dart';
+import 'package:raising_india/features/admin/widgets/admin_responsive.dart';
 import 'package:raising_india/models/model/category.dart';
 import 'package:raising_india/models/model/product.dart';
 
@@ -78,34 +80,56 @@ class _CategoryProductsScreenState extends State<CategoryProductsScreen> {
         children: [
           Consumer<ProductService>(
             builder: (context, productService, _) {
+              final products = productService.categoryProducts;
+              final isDesktop = AdminResponsive.isDesktop(context);
+
               return CustomScrollView(
                 physics: const BouncingScrollPhysics(),
                 slivers: [
                   SliverToBoxAdapter(
-                    child: _buildCategoryHeader(
-                      productService.categoryProducts,
+                    child: Center(
+                      child: ConstrainedBox(
+                        constraints: const BoxConstraints(
+                          maxWidth: AdminResponsive.maxContentWidth,
+                        ),
+                        child: _buildCategoryHeader(products),
+                      ),
                     ),
                   ),
                   if (productService.isLoading)
                     const SliverFillRemaining(
                       child: Center(child: CircularProgressIndicator()),
                     )
-                  else if (productService.categoryProducts.isEmpty)
+                  else if (products.isEmpty)
                     SliverFillRemaining(child: _buildEmptyState())
                   else
                     SliverPadding(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 16,
+                      padding: EdgeInsets.symmetric(
+                        horizontal: isDesktop ? 24 : 16,
                         vertical: 8,
                       ),
-                      sliver: SliverList(
-                        delegate: SliverChildBuilderDelegate(
-                          (context, index) => _buildProductCard(
-                            productService.categoryProducts[index],
-                          ),
-                          childCount: productService.categoryProducts.length,
-                        ),
-                      ),
+                      sliver: isDesktop
+                          ? SliverGrid(
+                              delegate: SliverChildBuilderDelegate(
+                                (context, index) =>
+                                    _buildProductCard(products[index]),
+                                childCount: products.length,
+                              ),
+                              gridDelegate:
+                                  const SliverGridDelegateWithMaxCrossAxisExtent(
+                                    maxCrossAxisExtent: 420,
+                                    mainAxisExtent: 112,
+                                    crossAxisSpacing: 12,
+                                    mainAxisSpacing: 12,
+                                  ),
+                            )
+                          : SliverList(
+                              delegate: SliverChildBuilderDelegate(
+                                (context, index) =>
+                                    _buildProductCard(products[index]),
+                                childCount: products.length,
+                              ),
+                            ),
                     ),
                 ],
               );
@@ -373,7 +397,12 @@ class _CategoryProductsScreenState extends State<CategoryProductsScreen> {
         ),
         trailing: const Icon(Icons.chevron_right, color: Colors.grey),
         onTap: () {
-          // Optional: Navigate to product details
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (_) => AdminProductDetailScreen(product: product),
+            ),
+          );
         },
       ),
     );

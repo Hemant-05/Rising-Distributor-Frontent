@@ -35,15 +35,23 @@ class LocationService {
 
       if (placemarks.isNotEmpty) {
         final placemark = placemarks.first;
+        String name = placemark.name ?? "";
         String street = placemark.street ?? "";
-        String city = placemark.locality ?? placemark.subLocality ?? "";
+        String thoroughfare = placemark.thoroughfare ?? "";
+        String subLocality = placemark.subLocality ?? "";
+        String locality = placemark.locality ?? "";
         String state = placemark.administrativeArea ?? "";
         String postalCode = placemark.postalCode ?? "";
 
-        // ✅ Smarter formatting: Only joins non-empty parts
-        List<String> parts = [street, city, state, postalCode];
-        parts.removeWhere((element) => element.isEmpty);
-        return parts.join(", ");
+        // Combine parts and avoid duplicates
+        List<String> parts = [name, street, thoroughfare, subLocality, locality, state, postalCode];
+        List<String> uniqueParts = [];
+        for (var part in parts) {
+          if (part.isNotEmpty && !uniqueParts.contains(part)) {
+            uniqueParts.add(part);
+          }
+        }
+        return uniqueParts.join(", ");
       } else {
         return "Location not found";
       }
@@ -59,10 +67,14 @@ class LocationService {
     try {
       return await Geolocator.getCurrentPosition(
         desiredAccuracy: LocationAccuracy.best,
-      );
+      ).timeout(const Duration(seconds: 10));
     } catch (e) {
       print("Error getting location: $e");
-      return null;
+      try {
+        return await Geolocator.getLastKnownPosition();
+      } catch (_) {
+        return null;
+      }
     }
   }
 }

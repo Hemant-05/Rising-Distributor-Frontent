@@ -5,6 +5,7 @@ import 'package:raising_india/comman/back_button.dart';
 import 'package:raising_india/comman/simple_text_style.dart';
 import 'package:raising_india/constant/AppColour.dart';
 import 'package:raising_india/data/services/product_service.dart';
+import 'package:raising_india/comman/helper_functions.dart';
 
 class ArchivedProductsScreen extends StatefulWidget {
   const ArchivedProductsScreen({super.key});
@@ -80,79 +81,99 @@ class _ArchivedProductsScreenState extends State<ArchivedProductsScreen> {
             );
           }
 
+          if (isDesktop(context)) {
+            return GridView.builder(
+              padding: const EdgeInsets.all(16),
+              gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
+                maxCrossAxisExtent: 400,
+                crossAxisSpacing: 16,
+                mainAxisSpacing: 16,
+                mainAxisExtent: 90,
+              ),
+              itemCount: productService.archivedProducts.length,
+              itemBuilder: (context, index) {
+                return _buildProductCard(context, productService.archivedProducts[index]);
+              },
+            );
+          }
+
           return ListView.separated(
             padding: const EdgeInsets.all(16),
             itemCount: productService.archivedProducts.length,
             separatorBuilder: (context, index) => const SizedBox(height: 12),
             itemBuilder: (context, index) {
-              final product = productService.archivedProducts[index];
-              final imageUrl = (product.photosList != null && product.photosList!.isNotEmpty)
-                  ? product.photosList!.first
-                  : '';
-
-              return Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: AppColour.white,
-                  borderRadius: BorderRadius.circular(12),
-                  boxShadow: [
-                    BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 10, offset: const Offset(0, 4)),
-                  ],
-                ),
-                child: Row(
-                  children: [
-                    // Product Image
-                    ClipRRect(
-                      borderRadius: BorderRadius.circular(8),
-                      child: CachedNetworkImage(
-                        imageUrl: imageUrl,
-                        width: 60,
-                        height: 60,
-                        fit: BoxFit.cover,
-                        errorWidget: (context, url, error) => Container(
-                          width: 60, height: 60, color: Colors.grey.shade100,
-                          child: const Icon(Icons.image_not_supported, color: Colors.grey),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 16),
-
-                    // Product Details
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            product.name ?? 'Unknown',
-                            maxLines: 1, overflow: TextOverflow.ellipsis,
-                            style: simple_text_style(fontWeight: FontWeight.bold, fontSize: 16),
-                          ),
-                          const SizedBox(height: 4),
-                          Text(
-                            '₹${product.price?.toStringAsFixed(0) ?? '0'}',
-                            style: simple_text_style(color: AppColour.primary, fontWeight: FontWeight.bold),
-                          ),
-                        ],
-                      ),
-                    ),
-
-                    // Restore Button
-                    ElevatedButton.icon(
-                      onPressed: () => _handleRestore(product.pid!),
-                      icon: const Icon(Icons.restore, size: 16, color: Colors.white),
-                      label: Text('Restore', style: simple_text_style(color: Colors.white, fontWeight: FontWeight.bold)),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: AppColour.primary,
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                      ),
-                    ),
-                  ],
-                ),
-              );
+              return _buildProductCard(context, productService.archivedProducts[index]);
             },
           );
         },
+      ),
+    );
+  }
+
+  Widget _buildProductCard(BuildContext context, dynamic product) {
+    final imageUrl = (product.photosList != null && product.photosList!.isNotEmpty)
+        ? product.photosList!.first
+        : '';
+
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: AppColour.white,
+        borderRadius: BorderRadius.circular(12),
+        boxShadow: [
+          BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 10, offset: const Offset(0, 4)),
+        ],
+      ),
+      child: Row(
+        children: [
+          // Product Image
+          ClipRRect(
+            borderRadius: BorderRadius.circular(8),
+            child: CachedNetworkImage(
+              imageUrl: imageUrl,
+              width: 60,
+              height: 60,
+              fit: BoxFit.cover,
+              errorWidget: (context, url, error) => Container(
+                width: 60, height: 60, color: Colors.grey.shade100,
+                child: const Icon(Icons.image_not_supported, color: Colors.grey),
+              ),
+            ),
+          ),
+          const SizedBox(width: 16),
+
+          // Product Details
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Text(
+                  product.name ?? 'Unknown',
+                  maxLines: 1, overflow: TextOverflow.ellipsis,
+                  style: simple_text_style(fontWeight: FontWeight.bold, fontSize: 16),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  '₹${product.price?.toStringAsFixed(0) ?? '0'}',
+                  style: simple_text_style(color: AppColour.primary, fontWeight: FontWeight.bold),
+                ),
+              ],
+            ),
+          ),
+
+          // Restore Button
+          ElevatedButton.icon(
+            onPressed: () => _handleRestore(product.pid!),
+            icon: const Icon(Icons.restore, size: 16, color: Colors.white),
+            label: Text('Restore', style: simple_text_style(color: Colors.white, fontWeight: FontWeight.bold)),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColour.primary,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+            ),
+          ),
+        ],
       ),
     );
   }

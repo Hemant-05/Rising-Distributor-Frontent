@@ -9,6 +9,7 @@ import 'package:raising_india/data/services/admin_service.dart';
 import 'package:raising_india/data/services/order_service.dart';
 import 'package:raising_india/models/model/order.dart';
 import 'package:raising_india/models/model/order_item.dart';
+import 'package:raising_india/features/admin/widgets/admin_responsive.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:intl/intl.dart';
@@ -53,11 +54,7 @@ class _AdminOrderDetailScreenState extends State<AdminOrderDetailScreen> {
       'label': 'Dispatched',
       'icon': Icons.local_shipping_outlined,
     },
-    {
-      'key': OrderStatusDeliverd,
-      'label': 'Delivered',
-      'icon': Icons.done_all
-    },
+    {'key': OrderStatusDeliverd, 'label': 'Delivered', 'icon': Icons.done_all},
   ];
 
   @override
@@ -257,14 +254,20 @@ class _AdminOrderDetailScreenState extends State<AdminOrderDetailScreen> {
 
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Payment marked as $targetStatus', style: simple_text_style(color: AppColour.white)),
+          content: Text(
+            'Payment marked as $targetStatus',
+            style: simple_text_style(color: AppColour.white),
+          ),
           backgroundColor: Colors.green,
         ),
       );
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Failed to update payment: $e', style: simple_text_style(color: AppColour.white)),
+          content: Text(
+            'Failed to update payment: $e',
+            style: simple_text_style(color: AppColour.white),
+          ),
           backgroundColor: AppColour.red,
         ),
       );
@@ -350,42 +353,61 @@ class _AdminOrderDetailScreenState extends State<AdminOrderDetailScreen> {
               ),
             ],
           ),
-          body: SingleChildScrollView(
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // Order Info Card
-                _buildOrderInfoCard(order),
-                const SizedBox(height: 16),
-
-                // Products Section
-                _buildProductsSection(products!),
-                const SizedBox(height: 16),
-
-                // Customer Details Section
-                _buildCustomerDetailsSection(order),
-                const SizedBox(height: 16),
-
-                // Order Status Section
-                _buildOrderStatusSection(),
-                const SizedBox(height: 16),
-
-                // Cancel Order Status Section
-                if (currentOrderStatus.toUpperCase() != OrderStatusCancelled &&
-                    currentOrderStatus.toUpperCase() != OrderStatusDeliverd) ...{
-                  _cancelOrderStatus(),
+          body: LayoutBuilder(
+            builder: (context, constraints) {
+              final isDesktop =
+                  constraints.maxWidth >= AdminResponsive.desktopBreakpoint;
+              final detailsColumn = Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _buildOrderInfoCard(order),
                   const SizedBox(height: 16),
-                },
+                  _buildProductsSection(products!),
+                  const SizedBox(height: 16),
+                  _buildCustomerDetailsSection(order),
+                ],
+              );
+              final actionColumn = Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _buildOrderStatusSection(),
+                  const SizedBox(height: 16),
+                  if (currentOrderStatus.toUpperCase() !=
+                          OrderStatusCancelled &&
+                      currentOrderStatus.toUpperCase() !=
+                          OrderStatusDeliverd) ...[
+                    _cancelOrderStatus(),
+                    const SizedBox(height: 16),
+                  ],
+                  _buildPaymentStatusSection(),
+                  const SizedBox(height: 16),
+                  _buildTotalSection(order),
+                ],
+              );
 
-                // Payment Status Section
-                _buildPaymentStatusSection(),
-                const SizedBox(height: 16),
-
-                // Total Section
-                _buildTotalSection(order),
-              ],
-            ),
+              return SingleChildScrollView(
+                child: AdminPageShell(
+                  padding: EdgeInsets.all(isDesktop ? 24 : 16),
+                  child: isDesktop
+                      ? Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Expanded(flex: 3, child: detailsColumn),
+                            const SizedBox(width: 24),
+                            Expanded(flex: 2, child: actionColumn),
+                          ],
+                        )
+                      : Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            detailsColumn,
+                            const SizedBox(height: 16),
+                            actionColumn,
+                          ],
+                        ),
+                ),
+              );
+            },
           ),
         );
       },
@@ -739,7 +761,10 @@ class _AdminOrderDetailScreenState extends State<AdminOrderDetailScreen> {
                                   order.address!.longitude,
                                 ),
                                 icon: const Icon(Icons.map_outlined, size: 18),
-                                label: Text('Open Map',style: simple_text_style(),),
+                                label: Text(
+                                  'Open Map',
+                                  style: simple_text_style(),
+                                ),
                                 style: OutlinedButton.styleFrom(
                                   foregroundColor: Colors.blue.shade600,
                                   side: BorderSide(color: Colors.blue.shade300),
@@ -754,7 +779,10 @@ class _AdminOrderDetailScreenState extends State<AdminOrderDetailScreen> {
                             child: OutlinedButton.icon(
                               onPressed: () => _showLocationOptions(order),
                               icon: const Icon(Icons.more_horiz, size: 18),
-                              label: Text('Options',style: simple_text_style(),),
+                              label: Text(
+                                'Options',
+                                style: simple_text_style(),
+                              ),
                               style: OutlinedButton.styleFrom(
                                 foregroundColor: Colors.orange.shade600,
                                 side: BorderSide(color: Colors.orange.shade300),
@@ -791,7 +819,10 @@ class _AdminOrderDetailScreenState extends State<AdminOrderDetailScreen> {
                 const SizedBox(width: 8),
                 Text(
                   'Cancel This Order',
-                  style: simple_text_style(fontSize: 18, fontWeight: FontWeight.w600),
+                  style: simple_text_style(
+                    fontSize: 18,
+                    fontWeight: FontWeight.w600,
+                  ),
                 ),
               ],
             ),
@@ -804,7 +835,10 @@ class _AdminOrderDetailScreenState extends State<AdminOrderDetailScreen> {
                     decoration: InputDecoration(
                       hintText: 'Enter cancellation reason...',
                       hintStyle: simple_text_style(color: Colors.grey),
-                      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                      contentPadding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 12,
+                      ),
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(8),
                         borderSide: BorderSide(color: Colors.grey.shade300),
@@ -820,46 +854,79 @@ class _AdminOrderDetailScreenState extends State<AdminOrderDetailScreen> {
                 SizedBox(
                   height: 48,
                   child: ElevatedButton(
-                    onPressed: isUpdating ? null : () async {
-                      String reason = _cancelController.text.trim();
-                      if (reason.isEmpty) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(content: const Text('Please enter a reason to cancel the order'), backgroundColor: AppColour.red),
-                        );
-                        return;
-                      }
+                    onPressed: isUpdating
+                        ? null
+                        : () async {
+                            String reason = _cancelController.text.trim();
+                            if (reason.isEmpty) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: const Text(
+                                    'Please enter a reason to cancel the order',
+                                  ),
+                                  backgroundColor: AppColour.red,
+                                ),
+                              );
+                              return;
+                            }
 
-                      setState(() => isUpdating = true);
-                      try {
-                        // ✅ Make the actual API call
-                        await context.read<OrderService>().cancelOrder(orderId, reason);
+                            setState(() => isUpdating = true);
+                            try {
+                              // ✅ Make the actual API call
+                              await context.read<OrderService>().cancelOrder(
+                                orderId,
+                                reason,
+                              );
 
-                        setState(() {
-                          currentOrderStatus = OrderStatusCancelled; // Force UI update
-                          widget.order.status = OrderStatusCancelled;
-                          widget.order.payment!.paymentStatus = PayStatusRefunding;
-                          // Assuming you added cancelReason to your Flutter Order model
-                          widget.order.cancelReason = reason;
-                        });
+                              setState(() {
+                                currentOrderStatus =
+                                    OrderStatusCancelled; // Force UI update
+                                widget.order.status = OrderStatusCancelled;
+                                widget.order.payment!.paymentStatus =
+                                    PayStatusRefunding;
+                                // Assuming you added cancelReason to your Flutter Order model
+                                widget.order.cancelReason = reason;
+                              });
 
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(content: Text('Order Cancelled Successfully'), backgroundColor: Colors.green),
-                        );
-                      } catch (e) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(content: Text('Failed to cancel: $e'), backgroundColor: AppColour.red),
-                        );
-                      } finally {
-                        setState(() => isUpdating = false);
-                      }
-                    },
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                  content: Text('Order Cancelled Successfully'),
+                                  backgroundColor: Colors.green,
+                                ),
+                              );
+                            } catch (e) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: Text('Failed to cancel: $e'),
+                                  backgroundColor: AppColour.red,
+                                ),
+                              );
+                            } finally {
+                              setState(() => isUpdating = false);
+                            }
+                          },
                     style: ElevatedButton.styleFrom(
                       backgroundColor: AppColour.red,
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
                     ),
                     child: isUpdating
-                        ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
-                        : Text('Cancel', style: simple_text_style(color: AppColour.white, fontWeight: FontWeight.bold)),
+                        ? const SizedBox(
+                            width: 20,
+                            height: 20,
+                            child: CircularProgressIndicator(
+                              color: Colors.white,
+                              strokeWidth: 2,
+                            ),
+                          )
+                        : Text(
+                            'Cancel',
+                            style: simple_text_style(
+                              color: AppColour.white,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
                   ),
                 ),
               ],
@@ -869,7 +936,6 @@ class _AdminOrderDetailScreenState extends State<AdminOrderDetailScreen> {
       ),
     );
   }
-
 
   // ✅ Pst this method inside your State class
   Widget _buildTimeline() {
@@ -904,9 +970,9 @@ class _AdminOrderDetailScreenState extends State<AdminOrderDetailScreen> {
                         shape: BoxShape.circle,
                         border: isCurrent
                             ? Border.all(
-                          color: Colors.orange.shade600,
-                          width: 3,
-                        )
+                                color: Colors.orange.shade600,
+                                width: 3,
+                              )
                             : null,
                       ),
                       child: Icon(
@@ -941,9 +1007,13 @@ class _AdminOrderDetailScreenState extends State<AdminOrderDetailScreen> {
                         Text(
                           stage['label'],
                           style: simple_text_style(
-                            fontWeight: isCurrent ? FontWeight.w600 : FontWeight.w500,
+                            fontWeight: isCurrent
+                                ? FontWeight.w600
+                                : FontWeight.w500,
                             fontSize: 16,
-                            color: isCompleted ? Colors.black : Colors.grey.shade600,
+                            color: isCompleted
+                                ? Colors.black
+                                : Colors.grey.shade600,
                           ),
                         ),
                         if (canAdvance)
@@ -976,12 +1046,14 @@ class _AdminOrderDetailScreenState extends State<AdminOrderDetailScreen> {
       }).toList(),
     );
   }
+
   // ✅ 2. Updated Order Status Section to show the reason if cancelled
   Widget _buildOrderStatusSection() {
     // Normalize string to match backend
     final safeStatus = currentOrderStatus.toUpperCase();
 
-    orderIsRunning = safeStatus != OrderStatusDeliverd && safeStatus != OrderStatusCancelled;
+    orderIsRunning =
+        safeStatus != OrderStatusDeliverd && safeStatus != OrderStatusCancelled;
 
     return Card(
       elevation: 2,
@@ -996,20 +1068,33 @@ class _AdminOrderDetailScreenState extends State<AdminOrderDetailScreen> {
               children: [
                 Icon(Icons.timeline, color: Colors.orange.shade600),
                 const SizedBox(width: 8),
-                Text('Order Status', style: simple_text_style(fontSize: 18, fontWeight: FontWeight.w600)),
+                Text(
+                  'Order Status',
+                  style: simple_text_style(
+                    fontSize: 18,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
                 const Spacer(),
                 if (!orderIsRunning)
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 6,
+                    ),
                     decoration: BoxDecoration(
-                      color: safeStatus == OrderStatusDeliverd ? Colors.green.withOpacity(0.15) : AppColour.red.withOpacity(0.15),
+                      color: safeStatus == OrderStatusDeliverd
+                          ? Colors.green.withOpacity(0.15)
+                          : AppColour.red.withOpacity(0.15),
                       borderRadius: BorderRadius.circular(20),
                     ),
                     child: Text(
                       safeStatus,
                       style: simple_text_style(
                         fontWeight: FontWeight.bold,
-                        color: safeStatus == OrderStatusDeliverd ? Colors.green.shade700 : AppColour.red,
+                        color: safeStatus == OrderStatusDeliverd
+                            ? Colors.green.shade700
+                            : AppColour.red,
                       ),
                     ),
                   ),
@@ -1021,62 +1106,75 @@ class _AdminOrderDetailScreenState extends State<AdminOrderDetailScreen> {
             orderIsRunning
                 ? _buildTimeline() // (Your existing timeline mapping logic goes here)
                 : Container(
-              width: double.infinity,
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: Colors.grey.shade50,
-                borderRadius: BorderRadius.circular(8),
-                border: Border.all(color: Colors.grey.shade200),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    safeStatus == OrderStatusCancelled
-                        ? '❌ Order was Cancelled'
-                        : '✅ Delivered Successfully',
-                    style: simple_text_style(
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                      color: safeStatus == OrderStatusCancelled ? AppColour.red : Colors.green.shade700,
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: Colors.grey.shade50,
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(color: Colors.grey.shade200),
                     ),
-                  ),
-                  const SizedBox(height: 8),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          safeStatus == OrderStatusCancelled
+                              ? '❌ Order was Cancelled'
+                              : '✅ Delivered Successfully',
+                          style: simple_text_style(
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                            color: safeStatus == OrderStatusCancelled
+                                ? AppColour.red
+                                : Colors.green.shade700,
+                          ),
+                        ),
+                        const SizedBox(height: 8),
 
-                  // Show the date
-                  Text(
-                    'At: ${DateFormat('MMM d, yyyy • h:mm a').format(widget.order.createdAt ?? DateTime.now())}',
-                    style: simple_text_style(color: Colors.grey.shade700),
-                  ),
+                        // Show the date
+                        Text(
+                          'At: ${DateFormat('MMM d, yyyy • h:mm a').format(widget.order.createdAt ?? DateTime.now())}',
+                          style: simple_text_style(color: Colors.grey.shade700),
+                        ),
 
-                  // ✅ Show Cancel Reason if available!
-                  if (safeStatus == OrderStatusCancelled && widget.order.cancelReason != null) ...[
-                    const SizedBox(height: 12),
-                    Container(
-                      padding: const EdgeInsets.all(12),
-                      decoration: BoxDecoration(
-                        color: AppColour.red.withOpacity(0.05),
-                        borderRadius: BorderRadius.circular(8),
-                        border: Border.all(color: AppColour.red.withOpacity(0.2)),
-                      ),
-                      child: Row(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Icon(Icons.info_outline, color: AppColour.red, size: 18),
-                          const SizedBox(width: 8),
-                          Expanded(
-                            child: Text(
-                              'Reason: ${widget.order.cancelReason}',
-                              style: simple_text_style(color: AppColour.red, fontWeight: FontWeight.w500,isEllipsisAble: false),
+                        // ✅ Show Cancel Reason if available!
+                        if (safeStatus == OrderStatusCancelled &&
+                            widget.order.cancelReason != null) ...[
+                          const SizedBox(height: 12),
+                          Container(
+                            padding: const EdgeInsets.all(12),
+                            decoration: BoxDecoration(
+                              color: AppColour.red.withOpacity(0.05),
+                              borderRadius: BorderRadius.circular(8),
+                              border: Border.all(
+                                color: AppColour.red.withOpacity(0.2),
+                              ),
+                            ),
+                            child: Row(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Icon(
+                                  Icons.info_outline,
+                                  color: AppColour.red,
+                                  size: 18,
+                                ),
+                                const SizedBox(width: 8),
+                                Expanded(
+                                  child: Text(
+                                    'Reason: ${widget.order.cancelReason}',
+                                    style: simple_text_style(
+                                      color: AppColour.red,
+                                      fontWeight: FontWeight.w500,
+                                      isEllipsisAble: false,
+                                    ),
+                                  ),
+                                ),
+                              ],
                             ),
                           ),
                         ],
-                      ),
+                      ],
                     ),
-                  ],
-                ],
-              ),
-            ),
+                  ),
           ],
         ),
       ),
@@ -1103,21 +1201,31 @@ class _AdminOrderDetailScreenState extends State<AdminOrderDetailScreen> {
                 const SizedBox(width: 8),
                 Text(
                   'Payment Status',
-                  style: simple_text_style(fontSize: 18, fontWeight: FontWeight.w600),
+                  style: simple_text_style(
+                    fontSize: 18,
+                    fontWeight: FontWeight.w600,
+                  ),
                 ),
                 const Spacer(),
 
                 // --- STATUS PILL ---
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 6,
+                  ),
                   decoration: BoxDecoration(
-                    color: safePaymentStatus == PayStatusPaid || safePaymentStatus == PayStatusRefunded
+                    color:
+                        safePaymentStatus == PayStatusPaid ||
+                            safePaymentStatus == PayStatusRefunded
                         ? Colors.green.withOpacity(0.15)
                         : safePaymentStatus == PayStatusPending
                         ? AppColour.primary.withOpacity(0.15)
                         : safePaymentStatus == PayStatusRefunding
                         ? Colors.orange.withOpacity(0.15)
-                        : AppColour.red.withOpacity(0.15), // Failed or Cancelled
+                        : AppColour.red.withOpacity(
+                            0.15,
+                          ), // Failed or Cancelled
                     borderRadius: BorderRadius.circular(20),
                   ),
                   child: Text(
@@ -1125,7 +1233,9 @@ class _AdminOrderDetailScreenState extends State<AdminOrderDetailScreen> {
                     style: simple_text_style(
                       fontWeight: FontWeight.bold,
                       fontSize: 12,
-                      color: safePaymentStatus == PayStatusPaid || safePaymentStatus == PayStatusRefunded
+                      color:
+                          safePaymentStatus == PayStatusPaid ||
+                              safePaymentStatus == PayStatusRefunded
                           ? Colors.green.shade700
                           : safePaymentStatus == PayStatusPending
                           ? AppColour.primary
@@ -1147,8 +1257,16 @@ class _AdminOrderDetailScreenState extends State<AdminOrderDetailScreen> {
                 spacing: 12,
                 runSpacing: 12,
                 children: [
-                  _buildPaymentStatusChip(PayStatusPaid, 'Mark as Paid', Colors.green),
-                  _buildPaymentStatusChip(PayStatusFailed, 'Mark as Failed', Colors.red),
+                  _buildPaymentStatusChip(
+                    PayStatusPaid,
+                    'Mark as Paid',
+                    Colors.green,
+                  ),
+                  _buildPaymentStatusChip(
+                    PayStatusFailed,
+                    'Mark as Failed',
+                    Colors.red,
+                  ),
                 ],
               ),
 
@@ -1159,7 +1277,11 @@ class _AdminOrderDetailScreenState extends State<AdminOrderDetailScreen> {
                 spacing: 12,
                 runSpacing: 12,
                 children: [
-                  _buildPaymentStatusChip(PayStatusRefunded, 'Mark as Refunded', Colors.blue),
+                  _buildPaymentStatusChip(
+                    PayStatusRefunded,
+                    'Mark as Refunded',
+                    Colors.blue,
+                  ),
                 ],
               ),
           ],
@@ -1169,7 +1291,11 @@ class _AdminOrderDetailScreenState extends State<AdminOrderDetailScreen> {
   }
 
   // ✅ 4. The Updated Chip Builder
-  Widget _buildPaymentStatusChip(String targetStatus, String label, Color color) {
+  Widget _buildPaymentStatusChip(
+    String targetStatus,
+    String label,
+    Color color,
+  ) {
     return GestureDetector(
       onTap: isUpdating ? null : () => _updatePaymentStatus(targetStatus),
       child: AnimatedContainer(
@@ -1181,24 +1307,39 @@ class _AdminOrderDetailScreenState extends State<AdminOrderDetailScreen> {
           border: Border.all(color: color, width: 1),
         ),
         child: isUpdating
-            ? SizedBox(width: 14, height: 14, child: CircularProgressIndicator(strokeWidth: 2, color: color))
+            ? SizedBox(
+                width: 14,
+                height: 14,
+                child: CircularProgressIndicator(strokeWidth: 2, color: color),
+              )
             : Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(targetStatus == PayStatusPaid ? Icons.check_circle : targetStatus == PayStatusFailed ? Icons.cancel : Icons.autorenew, size: 16, color: color),
-            const SizedBox(width: 6),
-            Text(
-              label,
-              style: simple_text_style(color: color, fontWeight: FontWeight.bold, fontSize: 13),
-            ),
-          ],
-        ),
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(
+                    targetStatus == PayStatusPaid
+                        ? Icons.check_circle
+                        : targetStatus == PayStatusFailed
+                        ? Icons.cancel
+                        : Icons.autorenew,
+                    size: 16,
+                    color: color,
+                  ),
+                  const SizedBox(width: 6),
+                  Text(
+                    label,
+                    style: simple_text_style(
+                      color: color,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 13,
+                    ),
+                  ),
+                ],
+              ),
       ),
     );
   }
 
   Widget _buildTotalSection(Order order) {
-
     return Card(
       color: AppColour.white,
       elevation: 2,
@@ -1223,7 +1364,9 @@ class _AdminOrderDetailScreenState extends State<AdminOrderDetailScreen> {
               children: [
                 Text('Delivery Fee:', style: simple_text_style(fontSize: 16)),
                 Text(
-                  (order.deliveryFee == 0)? "Free" : '₹${order.deliveryFee.toStringAsFixed(2)}', // @ Delivery fee
+                  (order.deliveryFee == 0)
+                      ? "Free"
+                      : '₹${order.deliveryFee.toStringAsFixed(2)}', // @ Delivery fee
                   style: simple_text_style(fontSize: 16),
                 ),
               ],
@@ -1243,7 +1386,15 @@ class _AdminOrderDetailScreenState extends State<AdminOrderDetailScreen> {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Expanded(child: Text('Coupon (${order.couponCode}) :', style: simple_text_style(fontSize: 16,color: AppColour.red))),
+                Expanded(
+                  child: Text(
+                    'Coupon (${order.couponCode}) :',
+                    style: simple_text_style(
+                      fontSize: 16,
+                      color: AppColour.red,
+                    ),
+                  ),
+                ),
                 Text(
                   '-₹${order.discountAmount!.toStringAsFixed(2)}', // @ Delivery fee
                   style: simple_text_style(fontSize: 16, color: AppColour.red),

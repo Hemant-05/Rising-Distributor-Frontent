@@ -16,6 +16,7 @@ import 'package:raising_india/constant/AppColour.dart';
 
 // Widgets
 import 'package:raising_india/features/admin/add_new_items/widgets/product_image_selector_widget.dart';
+import 'package:raising_india/comman/helper_functions.dart';
 
 class AddNewItemScreen extends StatefulWidget {
   const AddNewItemScreen({super.key});
@@ -275,22 +276,56 @@ class _AddNewItemScreenState extends State<AddNewItemScreen>
           child: SingleChildScrollView(
             physics: const BouncingScrollPhysics(),
             padding: const EdgeInsets.all(20),
-            child: Column(
-              children: [
-                _buildImageSection(),
-                const SizedBox(height: 24),
-                _buildBasicInfoSection(),
-                const SizedBox(height: 24),
-                _buildPricingSection(),
-                const SizedBox(height: 24),
-                _buildStockSection(),
-                const SizedBox(height: 24),
-                _buildDetailsSection(),
-                const SizedBox(height: 32),
-                _buildAddButton(),
-                const SizedBox(height: 20),
-              ],
-            ),
+            child: isDesktop(context)
+                ? Center(
+                    child: ConstrainedBox(
+                      constraints: const BoxConstraints(maxWidth: 1000),
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Expanded(
+                            child: Column(
+                              children: [
+                                _buildImageSection(),
+                                const SizedBox(height: 24),
+                                _buildBasicInfoSection(),
+                                const SizedBox(height: 24),
+                                _buildDetailsSection(),
+                              ],
+                            ),
+                          ),
+                          const SizedBox(width: 24),
+                          Expanded(
+                            child: Column(
+                              children: [
+                                _buildPricingSection(),
+                                const SizedBox(height: 24),
+                                _buildStockSection(),
+                                const SizedBox(height: 32),
+                                _buildAddButton(),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  )
+                : Column(
+                    children: [
+                      _buildImageSection(),
+                      const SizedBox(height: 24),
+                      _buildBasicInfoSection(),
+                      const SizedBox(height: 24),
+                      _buildPricingSection(),
+                      const SizedBox(height: 24),
+                      _buildStockSection(),
+                      const SizedBox(height: 24),
+                      _buildDetailsSection(),
+                      const SizedBox(height: 32),
+                      _buildAddButton(),
+                      const SizedBox(height: 20),
+                    ],
+                  ),
           ),
         ),
       ),
@@ -591,7 +626,19 @@ class _AddNewItemScreenState extends State<AddNewItemScreen>
   }
 
   void _addProduct() async {
-    if (!_formKey.currentState!.validate()) return;
+    if (!_formKey.currentState!.validate()) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Please fill all required fields correctly"), backgroundColor: Colors.red),
+      );
+      return;
+    }
+
+    if (selectedCategory == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Please select a category"), backgroundColor: Colors.red),
+      );
+      return;
+    }
 
     // Get Images from Service
     final images = context
@@ -601,12 +648,11 @@ class _AddNewItemScreenState extends State<AddNewItemScreen>
         .toList();
     if (images.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Please select at least one image")),
+        const SnackBar(content: Text("Please select at least one image"), backgroundColor: Colors.red),
       );
       return;
     }
     setState(() => _isLoading = true);
-
 
     try {
       // Construct Product Model
@@ -632,27 +678,27 @@ class _AddNewItemScreenState extends State<AddNewItemScreen>
         images,
         context.read<ImageService>(),
       );
+
       if (mounted) {
         setState(() => _isLoading = false);
         if (error == null) {
-          _clearForm();
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text("🎉 Product added successfully!"),
-              backgroundColor: Colors.green,
-            ),
+            const SnackBar(content: Text("Product added successfully!")),
           );
+          _resetForm();
         } else {
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(error),
-              backgroundColor: Colors.red,
-            ),
+            SnackBar(content: Text(error), backgroundColor: Colors.red),
           );
         }
       }
     } catch (e) {
-      if (mounted) setState(() => _isLoading = false);
+      if (mounted) {
+        setState(() => _isLoading = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text("Error: ${e.toString()}"), backgroundColor: Colors.red),
+        );
+      }
     }
   }
 
@@ -864,16 +910,27 @@ class _AddNewItemScreenState extends State<AddNewItemScreen>
       width: double.infinity,
       height: 60,
       decoration: BoxDecoration(
-        gradient: (_isFormValid && !_isLoading)
+        gradient: !_isLoading
             ? LinearGradient(
                 colors: [AppColour.primary, AppColour.primary.withOpacity(0.8)],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
               )
             : null,
-        color: (_isFormValid && !_isLoading) ? null : Colors.grey.shade300,
+        color: !_isLoading ? null : Colors.grey.shade300,
         borderRadius: BorderRadius.circular(16),
+        boxShadow: !_isLoading
+            ? [
+                BoxShadow(
+                  color: AppColour.primary.withOpacity(0.4),
+                  blurRadius: 12,
+                  offset: const Offset(0, 4),
+                )
+              ]
+            : null,
       ),
       child: ElevatedButton(
-        onPressed: (_isFormValid && !_isLoading) ? _addProduct : null,
+        onPressed: !_isLoading ? _addProduct : null,
         style: ElevatedButton.styleFrom(
           backgroundColor: Colors.transparent,
           shadowColor: Colors.transparent,

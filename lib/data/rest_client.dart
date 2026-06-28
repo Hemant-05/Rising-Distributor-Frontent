@@ -34,17 +34,26 @@ abstract class RestClient {
   factory RestClient(Dio dio, {String baseUrl}) = _RestClient;
 
   // ===========================================================================
+  // 0. HEALTH CONTROLLER
+  // ===========================================================================
+  @GET("/health")
+  Future<dynamic> getHealth();
+
+  @GET("/health/db")
+  Future<dynamic> getDatabaseHealth();
+
+  // ===========================================================================
   // 1. AUTH CONTROLLER
   // ===========================================================================
   // 1. Register User (Returns Customer + Tokens)
   @POST("/auth/register/user")
-  Future<ApiResponse<Map<String, dynamic>>> registerUser(
+  Future<ApiResponse<dynamic>> registerUser(
     @Body() RegistrationRequest request,
   );
 
   // 2. Register Admin (Returns Admin + Tokens)
   @POST("/auth/register/admin")
-  Future<ApiResponse<Map<String, dynamic>>> registerAdmin(
+  Future<ApiResponse<dynamic>> registerAdmin(
     @Body() RegistrationRequest request,
   );
 
@@ -110,7 +119,7 @@ abstract class RestClient {
 
   // New endpoint from your controller
   @GET("/cart/status/{productId}")
-  Future<ApiResponse<Map<String, dynamic>>> getCartStatus(
+  Future<ApiResponse<dynamic>> getCartStatus(
     @Path("productId") String productId,
   );
 
@@ -182,6 +191,17 @@ abstract class RestClient {
   Future<ApiResponse<List<Product>>> getProductsByBrand(
     @Path("brandId") int brandId, // Java Long -> Dart int
   );
+
+  // 5. Update Brand
+  @PUT("/brands/{id}/update")
+  Future<ApiResponse<Brand>> updateBrand(
+    @Path("id") int id,
+    @Body() Brand brand,
+  );
+
+  // 6. Delete Brand
+  @DELETE("/brands/{id}/delete")
+  Future<ApiResponse<bool>> deleteBrand(@Path("id") int id);
   // ===========================================================================
   // 7. COUPON CONTROLLER
   // ===========================================================================
@@ -367,7 +387,7 @@ abstract class RestClient {
   // Note: Returns Map<String, dynamic> because Spring 'Page' object structure is complex.
   // You can access the list via response.data['content']
   @GET("/products/search")
-  Future<ApiResponse<Map<String, dynamic>>> searchProducts(
+  Future<ApiResponse<dynamic>> searchProducts(
     @Query("query") String? query,
     @Query("category") String? category,
     @Query("minPrice") double? minPrice,

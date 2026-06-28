@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:firebase_auth/firebase_auth.dart'; // ✅ Added Firebase Auth
+import 'package:firebase_auth/firebase_auth.dart';
 
 import 'package:raising_india/comman/back_button.dart';
 import 'package:raising_india/comman/simple_text_style.dart';
@@ -17,7 +17,7 @@ class PersonalInfoScreen extends StatefulWidget {
 }
 
 class _PersonalInfoScreenState extends State<PersonalInfoScreen> {
-  String? _firebaseVerificationId; // ✅ Store Firebase Session ID
+  String? _firebaseVerificationId;
 
   // --- 1. EDIT PROFILE BOTTOM SHEET ---
   void _showEditProfileSheet(BuildContext context, Customer user) {
@@ -151,6 +151,20 @@ class _PersonalInfoScreenState extends State<PersonalInfoScreen> {
 
                       setSheetState(() => isSending = true);
 
+                      final mobileNumber = phoneController.text.trim();
+                      final error = await context.read<UserService>().sendMobileOtp(mobileNumber);
+                      setSheetState(() => isSending = false);
+
+                      if (error == null) {
+                        if (mounted) {
+                          Navigator.pop(context);
+                          _showBackendOtpSheet(context, mobileNumber);
+                        }
+                      } else {
+                        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(error), backgroundColor: Colors.red));
+                      }
+                      return;
+
                       String fullPhoneNumber = '+91${phoneController.text.trim()}';
 
                       // ✅ Trigger Firebase SMS
@@ -190,6 +204,77 @@ class _PersonalInfoScreenState extends State<PersonalInfoScreen> {
   }
 
   // --- 3. ENTER OTP BOTTOM SHEET (✅ UPDATED FOR FIREBASE) ---
+  void _showBackendOtpSheet(BuildContext context, String mobileNumber) {
+    final otpController = TextEditingController();
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.white,
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(24))),
+      builder: (ctx) => StatefulBuilder(
+        builder: (context, setSheetState) {
+          bool isVerifying = false;
+
+          return Padding(
+            padding: EdgeInsets.only(
+              bottom: MediaQuery.of(context).viewInsets.bottom,
+              left: 24, right: 24, top: 24,
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text("Enter OTP", style: simple_text_style(fontSize: 20, fontWeight: FontWeight.bold)),
+                    IconButton(icon: const Icon(Icons.close), onPressed: () => Navigator.pop(context)),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                Text("Enter the 6-digit code sent to your phone.", style: simple_text_style(color: Colors.grey.shade600)),
+                const SizedBox(height: 20),
+                _buildInputField(otpController, "OTP Code", Icons.message_outlined, isNumber: true),
+                const SizedBox(height: 24),
+                SizedBox(
+                  width: double.infinity,
+                  height: 50,
+                  child: ElevatedButton(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppColour.primary,
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    ),
+                    onPressed: isVerifying ? null : () async {
+                      if (otpController.text.isEmpty) return;
+                      setSheetState(() => isVerifying = true);
+
+                      final error = await context.read<UserService>().verifyMobileOtp(mobileNumber, otpController.text.trim());
+                      if (error == null) {
+                        await context.read<AuthService>().loadUserFromStorage();
+                        if (mounted) {
+                          Navigator.pop(context);
+                          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Phone verified successfully!"), backgroundColor: Colors.green));
+                        }
+                      } else {
+                        setSheetState(() => isVerifying = false);
+                        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(error), backgroundColor: Colors.red));
+                      }
+                    },
+                    child: isVerifying
+                        ? const SizedBox(width: 24, height: 24, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
+                        : Text("Verify", style: simple_text_style(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16)),
+                  ),
+                ),
+                const SizedBox(height: 24),
+              ],
+            ),
+          );
+        },
+      ),
+    );
+  }
+
   void _showOtpSheet(BuildContext context) {
     final otpController = TextEditingController();
 

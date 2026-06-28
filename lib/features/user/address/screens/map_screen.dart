@@ -31,15 +31,17 @@ class _MapScreenState extends State<MapScreen> {
 
   Future<void> _getInitialLocation() async {
     final position = await LocationService.getCurrentPosition();
-    if (position != null && mounted) {
+    if (mounted) {
       setState(() {
-        _currentLatLng = LatLng(position.latitude, position.longitude);
+        if (position != null) {
+          _currentLatLng = LatLng(position.latitude, position.longitude);
+        } else {
+          // Default location (Center of India)
+          _currentLatLng = const LatLng(20.5937, 78.9629);
+        }
         _isLoading = false;
       });
-      _mapController.move(_currentLatLng!, 16.0);
       _updateAddress(_currentLatLng!);
-    } else {
-      setState(() => _isLoading = false);
     }
   }
 
@@ -57,6 +59,13 @@ class _MapScreenState extends State<MapScreen> {
       // Animate/Move the map back to the user's location
       _mapController.move(newLatLng, 16.0);
       await _updateAddress(newLatLng);
+    } else if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          backgroundColor: Colors.red,
+          content: Text('Failed to fetch location. Please check GPS.', style: simple_text_style(color: AppColour.white)),
+        ),
+      );
     }
 
     if (mounted) {
@@ -201,8 +210,20 @@ class _MapScreenState extends State<MapScreen> {
 
                           if (placemarks.isNotEmpty) {
                             final placemark = placemarks.first;
-                            addressData['street'] = placemark.street ?? "";
-                            addressData['city'] = placemark.locality ?? placemark.subLocality ?? "";
+                            
+                            String name = placemark.name ?? "";
+                            String street = placemark.street ?? "";
+                            String thoroughfare = placemark.thoroughfare ?? "";
+                            String subLocality = placemark.subLocality ?? "";
+                            
+                            List<String> streetParts = [name, street, thoroughfare, subLocality];
+                            List<String> uniqueStreet = [];
+                            for (var p in streetParts) {
+                                if (p.isNotEmpty && !uniqueStreet.contains(p)) uniqueStreet.add(p);
+                            }
+                            
+                            addressData['street'] = uniqueStreet.join(', ');
+                            addressData['city'] = placemark.locality ?? "";
                             addressData['state'] = placemark.administrativeArea ?? "";
                             addressData['zipCode'] = placemark.postalCode ?? "";
                             addressData['country'] = placemark.country ?? "";

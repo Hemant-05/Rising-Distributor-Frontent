@@ -30,7 +30,7 @@ class NotificationService extends ChangeNotifier {
   }
 
   // 2. Mark as Read
-  Future<void> markAsRead(String id) async {
+  Future<String?> markAsRead(String id) async {
     final index = _notifications.indexWhere((n) => n.id == id);
     if (index != -1) {
       _notifications[index].read = true;
@@ -38,9 +38,14 @@ class NotificationService extends ChangeNotifier {
     }
     try {
       await _repo.markAsRead(id);
+      return null;
     } catch (e) {
+      if (index != -1) {
+        _notifications[index].read = false;
+        notifyListeners();
+      }
       print("Failed to mark read on server: $e");
-      // Optional: Revert change if server fails
+      return e.toString();
     }
   }
 

@@ -1,6 +1,7 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:provider/provider.dart';
 import 'package:persistent_bottom_nav_bar/persistent_bottom_nav_bar.dart';
 import 'package:raising_india/comman/simple_text_style.dart';
 import 'package:raising_india/constant/AppColour.dart';
@@ -129,7 +130,7 @@ class product_card extends StatelessWidget {
                   ),
                   const SizedBox(height: 4),
                   Text(
-                    product.measurement ?? "1 item",
+                    "${product.quantity ?? ""} ${product.measurement ?? ""}".trim(),
                     style: simple_text_style(
                       fontSize: 11,
                       color: Colors.grey.shade600,
@@ -148,7 +149,7 @@ class product_card extends StatelessWidget {
                           if (product.mrp != null &&
                               product.mrp! > (product.price ?? 0))
                             Text(
-                              '₹${product.mrp}',
+                              '₹${product.mrp!.toStringAsFixed(0)}',
                               style: simple_text_style(
                                 fontSize: 10,
                                 color: Colors.grey.shade500,
@@ -156,7 +157,7 @@ class product_card extends StatelessWidget {
                               ),
                             ),
                           Text(
-                            '₹${product.price ?? 0}',
+                            '₹${(product.price ?? 0).toStringAsFixed(0)}',
                             style: simple_text_style(
                               fontSize: 15,
                               fontWeight: FontWeight.bold,
@@ -166,39 +167,94 @@ class product_card extends StatelessWidget {
                       ),
 
                       // Zepto Style Add Button
-                      unavailable
-                          ? Text(
-                              'Out of stock',
-                              style: simple_text_style(
-                                fontSize: 10,
-                                color: Colors.red,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            )
-                          : InkWell(
-                              onTap: () {
-                                context.read<CartService>().addToCart(product.pid!,1);
-                              },
-                              child: Container(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 16,
-                                  vertical: 6,
-                                ),
-                                decoration: BoxDecoration(
-                                  color: Colors.white,
-                                  border: Border.all(color: AppColour.primary),
-                                  borderRadius: BorderRadius.circular(6),
-                                ),
-                                child: Text(
-                                  'ADD',
+                      Consumer<CartService>(
+                        builder: (context, cartService, _) {
+                          final cartItemIndex = cartService.cartItems.indexWhere((item) => item.product?.pid == product.pid);
+                          final inCart = cartItemIndex != -1;
+                          final quantity = inCart ? cartService.cartItems[cartItemIndex].quantity ?? 1 : 0;
+                          final isProcessing = cartService.isProductProcessing(product.pid!);
+
+                          return unavailable
+                              ? Text(
+                                  'Out of stock',
                                   style: simple_text_style(
-                                    color: AppColour.primary,
+                                    fontSize: 10,
+                                    color: Colors.red,
                                     fontWeight: FontWeight.bold,
-                                    fontSize: 12,
                                   ),
-                                ),
-                              ),
-                            ),
+                                )
+                              : isProcessing
+                                  ? Container(
+                                      padding: const EdgeInsets.all(6),
+                                      width: 32,
+                                      height: 32,
+                                      decoration: BoxDecoration(
+                                        color: Colors.white,
+                                        border: Border.all(color: AppColour.primary),
+                                        borderRadius: BorderRadius.circular(6),
+                                      ),
+                                      child: const CircularProgressIndicator(
+                                        strokeWidth: 2,
+                                      ),
+                                    )
+                                  : inCart
+                                      ? Container(
+                                          padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
+                                          decoration: BoxDecoration(
+                                            color: AppColour.primary,
+                                            borderRadius: BorderRadius.circular(6),
+                                          ),
+                                          child: Row(
+                                            children: [
+                                              InkWell(
+                                                onTap: () {
+                                                  if (quantity > 1) {
+                                                    cartService.updateQuantity(product.pid!, quantity - 1);
+                                                  } else {
+                                                    cartService.removeFromCart(product.pid!);
+                                                  }
+                                                },
+                                                child: const Icon(Icons.remove, color: Colors.white, size: 16),
+                                              ),
+                                              Padding(
+                                                padding: const EdgeInsets.symmetric(horizontal: 8),
+                                                child: Text(
+                                                  '$quantity',
+                                                  style: simple_text_style(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 12),
+                                                ),
+                                              ),
+                                              InkWell(
+                                                onTap: () {
+                                                  cartService.updateQuantity(product.pid!, quantity + 1);
+                                                },
+                                                child: const Icon(Icons.add, color: Colors.white, size: 16),
+                                              ),
+                                            ],
+                                          ),
+                                        )
+                                      : InkWell(
+                                          onTap: () {
+                                            cartService.addToCart(product.pid!, 1);
+                                          },
+                                          child: Container(
+                                            padding: const EdgeInsets.symmetric(
+                                              horizontal: 10,
+                                              vertical: 6,
+                                            ),
+                                            decoration: BoxDecoration(
+                                              color: Colors.white,
+                                              border: Border.all(color: AppColour.primary),
+                                              borderRadius: BorderRadius.circular(6),
+                                            ),
+                                            child: Icon(
+                                              Icons.add,
+                                              color: AppColour.primary,
+                                              size: 16,
+                                            ),
+                                          ),
+                                        );
+                        },
+                      ),
                     ],
                   ),
                 ],

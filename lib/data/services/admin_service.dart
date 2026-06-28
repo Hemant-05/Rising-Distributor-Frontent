@@ -5,6 +5,7 @@ import 'package:raising_india/features/admin/order/OrderFilterType.dart';
 import 'package:raising_india/models/dto/dashboard_response.dart';
 import 'package:raising_india/models/model/order.dart';
 import 'package:raising_india/models/model/product.dart';
+import 'package:raising_india/constant/ConString.dart';
 
 class AdminService extends ChangeNotifier {
   final AdminRepository _repo = AdminRepository();
@@ -41,14 +42,26 @@ class AdminService extends ChangeNotifier {
         case OrderFilterType.all:
           _filteredOrders = (await _repo.getAllOrders()) ?? []; // Ensure _repo.getAllOrders returns ApiResponse
           break;
+        case OrderFilterType.placed:
+          _filteredOrders = (await _repo.fetchOrdersByStatus(OrderStatusPlaced)) ?? [];
+          break;
+        case OrderFilterType.confirmed:
+          _filteredOrders = (await _repo.fetchOrdersByStatus(OrderStatusConfirmed)) ?? [];
+          break;
+        case OrderFilterType.preparing:
+          _filteredOrders = (await _repo.fetchOrdersByStatus(OrderStatusPreparing)) ?? [];
+          break;
+        case OrderFilterType.dispatch:
+          _filteredOrders = (await _repo.fetchOrdersByStatus(OrderStatusDispatch)) ?? [];
+          break;
         case OrderFilterType.running:
           _filteredOrders = (await _repo.fetchOrdersByStatus("RUNNING")) ?? [];
           break;
         case OrderFilterType.cancelled:
-          _filteredOrders = (await _repo.fetchOrdersByStatus("CANCELLED")) ?? [];
+          _filteredOrders = (await _repo.fetchOrdersByStatus(OrderStatusCancelled)) ?? [];
           break;
         case OrderFilterType.delivered:
-          _filteredOrders = (await _repo.fetchOrdersByStatus("DELIVERED")) ?? [];
+          _filteredOrders = (await _repo.fetchOrdersByStatus(OrderStatusDeliverd)) ?? [];
           break;
         default :
           _filteredOrders = [];

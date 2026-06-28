@@ -1,15 +1,21 @@
 // core/config/api_endpoints.dart
 
-
 class ApiEndpoints {
   ApiEndpoints._();
+
+  // ============================================================================
+  // Health Endpoints
+  // ============================================================================
+
+  static const String health = '/health';
+  static const String databaseHealth = '$health/db';
 
   // ============================================================================
   // Authentication Endpoints
   // ============================================================================
 
-  static const String auth = '/api/auth';
-  static const String users = '/api/users';
+  static const String auth = '/auth';
+  static const String users = '/users';
 
   // Auth - Basic
   static const String registerUser = '$auth/register/user';
@@ -22,32 +28,34 @@ class ApiEndpoints {
   static const String registerMobile = '$users/mobile';
   static const String verifyOtp = '$registerMobile/verify';
 
-  static String forgotPassword(String email) => '$auth/forgot-password?email=$email';
+  static String forgotPassword(String email) =>
+      '$auth/forgot-password?email=$email';
   static const String resetPassword = '$auth/reset-password';
 
   // Auth - Profile
   static const String me = '$users/me';
-  static String updateFCMToken(String token) => '$users/update-fcm-token?token=$token';
+  static String updateFCMToken(String token) =>
+      '$users/update-fcm-token?token=$token';
 
   // ============================================================================
   // Products Endpoints
   // ============================================================================
 
-  static const String products = '/api/products';
+  static const String products = '/products';
   static const String getProducts = products;
   static const String addProducts = products;
   static String updateProducts(String id) => '$products/$id';
   static String deleteProducts(String id) => '$products/$id';
   static String getProductsById(String id) => '$products/$id';
-  static String getProductsByCategory(String category) => '$products/category/$category';
+  static String getProductsByCategory(String category) =>
+      '$products/category/$category';
   static String getProductsBySearch(String query) => '$products/search/$query';
-
 
   // ============================================================================
   // Cart Endpoints
   // ============================================================================
 
-  static const String cart = '/api/cart';
+  static const String cart = '/cart';
   static const String getCartItems = '$cart/items';
   static const String addToCart = '$cart/add';
   static const String updateCartProductQty = '$cart/update';
@@ -60,25 +68,27 @@ class ApiEndpoints {
   // Order Endpoints
   // ============================================================================
 
-  static const String order = '/api/order';
+  static const String order = '/orders';
   static const String getMyOrders = '$order/my-orders';
-  static String confirmPayment = '$order/confirm-payment';
-  static String placeOrder(String addressId, String paymentMethod) => '$order/place?addressId=$addressId&paymentMethod=$paymentMethod';
-  static String updateOrderStatus(String orderId, String status) => '$order/$orderId?status=$status';
+  static const String confirmPayment = '$order/confirm-payment';
+  static String placeOrder(String addressId, String paymentMethod) =>
+      '$order/place?addressId=$addressId&paymentMethod=$paymentMethod';
+  static String updateOrderStatus(String orderId, String status) =>
+      '$order/$orderId?status=$status';
   static String getOrderById(String orderId) => '$order/$orderId';
   static String cancelOrder(String orderId) => '$order/cancel/$orderId';
   static String getOrderInvoice(String orderId) => '$order/$orderId/invoice';
   static String getOrdersByStatus(String status) => '$order/status/$status';
 
-
   // ============================================================================
   // Addresses Endpoints
   // ============================================================================
 
-  static const String addresses = '/api/addresses';
+  static const String addresses = '/addresses';
   static const String getAllAddresses = '$addresses/all';
   static const String addAddresses = '$addresses/add';
-  static String setPrimaryAddress(String addressId) => '$addresses/set-primary/$addressId';
+  static String setPrimaryAddress(String addressId) =>
+      '$addresses/set-primary/$addressId';
   static String deleteAddress(int addressId) => '$addresses/delete/$addressId';
 
   // ============================================================================
@@ -116,9 +126,9 @@ class ApiEndpoints {
   // Upload Endpoints
   // ============================================================================
 
-  static const String upload = '/upload';
-  static const String uploadImage = '$upload/image';
-  static const String uploadVideo = '$upload/video';
+  static const String images = '/images';
+  static const String uploadImage = '$images/upload';
+  static const String deleteImage = '$images/delete';
 
   // ============================================================================
   // Report & Moderation Endpoints

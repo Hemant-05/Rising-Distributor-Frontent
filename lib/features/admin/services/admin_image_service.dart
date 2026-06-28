@@ -1,51 +1,61 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
-import 'package:image_picker/image_picker.dart';
+import 'package:raising_india/comman/image_helper.dart';
 
 class AdminImageService extends ChangeNotifier {
-  final ImagePicker _picker = ImagePicker();
+  // State: List of up to 5 images
+  List<File> _selectedImages = [];
+  List<File> get selectedImages => _selectedImages;
 
-  // State: List of 2 images (nullable) for the UI slots
-  List<File?> _selectedImages = [null, null];
-  List<File?> get selectedImages => _selectedImages;
-
-  void setImageAtIndex(int index, File image) {
-    if (index >= 0 && index < _selectedImages.length) {
-      _selectedImages[index] = image;
-      notifyListeners();
+  void reorderImages(int oldIndex, int newIndex) {
+    if (oldIndex < newIndex) {
+      newIndex -= 1;
     }
+    final File image = _selectedImages.removeAt(oldIndex);
+    _selectedImages.insert(newIndex, image);
+    notifyListeners();
   }
 
   void removeImageAtIndex(int index) {
     if (index >= 0 && index < _selectedImages.length) {
-      _selectedImages[index] = null;
+      _selectedImages.removeAt(index);
       notifyListeners();
     }
   }
 
   void clearImages() {
-    _selectedImages = [null, null];
+    _selectedImages.clear();
     notifyListeners();
   }
 
+  bool _isPicking = false;
+
   // Helper to pick image
-  Future<void> pickImage(int index, bool fromCamera) async {
-    final File? image = fromCamera
-        ? await pickFromCamera()
-        : await pickFromGallery();
-
-    if (image != null) {
-      setImageAtIndex(index, image);
+  Future<void> pickImage(BuildContext context, bool fromCamera) async {
+    if (_isPicking) return;
+    
+    int remainingSlots = 5 - _selectedImages.length;
+    if (remainingSlots <= 0) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('You can only select up to 5 images.')),
+      );
+      return;
     }
-  }
 
-  Future<File?> pickFromGallery() async {
-    final picked = await _picker.pickImage(source: ImageSource.gallery);
-    return picked != null ? File(picked.path) : null;
-  }
+    _isPicking = true;
+    try {
+      final List<File> images = await ImageHelper.pickAndCropMultipleImages(
+        context: context,
+        fromCamera: fromCamera,
+        maxImages: remainingSlots,
+      );
 
-  Future<File?> pickFromCamera() async {
-    final picked = await _picker.pickImage(source: ImageSource.camera);
-    return picked != null ? File(picked.path) : null;
+      if (images.isNotEmpty) {
+        _selectedImages.addAll(images);
+        notifyListeners();
+      }
+    } finally {
+      _isPicking = false;
+    }
   }
 }

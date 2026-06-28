@@ -100,15 +100,12 @@ class ProductService extends ChangeNotifier {
 
       // 1. Upload Images using the provided ImageService
       for (var file in imageFiles) {
-        // We await each upload. You could also use Future.wait for parallel uploads.
         String? url = await imageService.uploadImage(file);
         if (url != null) {
           imageUrls.add(url);
+        } else {
+          throw Exception("Failed to upload an image. Aborting product creation.");
         }
-      }
-
-      if (imageUrls.isEmpty && imageFiles.isNotEmpty) {
-        throw Exception("Failed to upload images. Please try again.");
       }
 
       // 2. Update Product Model with new URLs
@@ -122,17 +119,20 @@ class ProductService extends ChangeNotifier {
       return null; // Success
     } catch (e) {
       print('-=-=-= ERROR: $e');
+      // Cleanup uploaded images if product creation failed
       for(String url in imageUrls){
-        imageService.deleteImage(url);
+        try {
+          imageService.deleteImage(url);
+        } catch (_) {}
       }
       if (e is AppError) {
         _error = e.toString();
       }
+      return e.toString(); // Return error message instead of null
     } finally {
       _isLoading = false;
       notifyListeners();
     }
-    return null;
   }
 
   Future<String?> updateProduct(Product product) async {
