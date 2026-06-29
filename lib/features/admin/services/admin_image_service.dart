@@ -4,7 +4,7 @@ import 'package:raising_india/comman/image_helper.dart';
 
 class AdminImageService extends ChangeNotifier {
   // State: List of up to 5 images
-  List<File> _selectedImages = [];
+  final List<File> _selectedImages = [];
   List<File> get selectedImages => _selectedImages;
 
   void reorderImages(int oldIndex, int newIndex) {

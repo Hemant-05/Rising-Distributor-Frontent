@@ -30,3 +30,15 @@ Map<String, dynamic> _$RegistrationRequestToJson(
   'number': instance.number,
   'password': instance.password,
 };
+
+GoogleAuthRequest _$GoogleAuthRequestFromJson(Map<String, dynamic> json) =>
+    GoogleAuthRequest(
+      idToken: json['idToken'] as String?,
+      fcmToken: json['fcmToken'] as String?,
+    );
+
+Map<String, dynamic> _$GoogleAuthRequestToJson(GoogleAuthRequest instance) =>
+    <String, dynamic>{
+      'idToken': instance.idToken,
+      'fcmToken': instance.fcmToken,
+    };

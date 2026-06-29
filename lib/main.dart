@@ -81,7 +81,7 @@ class MyApp extends StatelessWidget {
       ],
       child: MaterialApp(
         navigatorKey: navigatorKey,
-        title: 'Rising Distributor',
+        title: 'Rising Mart',
         debugShowCheckedModeBanner: false,
         theme: ThemeData(
           textSelectionTheme: TextSelectionThemeData(

@@ -106,7 +106,7 @@ class _HomeScreenUState extends State<HomeScreenU> {
             if (!productService.isLoading && productService.products.isEmpty && productService.bestSelling.isEmpty) {
               return SingleChildScrollView(
                 physics: const AlwaysScrollableScrollPhysics(),
-                child: Container(
+                child: SizedBox(
                   height: MediaQuery.of(context).size.height * 0.7,
                   child: Center(
                     child: Column(

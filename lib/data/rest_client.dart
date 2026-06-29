@@ -61,6 +61,11 @@ abstract class RestClient {
   @POST("/auth/login")
   Future<ApiResponse<AuthResponse>> login(@Body() LogInRequest request);
 
+  // 4. Google Sign-In Customer
+  @POST("/auth/google/customer")
+  Future<ApiResponse<dynamic>> googleCustomerAuth(
+    @Body() GoogleAuthRequest request,
+  );
   // 4. Refresh Token
   @POST("/auth/refresh")
   Future<ApiResponse<AuthResponse>> refreshToken(

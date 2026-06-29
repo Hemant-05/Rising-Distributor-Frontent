@@ -12,7 +12,20 @@
           "package_name": "com.rising.raising_india"
         }
       },
-      "oauth_client": [],
+      "oauth_client": [
+        {
+          "client_id": "462845774640-vuke24qd84745rllmtntgvurndq7qqm6.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.rising.raising_india",
+            "certificate_hash": "fa27a5c6f4ff20a9cafacf09f85de29790900990"
+          }
+        },
+        {
+          "client_id": "462845774640-meljhuf4h5pqc96pqra70kuv3fbh5i2q.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
       "api_key": [
         {
           "current_key": "AIzaSyBytVjMcfNK5s-S54nT15AKrzbyAI6be-U"
@@ -20,7 +33,19 @@
       ],
       "services": {
         "appinvite_service": {
-          "other_platform_oauth_client": []
+          "other_platform_oauth_client": [
+            {
+              "client_id": "462845774640-meljhuf4h5pqc96pqra70kuv3fbh5i2q.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "462845774640-062edq5ekj63q8f02vns5i8citjfg7o5.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.example.raisingIndia"
+              }
+            }
+          ]
         }
       }
     }

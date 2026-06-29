@@ -12,7 +12,8 @@ NotificationModel _$NotificationModelFromJson(Map<String, dynamic> json) =>
       title: json['title'] as String?,
       message: json['message'] as String?,
       type: json['type'] as String?,
-      read: (json['isRead'] ?? json['read']) as bool? ?? false,
+      read:
+          NotificationModel._readStatusValue(json, 'isRead') as bool? ?? false,
       createdAt: json['createdAt'] as String?,
     );
 

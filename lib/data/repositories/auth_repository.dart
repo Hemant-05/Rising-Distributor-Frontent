@@ -12,7 +12,11 @@ import '../../../models/dto/user_profile_response.dart';
 class AuthRepository with RepoErrorHandler {
   final RestClient _client = getIt<RestClient>();
 
-  Future<Admin> updateAdminProfile(String uid, String name, String email) async {
+  Future<Admin> updateAdminProfile(
+    String uid,
+    String name,
+    String email,
+  ) async {
     try {
       final response = await _client.updateAdminProfile(uid, {
         "name": name,
@@ -20,11 +24,17 @@ class AuthRepository with RepoErrorHandler {
       });
       return response.data!; // Returns the newly updated Admin object
     } catch (e) {
-      throw handleError(e); // Assuming you have your RepoErrorHandler mixin here
+      throw handleError(
+        e,
+      ); // Assuming you have your RepoErrorHandler mixin here
     }
   }
 
-  Future<Customer> updateCustomerProfile(String uid, String name, String email) async {
+  Future<Customer> updateCustomerProfile(
+    String uid,
+    String name,
+    String email,
+  ) async {
     try {
       final response = await _client.updateUserProfile(uid, {
         "name": name,
@@ -32,7 +42,9 @@ class AuthRepository with RepoErrorHandler {
       });
       return response.data!; // Returns the newly updated Customer object
     } catch (e) {
-      throw handleError(e); // Assuming you have your RepoErrorHandler mixin here
+      throw handleError(
+        e,
+      ); // Assuming you have your RepoErrorHandler mixin here
     }
   }
 
@@ -53,7 +65,6 @@ class AuthRepository with RepoErrorHandler {
       throw handleError(e);
     }
   }
-
 
   // --- 1. LOGIN ---
   Future<AuthResponse> login(String email, String password) async {
@@ -79,6 +90,19 @@ class AuthRepository with RepoErrorHandler {
         password: password,
       );
       final response = await _client.registerUser(request);
+      return response.data as Map<String, dynamic>;
+    } catch (e) {
+      throw handleError(e);
+    }
+  }
+
+  Future<Map<String, dynamic>> googleCustomerAuth({
+    required String idToken,
+    String? fcmToken,
+  }) async {
+    try {
+      final request = GoogleAuthRequest(idToken: idToken, fcmToken: fcmToken);
+      final response = await _client.googleCustomerAuth(request);
       return response.data as Map<String, dynamic>;
     } catch (e) {
       throw handleError(e);
@@ -116,9 +140,17 @@ class AuthRepository with RepoErrorHandler {
     }
   }
 
-  Future<void> resetPassword(String email, String otp, String newPassword) async {
+  Future<void> resetPassword(
+    String email,
+    String otp,
+    String newPassword,
+  ) async {
     try {
-      final request = ResetPasswordDto(email: email, otp: otp, newPassword: newPassword);
+      final request = ResetPasswordDto(
+        email: email,
+        otp: otp,
+        newPassword: newPassword,
+      );
       await _client.resetPassword(request);
     } catch (e) {
       throw handleError(e);

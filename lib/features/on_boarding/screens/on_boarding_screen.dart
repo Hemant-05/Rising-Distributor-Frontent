@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:raising_india/constant/AppColour.dart';
 import 'package:raising_india/constant/ConPath.dart';
 import 'package:raising_india/constant/ConString.dart';
-import 'package:raising_india/features/auth/screens/signup_screen.dart';
+import 'package:raising_india/features/auth/screens/google_auth_choice_screen.dart';
 import 'package:raising_india/models/on_boarding_item.dart';
 
 import '../../../comman/elevated_button_style.dart';
@@ -105,7 +105,9 @@ class _OnBoardingScreenState extends State<OnBoardingScreen> {
               isLastPage
                   ? Navigator.pushAndRemoveUntil(
                       context,
-                      MaterialPageRoute(builder: (context) => SignupScreen()),
+                      MaterialPageRoute(
+                        builder: (context) => const GoogleAuthChoiceScreen(),
+                      ),
                       (route) => false,
                     )
                   : _pageController.nextPage(

@@ -125,7 +125,7 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
                           child: Column(
                             children: [
                               Text(
-                                'Rising Distributor',
+                                'Rising Mart',
                                 style: simple_text_style().copyWith(
                                   fontSize: 28,
                                   fontWeight: FontWeight.w900,
@@ -143,11 +143,6 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
                                 ),
                               ),
                               const SizedBox(height: 20),
-                              // 🐛 DEBUG TEXT 🐛
-                              Text(
-                                "Debug: Animating=${_mainController.isAnimating}, Loading=${authService.isLoading}",
-                                style: const TextStyle(fontSize: 12, color: Colors.grey),
-                              ),
                             ],
                           ),
                         ),

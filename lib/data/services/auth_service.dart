@@ -1,4 +1,8 @@
 import 'package:dio/dio.dart';
+import 'package:firebase_auth/firebase_auth.dart' as firebase_auth;
+import 'package:firebase_messaging/firebase_messaging.dart';
+import 'package:flutter/foundation.dart';
+import 'package:google_sign_in/google_sign_in.dart';
 import 'package:raising_india/constant/ConString.dart';
 import 'package:raising_india/error/exceptions.dart';
 import 'package:raising_india/data/repositories/auth_repository.dart';
@@ -13,6 +17,9 @@ import 'package:flutter/material.dart';
 class AuthService extends ChangeNotifier {
   final AuthRepository _repo = AuthRepository();
   final Dio _dio = getIt<Dio>();
+  bool _googleSignInInitialized = false;
+  static const String _googleServerClientId =
+      '462845774640-meljhuf4h5pqc96pqra70kuv3fbh5i2q.apps.googleusercontent.com';
 
   Customer? _customer;
   Admin? _admin;
@@ -42,7 +49,11 @@ class AuthService extends ChangeNotifier {
 
     try {
       // 1. Call the repository
-      final updatedAdmin = await _repo.updateAdminProfile(_admin!.uid!, name, email);
+      final updatedAdmin = await _repo.updateAdminProfile(
+        _admin!.uid!,
+        name,
+        email,
+      );
 
       // 2. Update the local admin state so the app UI refreshes immediately!
       _admin = Admin(
@@ -53,25 +64,30 @@ class AuthService extends ChangeNotifier {
       );
 
       return null; // Success!
-
     } on AppError catch (e) {
       return e.message;
     } catch (e) {
       return "Failed to update profile. Please try again.";
-    } finally{
+    } finally {
       _isLoading = false;
       notifyListeners();
     }
   }
 
   Future<String?> updateCustomerProfile(String name, String email) async {
-    if (_customer == null || _customer!.uid == null) return "Customer not found.";
+    if (_customer == null || _customer!.uid == null) {
+      return "Customer not found.";
+    }
 
     _isLoading = true;
     notifyListeners();
 
     try {
-      final updateCustomer = await _repo.updateCustomerProfile(_customer!.uid!, name, email);
+      final updateCustomer = await _repo.updateCustomerProfile(
+        _customer!.uid!,
+        name,
+        email,
+      );
       _customer = Customer(
         uid: updateCustomer.uid,
         name: updateCustomer.name,
@@ -84,7 +100,7 @@ class AuthService extends ChangeNotifier {
       return e.message;
     } catch (e) {
       return "Failed to update profile. Please try again.";
-    } finally{
+    } finally {
       _isLoading = false;
       notifyListeners();
     }
@@ -126,7 +142,7 @@ class AuthService extends ChangeNotifier {
     _isLoading = true;
     notifyListeners();
     try {
-      if(email.isEmpty || password.isEmpty){
+      if (email.isEmpty || password.isEmpty) {
         return "All fields are required";
       }
       if (!email.contains('@') || !email.contains('.')) {
@@ -163,7 +179,7 @@ class AuthService extends ChangeNotifier {
     notifyListeners();
     try {
       var data = {};
-      if(name.isEmpty || email.isEmpty || password.isEmpty){
+      if (name.isEmpty || email.isEmpty || password.isEmpty) {
         return "All fields are required";
       }
       if (!email.contains('@') || !email.contains('.')) {
@@ -178,7 +194,7 @@ class AuthService extends ChangeNotifier {
           email: email,
           password: password,
         );
-      }else{
+      } else {
         data = await _repo.registerAdmin(
           name: name,
           email: email,
@@ -191,7 +207,8 @@ class AuthService extends ChangeNotifier {
       if (data.containsKey('tokens')) {
         final tokenMap = data['tokens'] as Map<String, dynamic>;
         final accessToken = tokenMap['access_token'] ?? tokenMap['accessToken'];
-        final refreshToken = tokenMap['refresh_token'] ?? tokenMap['refreshToken'];
+        final refreshToken =
+            tokenMap['refresh_token'] ?? tokenMap['refreshToken'];
 
         if (accessToken != null) {
           await _persistTokens(accessToken, refreshToken);
@@ -207,6 +224,96 @@ class AuthService extends ChangeNotifier {
       _isLoading = false;
       notifyListeners();
     }
+  }
+
+  Future<String?> signInWithGoogle() async {
+    _isLoading = true;
+    notifyListeners();
+
+    try {
+      final firebaseIdToken = await _getFirebaseGoogleIdToken();
+      if (firebaseIdToken == null || firebaseIdToken.isEmpty) {
+        return 'Google sign-in could not get a valid token.';
+      }
+
+      final fcmToken = await FirebaseMessaging.instance.getToken().timeout(
+        const Duration(seconds: 5),
+        onTimeout: () => null,
+      );
+
+      final data = await _repo.googleCustomerAuth(
+        idToken: firebaseIdToken,
+        fcmToken: fcmToken,
+      );
+
+      if (data.containsKey('tokens')) {
+        final tokenMap = data['tokens'] as Map<String, dynamic>;
+        final accessToken = tokenMap['access_token'] ?? tokenMap['accessToken'];
+        final refreshToken =
+            tokenMap['refresh_token'] ?? tokenMap['refreshToken'];
+
+        if (accessToken != null) {
+          await _persistTokens(accessToken, refreshToken);
+          await _fetchAndSetUser();
+          await NotificationBackgroundService.syncFCMTokenWithServer();
+          return null;
+        }
+      }
+
+      return 'Google sign-in failed: backend did not return tokens.';
+    } on firebase_auth.FirebaseAuthException catch (e) {
+      return e.message ?? 'Google sign-in failed. Please try again.';
+    } on GoogleSignInException catch (e) {
+      if (e.code == GoogleSignInExceptionCode.canceled) {
+        return 'Google sign-in was cancelled.';
+      }
+      return e.description ?? 'Google sign-in failed. Please try again.';
+    } on AppError catch (e) {
+      return e.message;
+    } catch (e) {
+      debugPrint('Google sign-in failed: $e');
+      return 'Google sign-in failed. Please try again.';
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
+
+  Future<String?> _getFirebaseGoogleIdToken() async {
+    if (kIsWeb) {
+      final provider = firebase_auth.GoogleAuthProvider()
+        ..addScope('email')
+        ..addScope('profile');
+      final credential = await firebase_auth.FirebaseAuth.instance
+          .signInWithPopup(provider);
+      return credential.user?.getIdToken();
+    }
+
+    await _ensureGoogleSignInInitialized();
+    final googleUser = await GoogleSignIn.instance.authenticate(
+      scopeHint: const ['email', 'profile'],
+    );
+    final googleAuth = googleUser.authentication;
+    final googleIdToken = googleAuth.idToken;
+
+    if (googleIdToken == null || googleIdToken.isEmpty) {
+      return null;
+    }
+
+    final credential = firebase_auth.GoogleAuthProvider.credential(
+      idToken: googleIdToken,
+    );
+    final userCredential = await firebase_auth.FirebaseAuth.instance
+        .signInWithCredential(credential);
+    return userCredential.user?.getIdToken();
+  }
+
+  Future<void> _ensureGoogleSignInInitialized() async {
+    if (_googleSignInInitialized) return;
+    await GoogleSignIn.instance.initialize(
+      serverClientId: _googleServerClientId,
+    );
+    _googleSignInInitialized = true;
   }
 
   // --- 3. REFRESH TOKEN ---
@@ -272,6 +379,10 @@ class AuthService extends ChangeNotifier {
     notifyListeners();
 
     final prefs = await SharedPreferences.getInstance();
+    await firebase_auth.FirebaseAuth.instance.signOut();
+    if (_googleSignInInitialized) {
+      await GoogleSignIn.instance.signOut();
+    }
     await prefs.clear();
     _customer = null;
     _admin = null;
@@ -305,7 +416,7 @@ class AuthService extends ChangeNotifier {
       return e.message;
     } catch (e) {
       return 'Failed to send OTP.';
-    }finally{
+    } finally {
       _isLoading = false;
       notifyListeners();
     }
@@ -319,7 +430,7 @@ class AuthService extends ChangeNotifier {
       return 'success';
     } catch (e) {
       return 'fail';
-    }finally{
+    } finally {
       _isLoading = false;
       notifyListeners();
     }
