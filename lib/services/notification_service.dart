@@ -4,6 +4,8 @@ import 'dart:developer';
 
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:raising_india/data/services/user_service.dart';
+import 'package:raising_india/data/services/product_service.dart';
+import 'package:raising_india/data/services/order_service.dart';
 import 'package:raising_india/services/service_locator.dart';
 
 // Top-level function for background handling
@@ -134,7 +136,23 @@ class NotificationBackgroundService {
     // Foreground Message
     FirebaseMessaging.onMessage.listen((RemoteMessage message) {
       log('Got a message whilst in the foreground!');
-      _showLocalNotification(message);
+      
+      String? type = message.data['type'];
+      String? action = message.data['action'];
+      String? payloadId = message.data['payloadId'];
+      
+      if (type == 'SILENT_PUSH') {
+        log('SILENT_PUSH received: $action for $payloadId');
+        if (action == 'PRODUCT_UPDATE' && payloadId != null) {
+          getIt<ProductService>().refreshProduct(payloadId);
+        } else if (action == 'PRODUCT_DELETE') {
+          getIt<ProductService>().fetchAvailableProducts();
+        } else if (action == 'ORDER_UPDATE') {
+          getIt<OrderService>().fetchMyOrders();
+        }
+      } else {
+        _showLocalNotification(message);
+      }
     });
 
     // App Opened from Background

@@ -19,6 +19,10 @@ class ProductService extends ChangeNotifier {
   List<Product> _products = [];
   List<Product> get products => _products;
 
+  List<Product> get saleProducts => _products
+      .where((p) => p.mrp != null && p.price != null && p.mrp! > p.price!)
+      .toList();
+
   String? _error;
   String? get error => _error;
 
@@ -33,16 +37,20 @@ class ProductService extends ChangeNotifier {
   List<Product> _bestSelling = [];
   List<Product> get bestSelling => _bestSelling;
 
-  Future<void> fetchBestSelling() async {
-    _isLoading = true;
-    notifyListeners();
+  Future<void> fetchBestSelling({bool showLoader = true}) async {
+    if (showLoader) {
+      _isLoading = true;
+      notifyListeners();
+    }
     try {
       _bestSelling = await _repo.getBestSelling();
     } catch (e) {
       _error = e.toString();
       print("Best Selling Fetch Error: $e");
     } finally{
-      _isLoading = false;
+      if (showLoader) {
+        _isLoading = false;
+      }
       notifyListeners();
     }
   }
@@ -64,18 +72,39 @@ class ProductService extends ChangeNotifier {
     }
   }
 
-  Future<void> fetchAvailableProducts() async {
-    if (_products.isNotEmpty) return;
-    _isLoading = true;
-    notifyListeners();
+  Future<void> fetchAvailableProducts({bool forceRefresh = false, bool showLoader = true}) async {
+    if (_products.isNotEmpty && !forceRefresh) return;
+    if (showLoader) {
+      _isLoading = true;
+      notifyListeners();
+    }
     try {
       _products = await _repo.getAllAvailableProducts();
     } catch (e) {
       _error = e.toString();
       print("Product Error: $e");
     } finally {
-      _isLoading = false;
+      if (showLoader) {
+        _isLoading = false;
+      }
       notifyListeners();
+    }
+  }
+
+  Future<Product?> refreshProduct(String pid, {bool notify = true}) async {
+    try {
+      final product = await _repo.getProduct(pid);
+      final index = _products.indexWhere((p) => p.pid == pid);
+      if (index != -1) {
+        _products[index] = product;
+      } else {
+        _products.add(product);
+      }
+      if (notify) notifyListeners();
+      return product;
+    } catch (e) {
+      _error = e.toString();
+      return null;
     }
   }
 

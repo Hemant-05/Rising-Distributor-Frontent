@@ -416,12 +416,12 @@ abstract class RestClient {
 
   @GET("/reviews/product/{productId}")
   Future<ApiResponse<List<ProductReview>>> getProductReviews(
-    @Path("productId") int productId,
+    @Path("productId") String productId,
   );
 
   @GET("/reviews/product/{productId}/average")
   Future<ApiResponse<double>> getProductAverageRating(
-    @Path("productId") int productId,
+    @Path("productId") String productId,
   );
 
   // --- Reviews (Admin) ---

@@ -17,6 +17,17 @@ import 'package:raising_india/models/model/product.dart';
 import '../../../../models/model/brand.dart';
 import '../../../../models/model/category.dart';
 
+class _EditableProductImage {
+  final String? remoteUrl;
+  final File? localFile;
+
+  const _EditableProductImage.remote(this.remoteUrl) : localFile = null;
+  const _EditableProductImage.local(this.localFile) : remoteUrl = null;
+
+  bool get isRemote => remoteUrl != null;
+  String get key => remoteUrl ?? localFile?.path ?? UniqueKey().toString();
+}
+
 class AdminProductDetailScreen extends StatefulWidget {
   final Product product;
   const AdminProductDetailScreen({super.key, required this.product});
@@ -38,9 +49,8 @@ class _AdminProductDetailScreenState extends State<AdminProductDetailScreen>
   late TextEditingController ratingController;
   late Category selectedCategory;
   late Brand? selectedBrand;
-  List<String> photos_list = [];
-  List<File> photos_files_list = [];
-  List<String> deleted_photos_list = [];
+  final List<_EditableProductImage> _productImages = [];
+  final List<String> deleted_photos_list = [];
   late ImageService imageService;
   late AdminImageService adminImageService;
 
@@ -62,7 +72,11 @@ class _AdminProductDetailScreenState extends State<AdminProductDetailScreen>
     adminImageService = context.read<AdminImageService>();
 
     nameController = TextEditingController(text: widget.product.name);
-    photos_list.addAll(widget.product.photosList!);
+    _productImages.addAll(
+      (widget.product.photosList ?? [])
+          .map((url) => _EditableProductImage.remote(url))
+          .toList(),
+    );
     descriptionController = TextEditingController(
       text: widget.product.description,
     );
@@ -140,26 +154,6 @@ class _AdminProductDetailScreenState extends State<AdminProductDetailScreen>
     }
   }
 
-  void _moveExistingImage(int index, int direction) {
-    final newIndex = index + direction;
-    if (newIndex < 0 || newIndex >= photos_list.length) return;
-    setState(() {
-      final image = photos_list.removeAt(index);
-      photos_list.insert(newIndex, image);
-      _hasUnsavedChanges = true;
-    });
-  }
-
-  void _moveNewImage(int index, int direction) {
-    final newIndex = index + direction;
-    if (newIndex < 0 || newIndex >= photos_files_list.length) return;
-    setState(() {
-      final image = photos_files_list.removeAt(index);
-      photos_files_list.insert(newIndex, image);
-      _hasUnsavedChanges = true;
-    });
-  }
-
   @override
   void dispose() {
     _fadeAnimationController.dispose();
@@ -185,14 +179,19 @@ class _AdminProductDetailScreenState extends State<AdminProductDetailScreen>
     });
 
     try {
-      List<String> newPhotosList = [];
-      for (File file in photos_files_list) {
-        String? url = await imageService.uploadImage(file);
-        newPhotosList.add(url!);
+      final orderedPhotoUrls = <String>[];
+      for (final image in _productImages) {
+        if (image.isRemote && image.remoteUrl != null) {
+          orderedPhotoUrls.add(image.remoteUrl!);
+        } else if (image.localFile != null) {
+          final url = await imageService.uploadImage(image.localFile!);
+          if (url != null) {
+            orderedPhotoUrls.add(url);
+          }
+        }
       }
-      photos_list.addAll(newPhotosList);
       if (deleted_photos_list.isNotEmpty) {
-        for (String url in deleted_photos_list) {
+        for (String url in deleted_photos_list.toSet()) {
           await imageService.deleteImage(url);
         }
       }
@@ -225,7 +224,7 @@ class _AdminProductDetailScreenState extends State<AdminProductDetailScreen>
             widget.product.rating,
         category: selectedCategory,
         available: available,
-        photosList: photos_list,
+        photosList: orderedPhotoUrls,
         brand: selectedBrand,
         nameLower: nameController.text.trim().toLowerCase(),
         lastStockUpdate: DateTime.now(),
@@ -440,7 +439,9 @@ class _AdminProductDetailScreenState extends State<AdminProductDetailScreen>
               if (images.isNotEmpty) {
                 setState(() {
                   _hasUnsavedChanges = true;
-                  photos_files_list.addAll(images);
+                  _productImages.addAll(
+                    images.map((file) => _EditableProductImage.local(file)),
+                  );
                 });
               }
               Navigator.pop(ctx);
@@ -457,7 +458,9 @@ class _AdminProductDetailScreenState extends State<AdminProductDetailScreen>
               if (images.isNotEmpty) {
                 setState(() {
                   _hasUnsavedChanges = true;
-                  photos_files_list.addAll(images);
+                  _productImages.addAll(
+                    images.map((file) => _EditableProductImage.local(file)),
+                  );
                 });
               }
               Navigator.pop(ctx);
@@ -783,248 +786,198 @@ class _AdminProductDetailScreenState extends State<AdminProductDetailScreen>
             ),
           ),
           const SizedBox(height: 10),
-          if (photos_list.isNotEmpty && photos_files_list.isNotEmpty)
-            Text(
-              'Old Images',
-              style: simple_text_style(color: AppColour.black),
-            ),
-          Padding(
-            padding: const EdgeInsets.fromLTRB(20, 4, 20, 4),
-            child: photos_list.isNotEmpty
-                ? SizedBox(
-                    height: 80,
-                    child: ListView.separated(
-                      scrollDirection: Axis.horizontal,
-                      itemCount: photos_list.length,
-                      separatorBuilder: (_, __) => const SizedBox(width: 12),
-                      itemBuilder: (context, index) {
-                        return Stack(
-                          children: [
-                            Container(
-                              width: 80,
-                              height: 80,
-                              decoration: BoxDecoration(
-                                borderRadius: BorderRadius.circular(12),
-                                border: Border.all(
-                                  color: AppColour.black,
-                                  width: 1,
-                                ),
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: Colors.grey.shade300,
-                                    blurRadius: 6,
-                                    offset: const Offset(0, 2),
-                                  ),
-                                ],
-                              ),
-                              child: ClipRRect(
-                                borderRadius: BorderRadius.circular(12),
-                                child: CachedNetworkImage(
-                                  imageUrl: photos_list[index],
-                                  fit: BoxFit.cover,
-                                  errorWidget: (_, __, ___) => Container(
-                                    color: Colors.grey.shade200,
-                                    child: Icon(
-                                      Icons.broken_image,
-                                      color: Colors.grey.shade400,
-                                      size: 40,
-                                    ),
-                                  ),
-                                ),
-                              ),
-                            ),
-                            Positioned(
-                              top: 2,
-                              right: 2,
-                              child: InkWell(
-                                onTap: () async {
-                                  final croppedImage =
-                                      await ImageHelper.downloadAndCropImage(
-                                        context: context,
-                                        imageUrl: photos_list[index],
-                                      );
-                                  if (croppedImage != null) {
-                                    setState(() {
-                                      deleted_photos_list.add(
-                                        photos_list[index],
-                                      );
-                                      _hasUnsavedChanges = true;
-                                      photos_list.removeAt(index);
-                                      photos_files_list.add(croppedImage);
-                                    });
-                                  }
-                                },
-                                child: Container(
-                                  padding: const EdgeInsets.all(2),
-                                  decoration: BoxDecoration(
-                                    color: Colors.white.withOpacity(0.8),
-                                    shape: BoxShape.circle,
-                                  ),
-                                  child: const Icon(
-                                    Icons.crop,
-                                    color: Colors.blue,
-                                    size: 18,
-                                  ),
-                                ),
-                              ),
-                            ),
-                            Positioned(
-                              bottom: 0,
-                              left: 0,
-                              child: _buildImageReorderControls(
-                                index: index,
-                                itemCount: photos_list.length,
-                                onMoveLeft: () => _moveExistingImage(index, -1),
-                                onMoveRight: () => _moveExistingImage(index, 1),
-                              ),
-                            ),
-
-                            Positioned(
-                              bottom: 0,
-                              right: 0,
-                              child: InkWell(
-                                onTap: () {
-                                  setState(() {
-                                    deleted_photos_list.add(photos_list[index]);
-                                    _hasUnsavedChanges = true;
-                                    photos_list.removeAt(index);
-                                  });
-                                },
-                                child: Icon(Icons.cancel, color: AppColour.red),
-                              ),
-                            ),
-                          ],
-                        );
-                      },
-                    ),
-                  )
-                : Container(
-                    height: 120,
-                    width: double.infinity,
-                    decoration: BoxDecoration(
-                      color: Colors.grey.shade100,
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(
-                        color: Colors.grey.shade300,
-                        style: BorderStyle.solid,
-                      ),
-                    ),
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(
-                          Icons.image_not_supported,
-                          size: 40,
-                          color: Colors.grey.shade400,
-                        ),
-                        const SizedBox(height: 8),
-                        Text(
-                          'No images available',
-                          style: simple_text_style(color: Colors.grey.shade600),
-                        ),
-                      ],
-                    ),
+          if (_productImages.isEmpty)
+            Container(
+              margin: const EdgeInsets.all(20),
+              height: 120,
+              width: double.infinity,
+              decoration: BoxDecoration(
+                color: Colors.grey.shade100,
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(
+                  color: Colors.grey.shade300,
+                  style: BorderStyle.solid,
+                ),
+              ),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(
+                    Icons.image_not_supported,
+                    size: 40,
+                    color: Colors.grey.shade400,
                   ),
-          ),
-          const SizedBox(height: 10),
-          if (photos_files_list.isNotEmpty) ...{
-            Text(
-              'New Images',
-              style: simple_text_style(color: AppColour.black),
-            ),
+                  const SizedBox(height: 8),
+                  Text(
+                    'No images available',
+                    style: simple_text_style(color: Colors.grey.shade600),
+                  ),
+                ],
+              ),
+            )
+          else
             Padding(
               padding: const EdgeInsets.fromLTRB(20, 4, 20, 20),
               child: SizedBox(
-                height: 80,
-                child: ListView.separated(
+                height: 110,
+                child: ReorderableListView.builder(
                   scrollDirection: Axis.horizontal,
-                  itemCount: photos_files_list.length,
-                  separatorBuilder: (_, __) => const SizedBox(width: 12),
+                  itemCount: _productImages.length,
+                  onReorder: (oldIndex, newIndex) {
+                    setState(() {
+                      if (oldIndex < newIndex) {
+                        newIndex -= 1;
+                      }
+                      final item = _productImages.removeAt(oldIndex);
+                      _productImages.insert(newIndex, item);
+                      _hasUnsavedChanges = true;
+                    });
+                  },
+                  proxyDecorator: (child, index, animation) {
+                    return Material(
+                      elevation: 4,
+                      color: Colors.transparent,
+                      child: child,
+                    );
+                  },
                   itemBuilder: (context, index) {
-                    return Stack(
-                      children: [
-                        Container(
-                          width: 80,
-                          height: 80,
-                          decoration: BoxDecoration(
-                            borderRadius: BorderRadius.circular(12),
-                            border: Border.all(
-                              color: AppColour.black,
-                              width: 1,
-                            ),
-                            boxShadow: [
-                              BoxShadow(
-                                color: Colors.grey.shade300,
-                                blurRadius: 6,
-                                offset: const Offset(0, 2),
+                    final image = _productImages[index];
+                    return Container(
+                      key: ValueKey(image.key),
+                      margin: const EdgeInsets.only(right: 12),
+                      width: 80,
+                      child: Stack(
+                        clipBehavior: Clip.none,
+                        children: [
+                          Container(
+                            width: 80,
+                            height: 80,
+                            decoration: BoxDecoration(
+                              borderRadius: BorderRadius.circular(12),
+                              border: Border.all(
+                                color: AppColour.black,
+                                width: 1,
                               ),
-                            ],
-                          ),
-                          child: ClipRRect(
-                            borderRadius: BorderRadius.circular(12),
-                            child: Image.file(
-                              photos_files_list[index],
-                              fit: BoxFit.cover,
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.grey.shade300,
+                                  blurRadius: 6,
+                                  offset: const Offset(0, 2),
+                                ),
+                              ],
+                            ),
+                            child: ClipRRect(
+                              borderRadius: BorderRadius.circular(12),
+                              child: image.isRemote
+                                  ? CachedNetworkImage(
+                                      imageUrl: image.remoteUrl!,
+                                      fit: BoxFit.cover,
+                                      errorWidget: (_, __, ___) => Container(
+                                        color: Colors.grey.shade200,
+                                        child: Icon(
+                                          Icons.broken_image,
+                                          color: Colors.grey.shade400,
+                                        ),
+                                      ),
+                                    )
+                                  : Image.file(
+                                      image.localFile!,
+                                      fit: BoxFit.cover,
+                                    ),
                             ),
                           ),
-                        ),
-                        Positioned(
-                          bottom: 0,
-                          left: 0,
-                          child: _buildImageReorderControls(
-                            index: index,
-                            itemCount: photos_files_list.length,
-                            onMoveLeft: () => _moveNewImage(index, -1),
-                            onMoveRight: () => _moveNewImage(index, 1),
+                          Positioned(
+                            top: 2,
+                            right: 2,
+                            child: InkWell(
+                              onTap: () async {
+                                File? croppedImage;
+                                if (image.isRemote) {
+                                  croppedImage = await ImageHelper.downloadAndCropImage(
+                                    context: context,
+                                    imageUrl: image.remoteUrl!,
+                                  );
+                                } else {
+                                  croppedImage = await ImageHelper.cropImage(
+                                    imagePath: image.localFile!.path,
+                                    context: context,
+                                  );
+                                }
+
+                                if (croppedImage != null) {
+                                  setState(() {
+                                    if (image.isRemote) {
+                                      deleted_photos_list.add(image.remoteUrl!);
+                                    }
+                                    _hasUnsavedChanges = true;
+                                    _productImages[index] = _EditableProductImage.local(croppedImage);
+                                  });
+                                }
+                              },
+                              child: Container(
+                                padding: const EdgeInsets.all(4),
+                                decoration: BoxDecoration(
+                                  color: Colors.white.withOpacity(0.9),
+                                  shape: BoxShape.circle,
+                                ),
+                                child: const Icon(
+                                  Icons.crop,
+                                  color: Colors.blue,
+                                  size: 16,
+                                ),
+                              ),
+                            ),
                           ),
-                        ),
-                        Positioned(
-                          bottom: 0,
-                          right: 0,
-                          child: InkWell(
-                            onTap: () {
-                              setState(() {
-                                _hasUnsavedChanges = true;
-                                photos_files_list.removeAt(index);
-                              });
-                            },
-                            child: Icon(Icons.cancel, color: AppColour.red),
+                          Positioned(
+                            top: 60,
+                            right: -6,
+                            child: InkWell(
+                              onTap: () {
+                                setState(() {
+                                  if (image.isRemote) {
+                                    deleted_photos_list.add(image.remoteUrl!);
+                                  }
+                                  _hasUnsavedChanges = true;
+                                  _productImages.removeAt(index);
+                                });
+                              },
+                              child: Container(
+                                decoration: const BoxDecoration(
+                                  color: Colors.white,
+                                  shape: BoxShape.circle,
+                                ),
+                                child: Icon(Icons.cancel, color: AppColour.red, size: 24),
+                              ),
+                            ),
                           ),
-                        ),
-                      ],
+                          Positioned(
+                            bottom: 5,
+                            left: 0,
+                            right: 0,
+                            child: ReorderableDragStartListener(
+                              index: index,
+                              child: Container(
+                                margin: const EdgeInsets.symmetric(horizontal: 20),
+                                padding: const EdgeInsets.all(2),
+                                decoration: BoxDecoration(
+                                  color: Colors.black.withOpacity(0.5),
+                                  borderRadius: BorderRadius.circular(12)
+                                ),
+                                child: const Icon(
+                                  Icons.drag_handle,
+                                  color: Colors.white,
+                                  size: 18,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
                     );
                   },
                 ),
               ),
             ),
-          },
-        ],
-      ),
-    );
-  }
-
-  Widget _buildImageReorderControls({
-    required int index,
-    required int itemCount,
-    required VoidCallback onMoveLeft,
-    required VoidCallback onMoveRight,
-  }) {
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.9),
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          _tinyMoveButton(
-            icon: Icons.chevron_left,
-            onPressed: index > 0 ? onMoveLeft : null,
-          ),
-          _tinyMoveButton(
-            icon: Icons.chevron_right,
-            onPressed: index < itemCount - 1 ? onMoveRight : null,
-          ),
         ],
       ),
     );

@@ -17,9 +17,11 @@ class OrderService extends ChangeNotifier {
   bool get isLoading => _isLoading;
 
   // --- 1. Fetch Orders ---
-  Future<void> fetchMyOrders() async {
-    _isLoading = true;
-    notifyListeners();
+  Future<void> fetchMyOrders({bool showLoader = true}) async {
+    if (showLoader) {
+      _isLoading = true;
+      notifyListeners();
+    }
     try {
       _orders = await _repo.getMyOrders();
       // Sort by newest first (optional)
@@ -27,8 +29,34 @@ class OrderService extends ChangeNotifier {
     } catch (e) {
       print("Order Fetch Error: $e");
     } finally {
-      _isLoading = false;
+      if (showLoader) {
+        _isLoading = false;
+      }
       notifyListeners();
+    }
+  }
+
+  Future<Order?> fetchOrderById(int id, {bool showLoader = false}) async {
+    if (showLoader) {
+      _isLoading = true;
+      notifyListeners();
+    }
+    try {
+      final order = await _repo.getOrderById(id);
+      final index = _orders.indexWhere((item) => item.id == id);
+      if (index != -1) {
+        _orders[index] = order;
+      }
+      notifyListeners();
+      return order;
+    } catch (e) {
+      print("Order Detail Fetch Error: $e");
+      return null;
+    } finally {
+      if (showLoader) {
+        _isLoading = false;
+        notifyListeners();
+      }
     }
   }
 

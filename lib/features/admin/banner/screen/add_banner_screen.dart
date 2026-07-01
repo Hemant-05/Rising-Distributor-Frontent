@@ -7,7 +7,11 @@ import 'package:raising_india/comman/elevated_button_style.dart';
 import 'package:raising_india/comman/simple_text_style.dart';
 import 'package:raising_india/constant/AppColour.dart';
 import 'package:raising_india/data/services/banner_service.dart';
+import 'package:raising_india/data/services/brand_service.dart';
+import 'package:raising_india/data/services/category_service.dart';
 import 'package:raising_india/data/services/image_service.dart';
+import 'package:raising_india/models/model/brand.dart';
+import 'package:raising_india/models/model/category.dart';
 
 class AddBannerScreen extends StatefulWidget {
   const AddBannerScreen({super.key});
@@ -19,6 +23,18 @@ class AddBannerScreen extends StatefulWidget {
 class _AddBannerScreenState extends State<AddBannerScreen> {
   File? _imageFile;
   bool _isUploading = false; // Local loading state for this screen
+  String _targetType = 'sales';
+  Category? _selectedCategory;
+  Brand? _selectedBrand;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      context.read<CategoryService>().loadCategories();
+      context.read<BrandService>().fetchBrands();
+    });
+  }
 
   Future<void> _pickImage() async {
     try {
@@ -51,13 +67,37 @@ class _AddBannerScreenState extends State<AddBannerScreen> {
       return;
     }
 
+    if (_targetType == 'category' && _selectedCategory == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Please select a category for this banner'),
+          backgroundColor: Colors.orange,
+        ),
+      );
+      return;
+    }
+
+    if (_targetType == 'brand' && _selectedBrand == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Please select a brand for this banner'),
+          backgroundColor: Colors.orange,
+        ),
+      );
+      return;
+    }
+
     setState(() => _isUploading = true);
 
     // Get services
     final bannerService = context.read<BannerService>();
     final imageService = context.read<ImageService>(); // Needed for uploading
 
-    final error = await bannerService.addBanner(_imageFile!, imageService);
+    final error = await bannerService.addBanner(
+      _imageFile!,
+      imageService,
+      redirectRoute: _buildRedirectRoute(),
+    );
 
     if (mounted) {
       setState(() => _isUploading = false);
@@ -68,6 +108,25 @@ class _AddBannerScreenState extends State<AddBannerScreen> {
           SnackBar(content: Text(error), backgroundColor: Colors.red),
         );
       }
+    }
+  }
+
+  String? _buildRedirectRoute() {
+    switch (_targetType) {
+      case 'sales':
+        return 'sales';
+      case 'category':
+        final name = _selectedCategory?.name?.trim();
+        return name == null || name.isEmpty
+            ? null
+            : 'category:${Uri.encodeComponent(name)}';
+      case 'brand':
+        final id = _selectedBrand?.id;
+        return id == null ? null : 'brand:$id';
+      case 'none':
+        return null;
+      default:
+        return null;
     }
   }
 
@@ -91,6 +150,8 @@ class _AddBannerScreenState extends State<AddBannerScreen> {
           Column(
             children: [
               _buildImageSection(),
+              const SizedBox(height: 20),
+              _buildTargetSection(),
               const SizedBox(height: 32),
               ElevatedButton(
                 onPressed: _isUploading ? null : _handleAddBanner,
@@ -186,6 +247,124 @@ class _AddBannerScreenState extends State<AddBannerScreen> {
     );
   }
 
+  Widget _buildTargetSection() {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 20),
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: Colors.grey.shade50,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: Colors.grey.shade200),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Banner Target',
+              style: simple_text_style(
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+                color: AppColour.black,
+              ),
+            ),
+            const SizedBox(height: 12),
+            DropdownButtonFormField<String>(
+              initialValue: _targetType,
+              decoration: const InputDecoration(
+                border: OutlineInputBorder(),
+                contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+              ),
+              items: const [
+                DropdownMenuItem(value: 'sales', child: Text('Sale products')),
+                DropdownMenuItem(value: 'category', child: Text('Category products')),
+                DropdownMenuItem(value: 'brand', child: Text('Brand products')),
+                DropdownMenuItem(value: 'none', child: Text('No link')),
+              ],
+              onChanged: (value) {
+                if (value == null) return;
+                setState(() {
+                  _targetType = value;
+                  _selectedCategory = null;
+                  _selectedBrand = null;
+                });
+              },
+            ),
+            if (_targetType == 'category') ...[
+              const SizedBox(height: 12),
+              Consumer<CategoryService>(
+                builder: (context, categoryService, _) {
+                  final categories = _getAllLeafCategories(categoryService.categories)
+                      .where((category) => category.id != null)
+                      .toList();
+                  return DropdownButtonFormField<int>(
+                    initialValue: _selectedCategory?.id,
+                    decoration: const InputDecoration(
+                      labelText: 'Select category',
+                      border: OutlineInputBorder(),
+                      contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                    ),
+                    items: categories
+                        .map(
+                          (category) => DropdownMenuItem<int>(
+                            value: category.id!,
+                            child: Text(category.name ?? 'Unnamed category'),
+                          ),
+                        )
+                        .toList(),
+                    onChanged: (id) {
+                      if (id == null) return;
+                      setState(() {
+                        _selectedCategory = categories.firstWhere(
+                          (category) => category.id == id,
+                        );
+                      });
+                    },
+                  );
+                },
+              ),
+            ],
+            if (_targetType == 'brand') ...[
+              const SizedBox(height: 12),
+              Consumer<BrandService>(
+                builder: (context, brandService, _) {
+                  final brands = brandService.brands
+                      .where((brand) => brand.id != null)
+                      .toList();
+                  return DropdownButtonFormField<int>(
+                    initialValue: _selectedBrand?.id,
+                    decoration: const InputDecoration(
+                      labelText: 'Select brand',
+                      border: OutlineInputBorder(),
+                      contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                    ),
+                    items: brands
+                        .map(
+                          (brand) => DropdownMenuItem<int>(
+                            value: brand.id!,
+                            child: Text(brand.name ?? 'Unnamed brand'),
+                          ),
+                        )
+                        .toList(),
+                    onChanged: (id) {
+                      if (id == null) return;
+                      setState(() {
+                        _selectedBrand = brands.firstWhere(
+                          (brand) => brand.id == id,
+                        );
+                      });
+                    },
+                  );
+                },
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+
   Widget _buildImageWidget() {
     if (_imageFile != null) {
       return ClipRRect(
@@ -218,5 +397,18 @@ class _AddBannerScreenState extends State<AddBannerScreen> {
         ),
       ],
     );
+  }
+
+  List<Category> _getAllLeafCategories(List<Category> categories) {
+    final leafCategories = <Category>[];
+    for (final category in categories) {
+      final children = category.subCategories ?? [];
+      if (children.isEmpty) {
+        leafCategories.add(category);
+      } else {
+        leafCategories.addAll(_getAllLeafCategories(children));
+      }
+    }
+    return leafCategories;
   }
 }

@@ -1,3 +1,4 @@
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:raising_india/comman/back_button.dart';
@@ -328,8 +329,7 @@ class _AdminReviewsScreenState extends State<AdminReviewsScreen> with TickerProv
   }
 
   Widget _buildSingleProductReview(ProductReview pr) {
-    // ✅ Use productId since the full product object isn't in the model
-    String productName = "Product ID: ${pr.productId ?? 'Unknown'}";
+    String productName = pr.productName ?? "Product ID: ${pr.productId ?? 'Unknown'}";
 
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
@@ -345,13 +345,23 @@ class _AdminReviewsScreenState extends State<AdminReviewsScreen> with TickerProv
           Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // ✅ Fallback Product Image
               ClipRRect(
                 borderRadius: BorderRadius.circular(8),
-                child: Container(
-                  width: 50, height: 50, color: Colors.grey.shade100,
-                  child: const Icon(Icons.shopping_bag, color: Colors.grey),
-                ),
+                child: pr.productImageUrl != null && pr.productImageUrl!.isNotEmpty
+                    ? CachedNetworkImage(
+                        imageUrl: pr.productImageUrl!,
+                        width: 50,
+                        height: 50,
+                        fit: BoxFit.cover,
+                        errorWidget: (context, url, error) => Container(
+                          width: 50, height: 50, color: Colors.grey.shade100,
+                          child: const Icon(Icons.image_not_supported, color: Colors.grey),
+                        ),
+                      )
+                    : Container(
+                        width: 50, height: 50, color: Colors.grey.shade100,
+                        child: const Icon(Icons.shopping_bag, color: Colors.grey),
+                      ),
               ),
               const SizedBox(width: 12),
               // Name & Stars

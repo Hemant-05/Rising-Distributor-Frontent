@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
@@ -19,7 +21,6 @@ import 'package:raising_india/data/services/wishlist_service.dart';
 // Screens & Widgets
 import 'package:raising_india/features/user/address/screens/select_address_screen.dart';
 import 'package:raising_india/features/user/home/widgets/add_banner_widget.dart';
-import 'package:raising_india/features/user/home/widgets/category_showing_widget.dart';
 import 'package:raising_india/features/user/home/widgets/product_grid.dart';
 import 'package:raising_india/features/user/home/widgets/search_bar_widget.dart';
 import 'package:raising_india/features/user/order/screens/order_tracking_screen.dart';
@@ -35,6 +36,8 @@ class HomeScreenU extends StatefulWidget {
 }
 
 class _HomeScreenUState extends State<HomeScreenU> {
+  Timer? _liveRefreshTimer;
+
   @override
   void initState() {
     super.initState();
@@ -58,6 +61,30 @@ class _HomeScreenUState extends State<HomeScreenU> {
         );
       }
     });
+    _liveRefreshTimer = Timer.periodic(const Duration(seconds: 30), (_) {
+      _refreshLiveData();
+    });
+  }
+
+  @override
+  void dispose() {
+    _liveRefreshTimer?.cancel();
+    super.dispose();
+  }
+
+  Future<void> _refreshLiveData() async {
+    if (!mounted) return;
+    final productService = context.read<ProductService>();
+    final bannerService = context.read<BannerService>();
+    final orderService = context.read<OrderService>();
+    final authService = context.read<AuthService>();
+
+    await Future.wait([
+      bannerService.loadHomeBanners(),
+      productService.fetchAvailableProducts(forceRefresh: true, showLoader: false),
+      productService.fetchBestSelling(showLoader: false),
+      if (authService.isCustomer) orderService.fetchMyOrders(showLoader: false),
+    ]);
   }
 
   Future<void> fcm_token() async{
@@ -80,15 +107,16 @@ class _HomeScreenUState extends State<HomeScreenU> {
 
     await Future.wait([
       bannerService.loadHomeBanners(),
-      productService.fetchAvailableProducts(),
+      productService.fetchAvailableProducts(forceRefresh: true),
       productService.fetchBestSelling(),
       categoryService.loadCategories(),
       context.read<BrandService>().fetchBrands(),
       if (authService.isCustomer) cartService.fetchCart(),
-      orderService.fetchMyOrders(),
-      addressService.fetchAddresses(),
-      cartService.fetchCart(),
-      wishlistService.fetchWishlist(authService.customer!.uid!),
+      if (authService.isCustomer) orderService.fetchMyOrders(),
+      if (authService.isCustomer) addressService.fetchAddresses(),
+      if (authService.isCustomer) cartService.fetchCart(),
+      if (authService.isCustomer && authService.customer?.uid != null)
+        wishlistService.fetchWishlist(authService.customer!.uid!),
     ]);
   }
 

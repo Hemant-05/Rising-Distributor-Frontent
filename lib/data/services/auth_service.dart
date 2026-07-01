@@ -12,7 +12,6 @@ import 'package:raising_india/models/model/customer.dart';
 import 'package:raising_india/services/notification_service.dart';
 import 'package:raising_india/services/service_locator.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:flutter/material.dart';
 
 class AuthService extends ChangeNotifier {
   final AuthRepository _repo = AuthRepository();

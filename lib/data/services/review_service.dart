@@ -46,7 +46,7 @@ class ReviewService extends ChangeNotifier {
   }
 
   // --- 2. Get Reviews for a Product (User) ---
-  Future<List<ProductReview>> getProductReviews(int productId) async {
+  Future<List<ProductReview>> getProductReviews(String productId) async {
     try {
       return await _repo.getProductReviews(productId);
     } catch (e) {

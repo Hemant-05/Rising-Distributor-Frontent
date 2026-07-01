@@ -20,7 +20,7 @@ class _AllBannerScreenState extends State<AllBannerScreen> {
     super.initState();
     // Load banners when screen opens
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      context.read<BannerService>().loadHomeBanners();
+      context.read<BannerService>().loadAdminBanners();
     });
   }
 
@@ -133,6 +133,16 @@ class _AllBannerScreenState extends State<AllBannerScreen> {
                     const Icon(Icons.broken_image),
               ),
             ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            'Target: ${banner.redirectRoute ?? "No link"}',
+            style: simple_text_style(
+              fontSize: 12,
+              color: Colors.grey.shade700,
+            ),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
           ),
           SizedBox(
             height: 30,

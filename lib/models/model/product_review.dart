@@ -10,6 +10,10 @@ class ProductReview {
   final String? productId;
   final double? rating;
   final String? reviewText;
+  final String? productName;
+  final String? productImageUrl;
+  final String? productBrandName;
+  final String? productCategoryName;
   final DateTime? createdAt;
 
   ProductReview({
@@ -19,6 +23,10 @@ class ProductReview {
     this.productId,
     this.rating,
     this.reviewText,
+    this.productName,
+    this.productImageUrl,
+    this.productBrandName,
+    this.productCategoryName,
     this.createdAt,
   });
 

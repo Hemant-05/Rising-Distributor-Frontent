@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:raising_india/comman/simple_text_style.dart';
@@ -14,6 +16,7 @@ class OrderScreen extends StatefulWidget {
 
 class _OrderScreenState extends State<OrderScreen> {
   int _selectedIndex = 0; // Default to Ongoing (0)
+  Timer? _orderRefreshTimer;
 
   @override
   void initState() {
@@ -21,6 +24,17 @@ class _OrderScreenState extends State<OrderScreen> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       context.read<OrderService>().fetchMyOrders();
     });
+    _orderRefreshTimer = Timer.periodic(const Duration(seconds: 12), (_) {
+      if (mounted) {
+        context.read<OrderService>().fetchMyOrders(showLoader: false);
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _orderRefreshTimer?.cancel();
+    super.dispose();
   }
 
   @override

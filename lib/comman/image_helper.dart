@@ -49,6 +49,40 @@ class ImageHelper {
     return null;
   }
 
+  /// Crops an existing local image file.
+  static Future<File?> cropImage({
+    required BuildContext context,
+    required String imagePath,
+  }) async {
+    final croppedFile = await ImageCropper().cropImage(
+      sourcePath: imagePath,
+      uiSettings: [
+        AndroidUiSettings(
+          toolbarTitle: 'Crop Image',
+          toolbarColor: AppColour.primary,
+          toolbarWidgetColor: Colors.white,
+          initAspectRatio: CropAspectRatioPreset.square,
+          lockAspectRatio: false,
+          hideBottomControls: false,
+        ),
+        IOSUiSettings(
+          title: 'Crop Image',
+          aspectRatioPresets: [
+            CropAspectRatioPreset.square,
+            CropAspectRatioPreset.original,
+            CropAspectRatioPreset.ratio4x3,
+            CropAspectRatioPreset.ratio16x9
+          ],
+        ),
+      ],
+    );
+
+    if (croppedFile != null) {
+      return File(croppedFile.path);
+    }
+    return null;
+  }
+
   /// Picks multiple images (or 1 from camera) and crops them sequentially.
   static Future<List<File>> pickAndCropMultipleImages({
     required BuildContext context,

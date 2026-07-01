@@ -2515,7 +2515,7 @@ class _RestClient implements RestClient {
 
   @override
   Future<ApiResponse<List<ProductReview>>> getProductReviews(
-    int productId,
+    String productId,
   ) async {
     final _extra = <String, dynamic>{};
     final queryParameters = <String, dynamic>{};
@@ -2552,7 +2552,7 @@ class _RestClient implements RestClient {
   }
 
   @override
-  Future<ApiResponse<double>> getProductAverageRating(int productId) async {
+  Future<ApiResponse<double>> getProductAverageRating(String productId) async {
     final _extra = <String, dynamic>{};
     final queryParameters = <String, dynamic>{};
     final _headers = <String, dynamic>{};

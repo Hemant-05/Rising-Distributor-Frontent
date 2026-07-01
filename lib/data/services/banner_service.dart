@@ -51,7 +51,11 @@ class BannerService extends ChangeNotifier {
   }
 
   // --- 3. Admin: Add Banner (Modified to handle File Upload) ---
-  Future<String?> addBanner(File imageFile, ImageService imageService) async {
+  Future<String?> addBanner(
+    File imageFile,
+    ImageService imageService, {
+    String? redirectRoute,
+  }) async {
     _isLoading = true;
     notifyListeners();
 
@@ -64,8 +68,7 @@ class BannerService extends ChangeNotifier {
       }
 
       // Step B: Save Banner details to Backend
-      // Passing null for route as per your UI flow
-      await _repo.addBanner(imageUrl, null);
+      await _repo.addBanner(imageUrl, redirectRoute);
 
       // Step C: Refresh Admin List
       await loadAdminBanners();

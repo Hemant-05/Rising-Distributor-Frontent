@@ -19,7 +19,7 @@ class ReviewRepository with RepoErrorHandler {
     }
   }
 
-  Future<List<ProductReview>> getProductReviews(int productId) async {
+  Future<List<ProductReview>> getProductReviews(String productId) async {
     try {
       final response = await _client.getProductReviews(productId);
       return response.data ?? [];

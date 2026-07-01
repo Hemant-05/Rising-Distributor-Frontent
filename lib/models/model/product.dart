@@ -11,6 +11,7 @@ class Product {
   final String? name;
   final String? nameLower;
   final double? rating;
+  final int? reviewCount;
 
   final Category? category;
   final Brand? brand;
@@ -37,6 +38,7 @@ class Product {
     this.name,
     this.nameLower,
     this.rating,
+    this.reviewCount,
     this.category,
     this.brand,
     this.description,
