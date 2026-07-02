@@ -2,8 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:raising_india/constant/AppColour.dart';
 import 'package:raising_india/constant/ConPath.dart';
 import 'package:raising_india/constant/ConString.dart';
-import 'package:raising_india/features/auth/screens/google_auth_choice_screen.dart';
+import 'package:raising_india/features/user/main_screen_u.dart';
 import 'package:raising_india/models/on_boarding_item.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../../comman/elevated_button_style.dart';
 import '../widgets/on_boarding_widget.dart';
@@ -101,19 +102,22 @@ class _OnBoardingScreenState extends State<OnBoardingScreen> {
         children: [
           ElevatedButton(
             style: elevated_button_style(),
-            onPressed: () {
-              isLastPage
-                  ? Navigator.pushAndRemoveUntil(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => const GoogleAuthChoiceScreen(),
-                      ),
-                      (route) => false,
-                    )
-                  : _pageController.nextPage(
-                      duration: Duration(milliseconds: 300),
-                      curve: Curves.easeInOut,
-                    );
+            onPressed: () async {
+              if (isLastPage) {
+                final prefs = await SharedPreferences.getInstance();
+                await prefs.setBool('has_seen_onboarding', true);
+                if (!context.mounted) return;
+                Navigator.pushAndRemoveUntil(
+                  context,
+                  MaterialPageRoute(builder: (context) => const MainScreenU()),
+                  (route) => false,
+                );
+              } else {
+                _pageController.nextPage(
+                  duration: Duration(milliseconds: 300),
+                  curve: Curves.easeInOut,
+                );
+              }
             },
             child: Text(
               isLastPage ? 'Get Started' : 'Next',

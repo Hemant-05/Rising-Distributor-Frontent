@@ -26,7 +26,6 @@ class ProductService extends ChangeNotifier {
   String? _error;
   String? get error => _error;
 
-
   bool _isLoading = false;
   bool get isLoading => _isLoading;
 
@@ -43,11 +42,12 @@ class ProductService extends ChangeNotifier {
       notifyListeners();
     }
     try {
+      _error = null;
       _bestSelling = await _repo.getBestSelling();
     } catch (e) {
       _error = e.toString();
       print("Best Selling Fetch Error: $e");
-    } finally{
+    } finally {
       if (showLoader) {
         _isLoading = false;
       }
@@ -55,10 +55,16 @@ class ProductService extends ChangeNotifier {
     }
   }
 
-  Future<void> fetchProductsByCategory(String categoryName) async {
-    _isLoading = true;
+  Future<void> fetchProductsByCategory(
+    String categoryName, {
+    bool showLoader = true,
+  }) async {
+    if (showLoader) {
+      _isLoading = true;
+    }
     // Clear previous list to avoid showing wrong data while loading
     _categoryProducts = [];
+    _error = null;
     notifyListeners();
 
     try {
@@ -67,18 +73,24 @@ class ProductService extends ChangeNotifier {
       _error = e.toString();
       print("Category Fetch Error: $e");
     } finally {
-      _isLoading = false;
+      if (showLoader) {
+        _isLoading = false;
+      }
       notifyListeners();
     }
   }
 
-  Future<void> fetchAvailableProducts({bool forceRefresh = false, bool showLoader = true}) async {
+  Future<void> fetchAvailableProducts({
+    bool forceRefresh = false,
+    bool showLoader = true,
+  }) async {
     if (_products.isNotEmpty && !forceRefresh) return;
     if (showLoader) {
       _isLoading = true;
       notifyListeners();
     }
     try {
+      _error = null;
       _products = await _repo.getAllAvailableProducts();
     } catch (e) {
       _error = e.toString();
@@ -120,20 +132,25 @@ class ProductService extends ChangeNotifier {
     }
   }
 
-// --- ADD PRODUCT ---
-  Future<String?> addProduct(ProductRequest request, List<File> imageFiles, ImageService imageService) async {
+  // --- ADD PRODUCT ---
+  Future<String?> addProduct(
+    ProductRequest request,
+    List<File> imageFiles,
+    ImageService imageService,
+  ) async {
     _isLoading = true;
     notifyListeners();
     List<String> imageUrls = [];
     try {
-
       // 1. Upload Images using the provided ImageService
       for (var file in imageFiles) {
         String? url = await imageService.uploadImage(file);
         if (url != null) {
           imageUrls.add(url);
         } else {
-          throw Exception("Failed to upload an image. Aborting product creation.");
+          throw Exception(
+            "Failed to upload an image. Aborting product creation.",
+          );
         }
       }
 
@@ -149,7 +166,7 @@ class ProductService extends ChangeNotifier {
     } catch (e) {
       print('-=-=-= ERROR: $e');
       // Cleanup uploaded images if product creation failed
-      for(String url in imageUrls){
+      for (String url in imageUrls) {
         try {
           imageService.deleteImage(url);
         } catch (_) {}
@@ -173,7 +190,7 @@ class ProductService extends ChangeNotifier {
       final requestPayload = ProductRequest(
         name: product.name,
         categoryId: product.category?.id, // Just send the ID! (e.g., 2)
-        brandId: product.brand?.id,       // Just send the ID! (e.g., 5)
+        brandId: product.brand?.id, // Just send the ID! (e.g., 5)
         price: product.price,
         description: product.description,
         quantity: product.quantity,
@@ -182,13 +199,17 @@ class ProductService extends ChangeNotifier {
         stockQuantity: product.stockQuantity,
         lowStockQuantity: product.lowStockQuantity,
         available: product.available ?? true,
-        discountable: product.discountable ?? true, // Fallback prevents null errors
+        discountable:
+            product.discountable ?? true, // Fallback prevents null errors
         photosList: product.photosList,
         rating: product.rating,
       );
 
       // ✅ 2. Send the PID and the new payload to the repository
-      Product updatedProduct = await _repo.updateProduct(product.pid!, requestPayload);
+      Product updatedProduct = await _repo.updateProduct(
+        product.pid!,
+        requestPayload,
+      );
 
       // 3. Update local list so UI refreshes immediately
       int index = _products.indexWhere((p) => p.pid == product.pid);
@@ -199,7 +220,6 @@ class ProductService extends ChangeNotifier {
       _isLoading = false;
       notifyListeners();
       return null; // Success!
-
     } on AppError catch (e) {
       _error = e.message;
       _isLoading = false;
@@ -249,9 +269,13 @@ class ProductService extends ChangeNotifier {
   Future<String?> restoreProduct(String pid) async {
     try {
       await _repo.restoreProduct(pid);
-      final restoredProductIndex = _archivedProducts.indexWhere((p) => p.pid == pid);
+      final restoredProductIndex = _archivedProducts.indexWhere(
+        (p) => p.pid == pid,
+      );
       if (restoredProductIndex != -1) {
-        final restoredProduct = _archivedProducts.removeAt(restoredProductIndex);
+        final restoredProduct = _archivedProducts.removeAt(
+          restoredProductIndex,
+        );
         _products.insert(0, restoredProduct);
         notifyListeners();
       }

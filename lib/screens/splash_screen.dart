@@ -5,6 +5,7 @@ import 'package:raising_india/data/services/auth_service.dart';
 import 'package:raising_india/features/admin/pagination/main_screen_a.dart';
 import 'package:raising_india/features/on_boarding/screens/welcome_screen.dart';
 import 'package:raising_india/features/user/main_screen_u.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../constant/ConPath.dart';
 
 class SplashScreen extends StatefulWidget {
@@ -14,12 +15,15 @@ class SplashScreen extends StatefulWidget {
   State<SplashScreen> createState() => _SplashScreenState();
 }
 
-class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMixin {
+class _SplashScreenState extends State<SplashScreen>
+    with TickerProviderStateMixin {
   late AnimationController _mainController;
   late AnimationController _backgroundController;
   late Animation<double> _logoScale;
   late Animation<double> _textOpacity;
   late Animation<Offset> _textSlide;
+  bool _hasSeenOnboarding = false;
+  bool _isCheckingOnboarding = true;
 
   @override
   void initState() {
@@ -55,19 +59,29 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
       curve: const Interval(0.5, 1.0, curve: Curves.easeIn),
     );
 
-    _textSlide = Tween<Offset>(
-      begin: const Offset(0, 0.5),
-      end: Offset.zero,
-    ).animate(CurvedAnimation(
-      parent: _mainController,
-      curve: const Interval(0.5, 1.0, curve: Curves.easeOutCubic),
-    ));
+    _textSlide = Tween<Offset>(begin: const Offset(0, 0.5), end: Offset.zero)
+        .animate(
+          CurvedAnimation(
+            parent: _mainController,
+            curve: const Interval(0.5, 1.0, curve: Curves.easeOutCubic),
+          ),
+        );
 
     _mainController.forward();
 
     // 4. Trigger Data Loading
     WidgetsBinding.instance.addPostFrameCallback((_) {
       context.read<AuthService>();
+    });
+    _loadOnboardingState();
+  }
+
+  Future<void> _loadOnboardingState() async {
+    final prefs = await SharedPreferences.getInstance();
+    if (!mounted) return;
+    setState(() {
+      _hasSeenOnboarding = prefs.getBool('has_seen_onboarding') ?? false;
+      _isCheckingOnboarding = false;
     });
   }
 
@@ -93,7 +107,10 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
             builder: (context, authService, _) {
               // CHECK: Is animation running OR is data still loading?
               // If EITHER is true, we stay on the Splash Screen.
-              bool showSplash = _mainController.isAnimating || authService.isLoading;
+              bool showSplash =
+                  _mainController.isAnimating ||
+                  authService.isLoading ||
+                  _isCheckingOnboarding;
 
               if (showSplash) {
                 return Center(
@@ -167,11 +184,7 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
         gradient: RadialGradient(
           center: Alignment.center,
           radius: 1.2,
-          colors: [
-            Colors.white,
-            Color(0xFFF0F7FF),
-            Color(0xFFE3F2FD),
-          ],
+          colors: [Colors.white, Color(0xFFF0F7FF), Color(0xFFE3F2FD)],
         ),
       ),
     );
@@ -203,16 +216,14 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
     return Container(
       width: size,
       height: size,
-      decoration: BoxDecoration(
-        shape: BoxShape.circle,
-        color: color,
-      ),
+      decoration: BoxDecoration(shape: BoxShape.circle, color: color),
     );
   }
 
   Widget _getDirectScreen(AuthService authService) {
     if (authService.isAdmin) return const MainScreenA();
     if (authService.isCustomer) return const MainScreenU();
+    if (_hasSeenOnboarding) return const MainScreenU();
     return const WelcomeScreen();
   }
 }

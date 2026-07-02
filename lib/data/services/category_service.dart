@@ -91,17 +91,22 @@ class CategoryService extends ChangeNotifier {
   bool _isLoading = false;
   bool get isLoading => _isLoading;
 
+  String _error = "";
+  String get error => _error;
+
   // --- Load Categories ---
   Future<void> loadCategories() async {
     // Show loading only if list is empty to prevent UI flicker on refresh
     if (_categories.isEmpty) {
       _isLoading = true;
-      notifyListeners();
     }
+    _error = "";
+    notifyListeners();
 
     try {
       _categories = await _repo.getAllCategories();
     } catch (e) {
+      _error = "Failed to load categories. ${e.toString()}";
       debugPrint("Category Load Error: $e");
     } finally {
       _isLoading = false;
@@ -118,6 +123,7 @@ class CategoryService extends ChangeNotifier {
     // Add other fields if your Category model requires them (e.g. parentId)
   }) async {
     _isLoading = true;
+    _error = "";
     notifyListeners();
 
     try {
@@ -132,20 +138,22 @@ class CategoryService extends ChangeNotifier {
 
       // 2. Create Category Object
       // ID is typically handled by backend or repo for new items
-      final newCategory = Category(
-        name: name,
-        imageUrl: imageUrl,
-      );
+      final newCategory = Category(name: name, imageUrl: imageUrl);
 
       // 3. Save to Repo
       // Adjust parameters based on your Repo's specific addCategory signature
-      await _repo.createCategory(name,imageUrl, parentId); // Example: assuming createCategory takes name & parentId
+      await _repo.createCategory(
+        name,
+        imageUrl,
+        parentId,
+      ); // Example: assuming createCategory takes name & parentId
 
       // 4. Refresh List
       await loadCategories();
 
       return null; // Success
     } catch (e) {
+      _error = "Failed to add category: $e";
       return "Failed to add category: $e";
     } finally {
       _isLoading = false;
@@ -160,6 +168,7 @@ class CategoryService extends ChangeNotifier {
     required ImageService imageService,
   }) async {
     _isLoading = true;
+    _error = "";
     notifyListeners();
 
     try {
@@ -196,6 +205,7 @@ class CategoryService extends ChangeNotifier {
 
       return null;
     } catch (e) {
+      _error = "Failed to update category: $e";
       return "Failed to update category: $e";
     } finally {
       _isLoading = false;
@@ -216,6 +226,7 @@ class CategoryService extends ChangeNotifier {
     }
 
     try {
+      _error = "";
       await _repo.deleteCategory(id);
       return null;
     } catch (e) {
@@ -224,6 +235,7 @@ class CategoryService extends ChangeNotifier {
         _categories.insert(index, deletedItem);
         notifyListeners();
       }
+      _error = "Failed to delete category. ${e.toString()}";
       return "Failed to delete category.";
     }
   }

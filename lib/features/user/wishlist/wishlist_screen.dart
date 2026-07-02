@@ -1,6 +1,7 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:raising_india/comman/auth_gate.dart';
 import 'package:raising_india/comman/back_button.dart';
 import 'package:raising_india/comman/simple_text_style.dart';
 import 'package:raising_india/constant/AppColour.dart';
@@ -42,14 +43,22 @@ class _WishlistScreenState extends State<WishlistScreen> {
           children: [
             back_button(),
             const SizedBox(width: 8),
-            Text('My Wishlist', style: simple_text_style(fontSize: 20, fontWeight: FontWeight.bold)),
+            Text(
+              'My Wishlist',
+              style: simple_text_style(
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
           ],
         ),
       ),
       body: Consumer<WishlistService>(
         builder: (context, wishlistService, _) {
           if (wishlistService.isLoading && wishlistService.items.isEmpty) {
-            return Center(child: CircularProgressIndicator(color: AppColour.primary));
+            return Center(
+              child: CircularProgressIndicator(color: AppColour.primary),
+            );
           }
 
           if (wishlistService.items.isEmpty) {
@@ -72,8 +81,13 @@ class _WishlistScreenState extends State<WishlistScreen> {
     );
   }
 
-  Widget _buildWishlistItem(BuildContext context, Product product, String userId) {
-    final imageUrl = (product.photosList != null && product.photosList!.isNotEmpty)
+  Widget _buildWishlistItem(
+    BuildContext context,
+    Product product,
+    String userId,
+  ) {
+    final imageUrl =
+        (product.photosList != null && product.photosList!.isNotEmpty)
         ? product.photosList!.first
         : '';
 
@@ -82,7 +96,13 @@ class _WishlistScreenState extends State<WishlistScreen> {
       decoration: BoxDecoration(
         color: AppColour.white,
         borderRadius: BorderRadius.circular(16),
-        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 10, offset: const Offset(0, 4))],
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.04),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
       ),
       child: Row(
         children: [
@@ -91,8 +111,15 @@ class _WishlistScreenState extends State<WishlistScreen> {
             borderRadius: BorderRadius.circular(12),
             child: CachedNetworkImage(
               imageUrl: imageUrl,
-              width: 80, height: 80, fit: BoxFit.cover,
-              errorWidget: (_, __, ___) => Container(width: 80, height: 80, color: Colors.grey.shade100, child: const Icon(Icons.image_not_supported)),
+              width: 80,
+              height: 80,
+              fit: BoxFit.cover,
+              errorWidget: (_, __, ___) => Container(
+                width: 80,
+                height: 80,
+                color: Colors.grey.shade100,
+                child: const Icon(Icons.image_not_supported),
+              ),
             ),
           ),
           const SizedBox(width: 16),
@@ -104,13 +131,21 @@ class _WishlistScreenState extends State<WishlistScreen> {
               children: [
                 Text(
                   product.name ?? 'Unknown',
-                  style: simple_text_style(fontWeight: FontWeight.bold, fontSize: 16),
-                  maxLines: 2, overflow: TextOverflow.ellipsis,
+                  style: simple_text_style(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 16,
+                  ),
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
                 ),
                 const SizedBox(height: 8),
                 Text(
                   '₹${product.price?.toStringAsFixed(0) ?? '0'}',
-                  style: simple_text_style(color: AppColour.primary, fontWeight: FontWeight.bold, fontSize: 16),
+                  style: simple_text_style(
+                    color: AppColour.primary,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 16,
+                  ),
                 ),
               ],
             ),
@@ -121,22 +156,38 @@ class _WishlistScreenState extends State<WishlistScreen> {
             children: [
               IconButton(
                 icon: const Icon(Icons.delete_outline, color: Colors.red),
-                onPressed: () => context.read<WishlistService>().toggleWishlist(userId, product),
+                onPressed: () => context.read<WishlistService>().toggleWishlist(
+                  userId,
+                  product,
+                ),
               ),
               ElevatedButton(
                 style: ElevatedButton.styleFrom(
                   backgroundColor: AppColour.primary,
                   minimumSize: const Size(80, 36),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8),
+                  ),
                 ),
-                onPressed: () {
+                onPressed: () async {
+                  final signedIn = await ensureCustomerSignedIn(context);
+                  if (!signedIn || !context.mounted) return;
                   // Add to Cart and optionally remove from wishlist
                   context.read<CartService>().addToCart(product.pid!, 1);
                   ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Added to Cart!'), backgroundColor: Colors.green),
+                    const SnackBar(
+                      content: Text('Added to Cart!'),
+                      backgroundColor: Colors.green,
+                    ),
                   );
                 },
-                child: Text('Add', style: simple_text_style(color: Colors.white, fontWeight: FontWeight.bold)),
+                child: Text(
+                  'Add',
+                  style: simple_text_style(
+                    color: Colors.white,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
               ),
             ],
           ),
@@ -150,11 +201,25 @@ class _WishlistScreenState extends State<WishlistScreen> {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(Icons.favorite_border_rounded, size: 80, color: Colors.grey.shade300),
+          Icon(
+            Icons.favorite_border_rounded,
+            size: 80,
+            color: Colors.grey.shade300,
+          ),
           const SizedBox(height: 16),
-          Text('Your Wishlist is Empty', style: simple_text_style(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.grey.shade700)),
+          Text(
+            'Your Wishlist is Empty',
+            style: simple_text_style(
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+              color: Colors.grey.shade700,
+            ),
+          ),
           const SizedBox(height: 8),
-          Text('Save your favorite items to view them later.', style: simple_text_style(color: Colors.grey.shade500)),
+          Text(
+            'Save your favorite items to view them later.',
+            style: simple_text_style(color: Colors.grey.shade500),
+          ),
         ],
       ),
     );

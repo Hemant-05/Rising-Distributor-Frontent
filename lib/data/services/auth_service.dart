@@ -378,11 +378,13 @@ class AuthService extends ChangeNotifier {
     notifyListeners();
 
     final prefs = await SharedPreferences.getInstance();
+    final hasSeenOnboarding = prefs.getBool('has_seen_onboarding') ?? false;
     await firebase_auth.FirebaseAuth.instance.signOut();
     if (_googleSignInInitialized) {
       await GoogleSignIn.instance.signOut();
     }
     await prefs.clear();
+    await prefs.setBool('has_seen_onboarding', hasSeenOnboarding);
     _customer = null;
     _admin = null;
     _dio.options.headers.remove('Authorization'); // Clear header too

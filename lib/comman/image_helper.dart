@@ -37,7 +37,7 @@ class ImageHelper {
             CropAspectRatioPreset.square,
             CropAspectRatioPreset.original,
             CropAspectRatioPreset.ratio4x3,
-            CropAspectRatioPreset.ratio16x9
+            CropAspectRatioPreset.ratio16x9,
           ],
         ),
       ],
@@ -71,7 +71,7 @@ class ImageHelper {
             CropAspectRatioPreset.square,
             CropAspectRatioPreset.original,
             CropAspectRatioPreset.ratio4x3,
-            CropAspectRatioPreset.ratio16x9
+            CropAspectRatioPreset.ratio16x9,
           ],
         ),
       ],
@@ -90,7 +90,7 @@ class ImageHelper {
     int? maxImages,
   }) async {
     List<XFile> pickedFiles = [];
-    
+
     if (fromCamera) {
       final pickedFile = await _picker.pickImage(source: ImageSource.camera);
       if (pickedFile != null) pickedFiles.add(pickedFile);
@@ -109,7 +109,8 @@ class ImageHelper {
         sourcePath: pickedFile.path,
         uiSettings: [
           AndroidUiSettings(
-            toolbarTitle: 'Crop Image (${croppedFiles.length + 1}/${pickedFiles.length})',
+            toolbarTitle:
+                'Crop Image (${croppedFiles.length + 1}/${pickedFiles.length})',
             toolbarColor: AppColour.primary,
             toolbarWidgetColor: Colors.white,
             initAspectRatio: CropAspectRatioPreset.square,
@@ -117,12 +118,13 @@ class ImageHelper {
             hideBottomControls: false,
           ),
           IOSUiSettings(
-            title: 'Crop Image (${croppedFiles.length + 1}/${pickedFiles.length})',
+            title:
+                'Crop Image (${croppedFiles.length + 1}/${pickedFiles.length})',
             aspectRatioPresets: [
               CropAspectRatioPreset.square,
               CropAspectRatioPreset.original,
               CropAspectRatioPreset.ratio4x3,
-              CropAspectRatioPreset.ratio16x9
+              CropAspectRatioPreset.ratio16x9,
             ],
           ),
         ],
@@ -155,7 +157,9 @@ class ImageHelper {
 
       // Download the image
       final dir = Directory.systemTemp;
-      final File file = File('${dir.path}/${DateTime.now().millisecondsSinceEpoch}.jpg');
+      final File file = File(
+        '${dir.path}/${DateTime.now().millisecondsSinceEpoch}.jpg',
+      );
       await Dio().download(imageUrl, file.path);
 
       // Dismiss loading
@@ -179,7 +183,7 @@ class ImageHelper {
               CropAspectRatioPreset.square,
               CropAspectRatioPreset.original,
               CropAspectRatioPreset.ratio4x3,
-              CropAspectRatioPreset.ratio16x9
+              CropAspectRatioPreset.ratio16x9,
             ],
           ),
         ],

@@ -5,11 +5,12 @@ import 'package:raising_india/comman/simple_text_style.dart';
 import 'package:raising_india/constant/AppColour.dart';
 import 'package:raising_india/data/services/category_service.dart';
 import 'package:raising_india/features/user/categories/widgets/category_widget.dart';
-import 'package:raising_india/features/user/categories/screens/category_product_screen.dart';
+import 'package:raising_india/features/user/products/screens/product_collection_screen.dart';
 import 'package:raising_india/models/model/category.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:raising_india/data/services/product_service.dart';
 import 'package:raising_india/features/user/home/widgets/product_grid.dart';
+import 'package:raising_india/features/user/search/screens/product_search_screen.dart';
 
 class AllCategoriesScreen extends StatefulWidget {
   const AllCategoriesScreen({super.key});
@@ -69,7 +70,12 @@ class _AllCategoriesScreenState extends State<AllCategoriesScreen> {
             IconButton(
               icon: const Icon(Icons.search, color: Colors.black, size: 28),
               onPressed: () {
-                // TODO: Navigate to search screen
+                PersistentNavBarNavigator.pushNewScreen(
+                  context,
+                  screen: const ProductSearchScreen(),
+                  withNavBar: false,
+                  pageTransitionAnimation: PageTransitionAnimation.fade,
+                );
               },
             ),
             const SizedBox(width: 8),
@@ -88,6 +94,10 @@ class _AllCategoriesScreenState extends State<AllCategoriesScreen> {
             final rootCategories = allCategories
                 .where((c) => c.parentCategory == null)
                 .toList();
+
+            if (rootCategories.isEmpty && categoryService.error.isNotEmpty) {
+              return _buildErrorState(context, categoryService.error);
+            }
 
             if (rootCategories.isEmpty) {
               return Center(
@@ -293,9 +303,11 @@ class _AllCategoriesScreenState extends State<AllCategoriesScreen> {
                                         // It's a leaf node, go to products!
                                         PersistentNavBarNavigator.pushNewScreen(
                                           context,
-                                          screen: CategoryProductScreen(
-                                            category: childCategory.name ?? '',
-                                          ),
+                                          screen:
+                                              ProductCollectionScreen.category(
+                                                categoryName:
+                                                    childCategory.name ?? '',
+                                              ),
                                           withNavBar: false,
                                           pageTransitionAnimation:
                                               PageTransitionAnimation.cupertino,
@@ -312,6 +324,64 @@ class _AllCategoriesScreenState extends State<AllCategoriesScreen> {
               ],
             );
           },
+        ),
+      ),
+    );
+  }
+
+  Widget _buildErrorState(BuildContext context, String error) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              Icons.category_outlined,
+              size: 80,
+              color: Colors.grey.shade300,
+            ),
+            const SizedBox(height: 16),
+            Text(
+              'Failed to load categories',
+              style: simple_text_style(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+                color: Colors.red,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              error,
+              textAlign: TextAlign.center,
+              style: simple_text_style(
+                color: Colors.redAccent,
+                isEllipsisAble: false,
+              ),
+            ),
+            const SizedBox(height: 24),
+            ElevatedButton.icon(
+              onPressed: () => context.read<CategoryService>().loadCategories(),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColour.primary,
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 24,
+                  vertical: 12,
+                ),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
+              icon: const Icon(Icons.refresh, color: Colors.white),
+              label: Text(
+                'Retry',
+                style: simple_text_style(
+                  color: Colors.white,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
+          ],
         ),
       ),
     );
@@ -344,7 +414,9 @@ class _CategoryProductsViewState extends State<CategoryProductsView> {
   void _fetchProducts() {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) {
-        context.read<ProductService>().fetchProductsByCategory(widget.categoryName);
+        context.read<ProductService>().fetchProductsByCategory(
+          widget.categoryName,
+        );
       }
     });
   }

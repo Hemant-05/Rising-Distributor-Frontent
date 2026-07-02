@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
 import 'package:persistent_bottom_nav_bar/persistent_bottom_nav_bar.dart';
+import 'package:raising_india/comman/auth_gate.dart';
 import 'package:raising_india/comman/helper_functions.dart';
 import 'package:raising_india/comman/simple_text_style.dart';
 import 'package:raising_india/constant/AppColour.dart';
@@ -24,6 +25,7 @@ import 'package:raising_india/features/user/home/widgets/add_banner_widget.dart'
 import 'package:raising_india/features/user/home/widgets/product_grid.dart';
 import 'package:raising_india/features/user/home/widgets/search_bar_widget.dart';
 import 'package:raising_india/features/user/order/screens/order_tracking_screen.dart';
+import 'package:raising_india/features/user/products/screens/product_collection_screen.dart';
 import 'package:raising_india/models/model/order.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../widgets/product_card.dart';
@@ -76,21 +78,28 @@ class _HomeScreenUState extends State<HomeScreenU> {
     if (!mounted) return;
     final productService = context.read<ProductService>();
     final bannerService = context.read<BannerService>();
+    final categoryService = context.read<CategoryService>();
+    final brandService = context.read<BrandService>();
     final orderService = context.read<OrderService>();
     final authService = context.read<AuthService>();
 
     await Future.wait([
       bannerService.loadHomeBanners(),
-      productService.fetchAvailableProducts(forceRefresh: true, showLoader: false),
+      categoryService.loadCategories(),
+      brandService.fetchBrands(forceRefresh: true),
+      productService.fetchAvailableProducts(
+        forceRefresh: true,
+        showLoader: false,
+      ),
       productService.fetchBestSelling(showLoader: false),
       if (authService.isCustomer) orderService.fetchMyOrders(showLoader: false),
     ]);
   }
 
-  Future<void> fcm_token() async{
+  Future<void> fcm_token() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
     String? token = prefs.getString('fcm_token');
-    if(token != null) {
+    if (token != null) {
       // context.read<UserService>().updateFCM(token);
     }
   }
@@ -110,7 +119,7 @@ class _HomeScreenUState extends State<HomeScreenU> {
       productService.fetchAvailableProducts(forceRefresh: true),
       productService.fetchBestSelling(),
       categoryService.loadCategories(),
-      context.read<BrandService>().fetchBrands(),
+      context.read<BrandService>().fetchBrands(forceRefresh: true),
       if (authService.isCustomer) cartService.fetchCart(),
       if (authService.isCustomer) orderService.fetchMyOrders(),
       if (authService.isCustomer) addressService.fetchAddresses(),
@@ -131,7 +140,9 @@ class _HomeScreenUState extends State<HomeScreenU> {
         onRefresh: _onRefresh,
         child: Consumer<ProductService>(
           builder: (context, productService, _) {
-            if (!productService.isLoading && productService.products.isEmpty && productService.bestSelling.isEmpty) {
+            if (!productService.isLoading &&
+                productService.products.isEmpty &&
+                productService.bestSelling.isEmpty) {
               return SingleChildScrollView(
                 physics: const AlwaysScrollableScrollPhysics(),
                 child: SizedBox(
@@ -140,11 +151,28 @@ class _HomeScreenUState extends State<HomeScreenU> {
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        Icon(Icons.inventory_2_outlined, size: 100, color: Colors.grey.shade300),
+                        Icon(
+                          Icons.inventory_2_outlined,
+                          size: 100,
+                          color: Colors.grey.shade300,
+                        ),
                         const SizedBox(height: 16),
-                        Text('No items listed yet', style: simple_text_style(fontSize: 18, color: Colors.grey.shade600, fontWeight: FontWeight.bold)),
+                        Text(
+                          'No items listed yet',
+                          style: simple_text_style(
+                            fontSize: 18,
+                            color: Colors.grey.shade600,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
                         const SizedBox(height: 8),
-                        Text('Check back later for new products', style: simple_text_style(fontSize: 14, color: Colors.grey)),
+                        Text(
+                          'Check back later for new products',
+                          style: simple_text_style(
+                            fontSize: 14,
+                            color: Colors.grey,
+                          ),
+                        ),
                       ],
                     ),
                   ),
@@ -173,17 +201,35 @@ class _HomeScreenUState extends State<HomeScreenU> {
                 if (productService.bestSelling.isNotEmpty) ...[
                   SliverToBoxAdapter(
                     child: Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 8,
+                      ),
                       child: Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          Text('Bestsellers', style: simple_text_style(fontSize: 18, fontWeight: FontWeight.bold)),
-                          Text('See All', style: simple_text_style(color: AppColour.primary, fontWeight: FontWeight.bold, fontSize: 13)),
+                          Text(
+                            'Bestsellers',
+                            style: simple_text_style(
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          Text(
+                            'See All',
+                            style: simple_text_style(
+                              color: AppColour.primary,
+                              fontWeight: FontWeight.bold,
+                              fontSize: 13,
+                            ),
+                          ),
                         ],
                       ),
                     ),
                   ),
-                  SliverToBoxAdapter(child: buildBestProductsHorizontal(context)),
+                  SliverToBoxAdapter(
+                    child: buildBestProductsHorizontal(context),
+                  ),
                   const SliverToBoxAdapter(child: SizedBox(height: 24)),
                 ],
 
@@ -191,20 +237,42 @@ class _HomeScreenUState extends State<HomeScreenU> {
                 if (productService.products.isNotEmpty) ...[
                   SliverToBoxAdapter(
                     child: Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                      child: Text('More to Explore', style: simple_text_style(fontSize: 18, fontWeight: FontWeight.bold)),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 8,
+                      ),
+                      child: Text(
+                        'More to Explore',
+                        style: simple_text_style(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
                     ),
                   ),
                   SliverPadding(
                     padding: const EdgeInsets.symmetric(horizontal: 16),
-                    sliver: SliverToBoxAdapter(child: ProductGrid(products: productService.products)),
+                    sliver: SliverToBoxAdapter(
+                      child: ProductGrid(products: productService.products),
+                    ),
                   ),
                 ],
-                
+
                 if (productService.isLoading && productService.products.isEmpty)
-                  SliverToBoxAdapter(child: SizedBox(height: 180, child: Center(child: CircularProgressIndicator(color: AppColour.primary)))),
-                  
-                const SliverToBoxAdapter(child: SizedBox(height: 100)), // Space for cart banner
+                  SliverToBoxAdapter(
+                    child: SizedBox(
+                      height: 180,
+                      child: Center(
+                        child: CircularProgressIndicator(
+                          color: AppColour.primary,
+                        ),
+                      ),
+                    ),
+                  ),
+
+                const SliverToBoxAdapter(
+                  child: SizedBox(height: 100),
+                ), // Space for cart banner
               ],
             );
           },
@@ -220,7 +288,15 @@ class _HomeScreenUState extends State<HomeScreenU> {
       titleSpacing: 16,
       automaticallyImplyLeading: false,
       title: GestureDetector(
-        onTap: () => PersistentNavBarNavigator.pushNewScreen(context, screen: const SelectAddressScreen(isFromProfile: true), withNavBar: false),
+        onTap: () async {
+          final signedIn = await ensureCustomerSignedIn(context);
+          if (!signedIn || !context.mounted) return;
+          PersistentNavBarNavigator.pushNewScreen(
+            context,
+            screen: const SelectAddressScreen(isFromProfile: true),
+            withNavBar: false,
+          );
+        },
         child: Row(
           children: [
             Icon(Icons.location_on, color: AppColour.primary, size: 28),
@@ -231,15 +307,36 @@ class _HomeScreenUState extends State<HomeScreenU> {
                 children: [
                   Row(
                     children: [
-                      Text('Delivery in 15 mins', style: simple_text_style(fontSize: 14, fontWeight: FontWeight.bold, color: Colors.black87)),
-                      const Icon(Icons.keyboard_arrow_down, size: 20, color: Colors.black87),
+                      Text(
+                        'Delivery in 15 mins',
+                        style: simple_text_style(
+                          fontSize: 14,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.black87,
+                        ),
+                      ),
+                      const Icon(
+                        Icons.keyboard_arrow_down,
+                        size: 20,
+                        color: Colors.black87,
+                      ),
                     ],
                   ),
                   Consumer<AddressService>(
                     builder: (context, addressService, state) {
                       var list = addressService.addresses;
-                      final address = list.isNotEmpty ? formatFullAddress(list.first) : 'Select a location to see products';
-                      return Text(address, maxLines: 1, overflow: TextOverflow.ellipsis, style: simple_text_style(fontSize: 12, color: Colors.grey.shade600));
+                      final address = list.isNotEmpty
+                          ? formatFullAddress(list.first)
+                          : 'Select a location to see products';
+                      return Text(
+                        address,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: simple_text_style(
+                          fontSize: 12,
+                          color: Colors.grey.shade600,
+                        ),
+                      );
                     },
                   ),
                 ],
@@ -248,7 +345,7 @@ class _HomeScreenUState extends State<HomeScreenU> {
             CircleAvatar(
               backgroundColor: Colors.grey.shade100,
               child: Icon(Icons.person_outline, color: Colors.grey.shade800),
-            )
+            ),
           ],
         ),
       ),
@@ -270,8 +367,13 @@ class _HomeScreenUState extends State<HomeScreenU> {
           children: [
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16),
-              child: Text('Explore by Brand', style: simple_text_style(
-                  fontSize: 16, fontWeight: FontWeight.bold)),
+              child: Text(
+                'Explore by Brand',
+                style: simple_text_style(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
             ),
             const SizedBox(height: 12),
             SizedBox(
@@ -284,33 +386,63 @@ class _HomeScreenUState extends State<HomeScreenU> {
                 itemBuilder: (context, index) {
                   return Padding(
                     padding: const EdgeInsets.only(right: 16.0),
-                    child: Column(
-                      children: [
-                        Container(
-                          width: 70,
-                          height: 70,
-                          decoration: BoxDecoration(
-                            shape: BoxShape.circle,
-                            color: Colors.grey.shade100,
-                            image: brands[index].imageUrl != null
-                                ? DecorationImage(
-                                    image: NetworkImage(brands[index].imageUrl!),
-                                    fit: BoxFit.cover,
-                                  )
-                                : null,
+                    child: InkWell(
+                      borderRadius: BorderRadius.circular(16),
+                      onTap: () {
+                        PersistentNavBarNavigator.pushNewScreen(
+                          context,
+                          screen: ProductCollectionScreen.brand(
+                            brand: brands[index],
                           ),
-                          child: brands[index].imageUrl == null
-                              ? const Icon(Icons.branding_watermark, color: Colors.grey)
-                              : null,
+                          withNavBar: false,
+                          pageTransitionAnimation:
+                              PageTransitionAnimation.cupertino,
+                        );
+                      },
+                      child: SizedBox(
+                        width: 78,
+                        child: Column(
+                          children: [
+                            Container(
+                              width: 70,
+                              height: 70,
+                              decoration: BoxDecoration(
+                                shape: BoxShape.circle,
+                                color: Colors.grey.shade100,
+                                image:
+                                    brands[index].imageUrl != null &&
+                                        brands[index].imageUrl!.isNotEmpty
+                                    ? DecorationImage(
+                                        image: NetworkImage(
+                                          brands[index].imageUrl!,
+                                        ),
+                                        fit: BoxFit.cover,
+                                      )
+                                    : null,
+                              ),
+                              child:
+                                  brands[index].imageUrl == null ||
+                                      brands[index].imageUrl!.isEmpty
+                                  ? const Icon(
+                                      Icons.branding_watermark,
+                                      color: Colors.grey,
+                                    )
+                                  : null,
+                            ),
+                            const SizedBox(height: 8),
+                            Text(
+                              brands[index].name ?? "",
+                              style: simple_text_style(
+                                fontSize: 12,
+                                fontWeight: FontWeight.w500,
+                              ),
+                              textAlign: TextAlign.center,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ],
                         ),
-                        const SizedBox(height: 8),
-                        Text(
-                          brands[index].name ?? "",
-                          style: simple_text_style(fontSize: 12, fontWeight: FontWeight.w500),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ],
+                      ),
                     ),
                   );
                 },

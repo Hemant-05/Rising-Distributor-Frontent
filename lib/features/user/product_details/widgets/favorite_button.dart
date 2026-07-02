@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:raising_india/comman/auth_gate.dart';
 import 'package:raising_india/data/services/auth_service.dart';
 import 'package:raising_india/data/services/wishlist_service.dart';
 import 'package:raising_india/models/model/product.dart';
@@ -18,11 +19,9 @@ class FavoriteButton extends StatelessWidget {
         final isWished = wishlistService.isInWishlist(product.pid!);
 
         return GestureDetector(
-          onTap: () {
+          onTap: () async {
             if (userId == null) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Please log in to add to wishlist')),
-              );
+              await ensureCustomerSignedIn(context);
               return;
             }
             // Trigger optimistic toggle

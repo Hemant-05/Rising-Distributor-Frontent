@@ -21,30 +21,28 @@ class ProductCollectionScreen extends StatefulWidget {
   final int? brandId;
 
   const ProductCollectionScreen.sale({super.key})
-      : title = 'Sale Products',
-        type = ProductCollectionType.sale,
-        categoryName = null,
-        brand = null,
-        brandId = null;
+    : title = 'Sale Products',
+      type = ProductCollectionType.sale,
+      categoryName = null,
+      brand = null,
+      brandId = null;
 
-  ProductCollectionScreen.category({
+  const ProductCollectionScreen.category({
     super.key,
     required this.categoryName,
-  })  : title = categoryName ?? 'Category Products',
-        type = ProductCollectionType.category,
-        brand = null,
-        brandId = null;
+  }) : title = categoryName ?? 'Category Products',
+       type = ProductCollectionType.category,
+       brand = null,
+       brandId = null;
 
-  ProductCollectionScreen.brand({
-    super.key,
-    this.brand,
-    this.brandId,
-  })  : title = brand?.name ?? 'Brand Products',
-        type = ProductCollectionType.brand,
-        categoryName = null;
+  ProductCollectionScreen.brand({super.key, this.brand, this.brandId})
+    : title = brand?.name ?? 'Brand Products',
+      type = ProductCollectionType.brand,
+      categoryName = null;
 
   @override
-  State<ProductCollectionScreen> createState() => _ProductCollectionScreenState();
+  State<ProductCollectionScreen> createState() =>
+      _ProductCollectionScreenState();
 }
 
 class _ProductCollectionScreenState extends State<ProductCollectionScreen> {
@@ -53,7 +51,9 @@ class _ProductCollectionScreenState extends State<ProductCollectionScreen> {
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) => _loadProducts(showLoader: true));
+    WidgetsBinding.instance.addPostFrameCallback(
+      (_) => _loadProducts(showLoader: true),
+    );
     _refreshTimer = Timer.periodic(const Duration(seconds: 20), (_) {
       _loadProducts(showLoader: false);
     });
@@ -71,20 +71,26 @@ class _ProductCollectionScreenState extends State<ProductCollectionScreen> {
     switch (widget.type) {
       case ProductCollectionType.sale:
         await context.read<ProductService>().fetchAvailableProducts(
-              forceRefresh: true,
-              showLoader: showLoader,
-            );
+          forceRefresh: true,
+          showLoader: showLoader,
+        );
         break;
       case ProductCollectionType.category:
         final category = widget.categoryName?.trim();
         if (category != null && category.isNotEmpty) {
-          await context.read<ProductService>().fetchProductsByCategory(category);
+          await context.read<ProductService>().fetchProductsByCategory(
+            category,
+            showLoader: showLoader,
+          );
         }
         break;
       case ProductCollectionType.brand:
         final brandId = widget.brand?.id ?? widget.brandId;
         if (brandId != null) {
-          await context.read<BrandService>().fetchProductsByBrand(brandId);
+          await context.read<BrandService>().fetchProductsByBrand(
+            brandId,
+            showLoader: showLoader,
+          );
         }
         break;
     }
@@ -111,10 +117,22 @@ class _ProductCollectionScreenState extends State<ProductCollectionScreen> {
     }
   }
 
+  String? _errorMessage(BuildContext context) {
+    switch (widget.type) {
+      case ProductCollectionType.brand:
+        final error = context.watch<BrandService>().error;
+        return error.isEmpty ? null : error;
+      case ProductCollectionType.sale:
+      case ProductCollectionType.category:
+        return context.watch<ProductService>().error;
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final products = _visibleProducts(context);
     final isLoading = _isLoading(context);
+    final error = _errorMessage(context);
 
     return Scaffold(
       backgroundColor: AppColour.white,
@@ -146,32 +164,74 @@ class _ProductCollectionScreenState extends State<ProductCollectionScreen> {
         child: isLoading && products.isEmpty
             ? Center(child: CircularProgressIndicator(color: AppColour.primary))
             : products.isEmpty
-                ? ListView(
-                    physics: const AlwaysScrollableScrollPhysics(),
-                    children: [
-                      SizedBox(height: MediaQuery.of(context).size.height * 0.22),
-                      Icon(
-                        Icons.inventory_2_outlined,
-                        color: Colors.grey.shade300,
-                        size: 84,
-                      ),
-                      const SizedBox(height: 16),
-                      Text(
-                        'No products found',
+            ? ListView(
+                physics: const AlwaysScrollableScrollPhysics(),
+                children: [
+                  SizedBox(height: MediaQuery.of(context).size.height * 0.22),
+                  Icon(
+                    error == null
+                        ? Icons.inventory_2_outlined
+                        : Icons.error_outline,
+                    color: error == null
+                        ? Colors.grey.shade300
+                        : Colors.red.shade300,
+                    size: 84,
+                  ),
+                  const SizedBox(height: 16),
+                  Text(
+                    error == null
+                        ? 'No products found'
+                        : 'Failed to load products',
+                    textAlign: TextAlign.center,
+                    style: simple_text_style(
+                      color: error == null
+                          ? Colors.grey.shade600
+                          : Colors.red.shade700,
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  if (error != null) ...[
+                    const SizedBox(height: 8),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 24),
+                      child: Text(
+                        error,
                         textAlign: TextAlign.center,
                         style: simple_text_style(
-                          color: Colors.grey.shade600,
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
+                          color: Colors.redAccent,
+                          isEllipsisAble: false,
                         ),
                       ),
-                    ],
-                  )
-                : SingleChildScrollView(
-                    physics: const AlwaysScrollableScrollPhysics(),
-                    padding: const EdgeInsets.all(12),
-                    child: ProductGrid(products: products),
-                  ),
+                    ),
+                    const SizedBox(height: 18),
+                    Center(
+                      child: ElevatedButton.icon(
+                        onPressed: () => _loadProducts(showLoader: true),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: AppColour.primary,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                        ),
+                        icon: const Icon(Icons.refresh, color: Colors.white),
+                        label: Text(
+                          'Retry',
+                          style: simple_text_style(
+                            color: Colors.white,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ],
+              )
+            : SingleChildScrollView(
+                physics: const AlwaysScrollableScrollPhysics(),
+                padding: const EdgeInsets.all(12),
+                child: ProductGrid(products: products),
+              ),
       ),
     );
   }

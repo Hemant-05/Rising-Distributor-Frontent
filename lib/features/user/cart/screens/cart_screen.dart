@@ -2,6 +2,7 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:persistent_bottom_nav_bar/persistent_bottom_nav_bar.dart';
+import 'package:raising_india/comman/auth_gate.dart';
 import 'package:raising_india/comman/elevated_button_style.dart';
 import 'package:raising_india/comman/simple_text_style.dart';
 import 'package:raising_india/constant/AppColour.dart';
@@ -25,7 +26,9 @@ class _CartScreenState extends State<CartScreen> {
     super.initState();
     // 1. Fetch Cart on Init
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      context.read<CartService>().fetchCart();
+      if (context.read<AuthService>().isCustomer) {
+        context.read<CartService>().fetchCart();
+      }
     });
   }
 
@@ -83,7 +86,9 @@ class _CartScreenState extends State<CartScreen> {
                     onTap: () {
                       if (cartItems.isEmpty) {
                         ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(content: Text('Cart is already Empty')),
+                          const SnackBar(
+                            content: Text('Cart is already Empty'),
+                          ),
                         );
                         return;
                       }
@@ -108,258 +113,319 @@ class _CartScreenState extends State<CartScreen> {
             child: cartService.isLoading
                 ? CircularProgressIndicator(color: AppColour.primary)
                 : Column(
-              children: [
-                Expanded(
-                  flex: 4,
-                  child: cartItems.isEmpty
-                      ? Center(
-                    child: Text(
-                      'Your cart is empty',
-                      style: simple_text_style(fontSize: 24),
-                    ),
-                  )
-                      : ListView.builder(
-                    itemCount: cartItems.length,
-                    itemBuilder: (context, index) {
-                      final item = cartItems[index];
-                      final product = item.product!; // Assuming populated
-
-                      return Container(
-                        margin: const EdgeInsets.symmetric(
-                          vertical: 8,
-                          horizontal: 16,
-                        ),
-                        padding: const EdgeInsets.symmetric(vertical: 8),
-                        decoration: BoxDecoration(
-                          color: AppColour.white,
-                          borderRadius: BorderRadius.circular(12),
-                          boxShadow: [
-                            BoxShadow(
-                              color: AppColour.grey.withOpacity(0.3),
-                              spreadRadius: 1,
-                              blurRadius: 5,
-                              offset: const Offset(0, 3),
-                            ),
-                          ],
-                        ),
-                        child: Column(
-                          children: [
-                            ListTile(
-                              leading: ClipRRect(
-                                borderRadius: BorderRadius.circular(8),
-                                child: CachedNetworkImage(
-                                  imageUrl: product.photosList?.first ?? "", // Handle list
-                                  width: 50,
-                                  height: 50,
-                                  fit: BoxFit.cover,
-                                  errorWidget: (context, error, stackTrace) =>
-                                  const Icon(Icons.error_outline_rounded),
+                    children: [
+                      Expanded(
+                        flex: 4,
+                        child: cartItems.isEmpty
+                            ? Center(
+                                child: Text(
+                                  'Your cart is empty',
+                                  style: simple_text_style(fontSize: 24),
                                 ),
+                              )
+                            : ListView.builder(
+                                itemCount: cartItems.length,
+                                itemBuilder: (context, index) {
+                                  final item = cartItems[index];
+                                  final product =
+                                      item.product!; // Assuming populated
+
+                                  return Container(
+                                    margin: const EdgeInsets.symmetric(
+                                      vertical: 8,
+                                      horizontal: 16,
+                                    ),
+                                    padding: const EdgeInsets.symmetric(
+                                      vertical: 8,
+                                    ),
+                                    decoration: BoxDecoration(
+                                      color: AppColour.white,
+                                      borderRadius: BorderRadius.circular(12),
+                                      boxShadow: [
+                                        BoxShadow(
+                                          color: AppColour.grey.withOpacity(
+                                            0.3,
+                                          ),
+                                          spreadRadius: 1,
+                                          blurRadius: 5,
+                                          offset: const Offset(0, 3),
+                                        ),
+                                      ],
+                                    ),
+                                    child: Column(
+                                      children: [
+                                        ListTile(
+                                          leading: ClipRRect(
+                                            borderRadius: BorderRadius.circular(
+                                              8,
+                                            ),
+                                            child: CachedNetworkImage(
+                                              imageUrl:
+                                                  product.photosList?.first ??
+                                                  "", // Handle list
+                                              width: 50,
+                                              height: 50,
+                                              fit: BoxFit.cover,
+                                              errorWidget:
+                                                  (
+                                                    context,
+                                                    error,
+                                                    stackTrace,
+                                                  ) => const Icon(
+                                                    Icons.error_outline_rounded,
+                                                  ),
+                                            ),
+                                          ),
+                                          title: Text(
+                                            product.name ?? "Product",
+                                            style: simple_text_style(
+                                              fontSize: 18,
+                                              fontWeight: FontWeight.bold,
+                                            ),
+                                          ),
+                                          subtitle: Row(
+                                            children: [
+                                              Text(
+                                                '₹${product.price}',
+                                                style: simple_text_style(
+                                                  fontSize: 14,
+                                                ),
+                                              ),
+                                              const SizedBox(width: 8),
+                                              Text(
+                                                '₹${product.mrp ?? (product.price! + 5)}',
+                                                style: const TextStyle(
+                                                  fontFamily: 'Sen',
+                                                  decoration: TextDecoration
+                                                      .lineThrough,
+                                                  fontSize: 14,
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                          trailing: Row(
+                                            mainAxisSize: MainAxisSize.min,
+                                            children: [
+                                              // Remove Button (-)
+                                              _buildQtyBtn(
+                                                icon: Icons.remove,
+                                                onTap: () {
+                                                  if (item.quantity! > 1) {
+                                                    context
+                                                        .read<CartService>()
+                                                        .updateQuantity(
+                                                          product.pid!,
+                                                          item.quantity! - 1,
+                                                        );
+                                                  }
+                                                },
+                                              ),
+                                              const SizedBox(width: 10),
+                                              Text(
+                                                '${item.quantity}',
+                                                style: simple_text_style(
+                                                  fontSize: 18,
+                                                  fontWeight: FontWeight.bold,
+                                                ),
+                                              ),
+                                              const SizedBox(width: 10),
+                                              // Add Button (+)
+                                              _buildQtyBtn(
+                                                icon: Icons.add,
+                                                onTap: () {
+                                                  context
+                                                      .read<CartService>()
+                                                      .updateQuantity(
+                                                        product.pid!,
+                                                        item.quantity! + 1,
+                                                      );
+                                                },
+                                              ),
+                                            ],
+                                          ),
+                                        ),
+                                        const Divider(),
+                                        InkWell(
+                                          onTap: () {
+                                            // 4. Remove Item Action
+                                            context
+                                                .read<CartService>()
+                                                .removeFromCart(product.pid!);
+                                          },
+                                          child: Text(
+                                            'Remove from cart',
+                                            style: simple_text_style(
+                                              color: AppColour.primary,
+                                              fontWeight: FontWeight.bold,
+                                            ),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  );
+                                },
                               ),
-                              title: Text(
-                                product.name ?? "Product",
+                      ),
+                      // Bottom Summary Section
+                      Visibility(
+                        visible: cartItems.isNotEmpty,
+                        child: Container(
+                          height: 120, // Increased slightly for spacing
+                          decoration: BoxDecoration(
+                            color: AppColour.white,
+                            borderRadius: const BorderRadius.only(
+                              topLeft: Radius.circular(16),
+                              topRight: Radius.circular(16),
+                            ),
+                            boxShadow: [
+                              BoxShadow(
+                                color: AppColour.grey.withOpacity(0.3),
+                                spreadRadius: 1,
+                                blurRadius: 5,
+                                offset: const Offset(0, -3),
+                              ),
+                            ],
+                          ),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 20,
+                            vertical: 6,
+                          ),
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Text(
+                                'Free Delivery Above ₹199',
                                 style: simple_text_style(
-                                  fontSize: 18,
+                                  fontSize: 14,
+                                  color: total > 199
+                                      ? AppColour.green
+                                      : AppColour.grey,
                                   fontWeight: FontWeight.bold,
                                 ),
                               ),
-                              subtitle: Row(
+                              const SizedBox(height: 8),
+                              Row(
+                                mainAxisAlignment:
+                                    MainAxisAlignment.spaceBetween,
                                 children: [
-                                  Text(
-                                    '₹${product.price}',
-                                    style: simple_text_style(fontSize: 14),
+                                  Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        'Cart Total',
+                                        style: simple_text_style(fontSize: 20),
+                                      ),
+                                      Row(
+                                        children: [
+                                          Text(
+                                            '₹${total.toStringAsFixed(0)}',
+                                            style: simple_text_style(
+                                              fontSize: 20,
+                                              fontWeight: FontWeight.bold,
+                                            ),
+                                          ),
+                                          const SizedBox(width: 8),
+                                          Text(
+                                            '₹${mrpTotal.toStringAsFixed(0)}',
+                                            style: const TextStyle(
+                                              decoration:
+                                                  TextDecoration.lineThrough,
+                                              fontFamily: 'Sen',
+                                              fontSize: 16,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                      if (save > 0)
+                                        Text(
+                                          'You Save: ₹${save.toStringAsFixed(0)}',
+                                          style: simple_text_style(
+                                            fontSize: 14,
+                                            fontWeight: FontWeight.w500,
+                                            color: AppColour.green,
+                                          ),
+                                        ),
+                                    ],
                                   ),
-                                  const SizedBox(width: 8),
-                                  Text(
-                                    '₹${product.mrp ?? (product.price! + 5)}',
-                                    style: const TextStyle(
-                                      fontFamily: 'Sen',
-                                      decoration: TextDecoration.lineThrough,
-                                      fontSize: 14,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                              trailing: Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  // Remove Button (-)
-                                  _buildQtyBtn(
-                                    icon: Icons.remove,
-                                    onTap: () {
-                                      if (item.quantity! > 1) {
-                                        context.read<CartService>().updateQuantity(
-                                          product.pid!,
-                                          item.quantity! - 1,
-                                        );
+                                  ElevatedButton(
+                                    onPressed: () async {
+                                      // 5. Checkout Logic
+                                      if (cartItems.isNotEmpty) {
+                                        final signedIn =
+                                            await ensureCustomerSignedIn(
+                                              context,
+                                            );
+                                        if (!signedIn || !context.mounted)
+                                          return;
+
+                                        final mobileVerified =
+                                            await ensureCustomerMobileVerified(
+                                              context,
+                                            );
+                                        if (!mobileVerified || !context.mounted)
+                                          return;
+
+                                        final result =
+                                            await PersistentNavBarNavigator.pushNewScreen(
+                                              context,
+                                              screen: SelectAddressScreen(
+                                                isFromProfile: false,
+                                              ),
+                                              withNavBar: false,
+                                              pageTransitionAnimation:
+                                                  PageTransitionAnimation
+                                                      .cupertino,
+                                            );
+
+                                        if (result != null) {
+                                          final user = context
+                                              .read<AuthService>()
+                                              .customer;
+
+                                          if (user == null) return;
+
+                                          Address resAdd = result['address'];
+
+                                          PersistentNavBarNavigator.pushNewScreen(
+                                            context,
+                                            screen: PaymentCheckoutScreen(
+                                              address: resAdd,
+                                              total: total.toString(),
+                                              mrpTotal: mrpTotal.toString(),
+                                              email: user.email!,
+                                              cartProductList:
+                                                  cartItems, // Pass list
+                                              isVerified:
+                                                  user.isMobileVerified ??
+                                                  false,
+                                            ),
+                                            withNavBar: false,
+                                            pageTransitionAnimation:
+                                                PageTransitionAnimation
+                                                    .cupertino,
+                                          );
+                                        }
                                       }
                                     },
-                                  ),
-                                  const SizedBox(width: 10),
-                                  Text(
-                                    '${item.quantity}',
-                                    style: simple_text_style(
-                                      fontSize: 18,
-                                      fontWeight: FontWeight.bold,
-                                    ),
-                                  ),
-                                  const SizedBox(width: 10),
-                                  // Add Button (+)
-                                  _buildQtyBtn(
-                                    icon: Icons.add,
-                                    onTap: () {
-                                      context.read<CartService>().updateQuantity(
-                                        product.pid!,
-                                        item.quantity! + 1,
-                                      );
-                                    },
-                                  ),
-                                ],
-                              ),
-                            ),
-                            const Divider(),
-                            InkWell(
-                              onTap: () {
-                                // 4. Remove Item Action
-                                context.read<CartService>().removeFromCart(product.pid!);
-                              },
-                              child: Text(
-                                'Remove from cart',
-                                style: simple_text_style(
-                                  color: AppColour.primary,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                      );
-                    },
-                  ),
-                ),
-                // Bottom Summary Section
-                Visibility(
-                  visible: cartItems.isNotEmpty,
-                  child: Container(
-                    height: 120, // Increased slightly for spacing
-                    decoration: BoxDecoration(
-                      color: AppColour.white,
-                      borderRadius: const BorderRadius.only(
-                        topLeft: Radius.circular(16),
-                        topRight: Radius.circular(16),
-                      ),
-                      boxShadow: [
-                        BoxShadow(
-                          color: AppColour.grey.withOpacity(0.3),
-                          spreadRadius: 1,
-                          blurRadius: 5,
-                          offset: const Offset(0, -3),
-                        ),
-                      ],
-                    ),
-                    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 6),
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Text(
-                          'Free Delivery Above ₹199',
-                          style: simple_text_style(
-                            fontSize: 14,
-                            color: total > 199 ? AppColour.green : AppColour.grey,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                        const SizedBox(height: 8),
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text('Cart Total', style: simple_text_style(fontSize: 20)),
-                                Row(
-                                  children: [
-                                    Text(
-                                      '₹${total.toStringAsFixed(0)}',
+                                    style: elevated_button_style(width: 120),
+                                    child: Text(
+                                      'CONTINUE',
                                       style: simple_text_style(
-                                        fontSize: 20,
+                                        color: AppColour.white,
+                                        fontSize: 14,
                                         fontWeight: FontWeight.bold,
                                       ),
                                     ),
-                                    const SizedBox(width: 8),
-                                    Text(
-                                      '₹${mrpTotal.toStringAsFixed(0)}',
-                                      style: const TextStyle(
-                                        decoration: TextDecoration.lineThrough,
-                                        fontFamily: 'Sen',
-                                        fontSize: 16,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                                if (save > 0)
-                                  Text(
-                                    'You Save: ₹${save.toStringAsFixed(0)}',
-                                    style: simple_text_style(
-                                      fontSize: 14,
-                                      fontWeight: FontWeight.w500,
-                                      color: AppColour.green,
-                                    ),
                                   ),
-                              ],
-                            ),
-                            ElevatedButton(
-                              onPressed: () async {
-                                // 5. Checkout Logic
-                                if (cartItems.isNotEmpty) {
-                                  final result = await PersistentNavBarNavigator.pushNewScreen(
-                                    context,
-                                    screen: SelectAddressScreen(isFromProfile: false),
-                                    withNavBar: false,
-                                    pageTransitionAnimation: PageTransitionAnimation.cupertino,
-                                  );
-
-                                  if (result != null) {
-                                    final user = context.read<AuthService>().customer;
-
-                                    if(user == null) return;
-
-                                    Address resAdd = result['address'];
-
-                                    PersistentNavBarNavigator.pushNewScreen(
-                                      context,
-                                      screen: PaymentCheckoutScreen(
-                                        address: resAdd,
-                                        total: total.toString(),
-                                        mrpTotal: mrpTotal.toString(),
-                                        email: user.email!,
-                                        cartProductList: cartItems, // Pass list
-                                        isVerified: user.isMobileVerified ?? false,
-                                      ),
-                                      withNavBar: false,
-                                      pageTransitionAnimation: PageTransitionAnimation.cupertino,
-                                    );
-                                  }
-                                }
-                              },
-                              style: elevated_button_style(width: 120),
-                              child: Text(
-                                'CONTINUE',
-                                style: simple_text_style(
-                                  color: AppColour.white,
-                                  fontSize: 14,
-                                  fontWeight: FontWeight.bold,
-                                ),
+                                ],
                               ),
-                            ),
-                          ],
+                            ],
+                          ),
                         ),
-                      ],
-                    ),
+                      ),
+                    ],
                   ),
-                ),
-              ],
-            ),
           ),
         );
       },

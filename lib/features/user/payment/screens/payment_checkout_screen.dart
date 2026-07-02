@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:raising_india/comman/auth_gate.dart';
 import 'package:raising_india/comman/elevated_button_style.dart';
 import 'package:raising_india/comman/helper_functions.dart';
 import 'package:raising_india/models/model/address.dart';
@@ -49,7 +50,8 @@ class PaymentCheckoutScreen extends StatefulWidget {
   State<PaymentCheckoutScreen> createState() => _PaymentCheckoutScreenState();
 }
 
-class _PaymentCheckoutScreenState extends State<PaymentCheckoutScreen> with TickerProviderStateMixin {
+class _PaymentCheckoutScreenState extends State<PaymentCheckoutScreen>
+    with TickerProviderStateMixin {
   late Razorpay _razorpay;
   bool isCOD = true;
   bool _isProcessingOrder = false;
@@ -88,8 +90,13 @@ class _PaymentCheckoutScreenState extends State<PaymentCheckoutScreen> with Tick
     _razorpay.on(Razorpay.EVENT_PAYMENT_ERROR, _handlePaymentError);
     _razorpay.on(Razorpay.EVENT_EXTERNAL_WALLET, _handleExternalWallet);
 
-    _animationController = AnimationController(duration: const Duration(milliseconds: 800), vsync: this);
-    _fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(CurvedAnimation(parent: _animationController, curve: Curves.easeInOut));
+    _animationController = AnimationController(
+      duration: const Duration(milliseconds: 800),
+      vsync: this,
+    );
+    _fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
+      CurvedAnimation(parent: _animationController, curve: Curves.easeInOut),
+    );
     _animationController.forward();
   }
 
@@ -106,10 +113,15 @@ class _PaymentCheckoutScreenState extends State<PaymentCheckoutScreen> with Tick
     print("--- PLACE ORDER CLICKED ---");
     print("isCod: $isCod");
     print("Address ID: ${widget.address.id}");
-    
+
     if (widget.address.id == null) {
       print("ERROR: Address ID is null!");
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Error: Selected address has no ID!"), backgroundColor: Colors.red));
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text("Error: Selected address has no ID!"),
+          backgroundColor: Colors.red,
+        ),
+      );
       return;
     }
 
@@ -129,7 +141,10 @@ class _PaymentCheckoutScreenState extends State<PaymentCheckoutScreen> with Tick
       // Check if result is an error String
       if (result is String) {
         setState(() => _isProcessingOrder = false);
-        if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(result), backgroundColor: Colors.red));
+        if (mounted)
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text(result), backgroundColor: Colors.red),
+          );
         return;
       }
 
@@ -142,12 +157,16 @@ class _PaymentCheckoutScreenState extends State<PaymentCheckoutScreen> with Tick
         if (isCod) {
           setState(() => _isProcessingOrder = false);
           if (mounted) {
-            Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => const OrderPlacedScreen()));
+            Navigator.pushReplacement(
+              context,
+              MaterialPageRoute(builder: (_) => const OrderPlacedScreen()),
+            );
           }
         } else {
           // Open Razorpay with the generated Order ID
           final String razorpayOrderId = result.razorpayOrderId ?? "";
-          if (razorpayOrderId.isEmpty) throw Exception("Razorpay Order ID missing from backend");
+          if (razorpayOrderId.isEmpty)
+            throw Exception("Razorpay Order ID missing from backend");
           _openCheckOut(razorpayOrderId);
         }
       } else {
@@ -156,7 +175,10 @@ class _PaymentCheckoutScreenState extends State<PaymentCheckoutScreen> with Tick
     } catch (e) {
       print("Exception in _placeOrder: $e");
       setState(() => _isProcessingOrder = false);
-      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Error: $e"), backgroundColor: Colors.red));
+      if (mounted)
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text("Error: $e"), backgroundColor: Colors.red),
+        );
     }
   }
 
@@ -170,7 +192,14 @@ class _PaymentCheckoutScreenState extends State<PaymentCheckoutScreen> with Tick
 
     if (razorpayKeyId.isEmpty) {
       setState(() => _isProcessingOrder = false);
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Payment gateway not configured properly. Please try COD."), backgroundColor: Colors.red));
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(
+            "Payment gateway not configured properly. Please try COD.",
+          ),
+          backgroundColor: Colors.red,
+        ),
+      );
       return;
     }
 
@@ -207,17 +236,33 @@ class _PaymentCheckoutScreenState extends State<PaymentCheckoutScreen> with Tick
       setState(() => _isProcessingOrder = false);
 
       if (mounted) {
-        Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => PaymentResultScreen(isSuccess: true, transactionId: response.paymentId ?? "NA")));
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(
+            builder: (_) => PaymentResultScreen(
+              isSuccess: true,
+              transactionId: response.paymentId ?? "NA",
+            ),
+          ),
+        );
       }
     } catch (e) {
       setState(() => _isProcessingOrder = false);
-      if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Payment verification failed."), backgroundColor: Colors.red));
+      if (mounted)
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text("Payment verification failed."),
+            backgroundColor: Colors.red,
+          ),
+        );
     }
   }
 
   void _handlePaymentError(PaymentFailureResponse response) {
     setState(() => _isProcessingOrder = false);
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Payment Failed: ${response.message}")));
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text("Payment Failed: ${response.message}")),
+    );
   }
 
   void _handleExternalWallet(ExternalWalletResponse response) {}
@@ -226,27 +271,41 @@ class _PaymentCheckoutScreenState extends State<PaymentCheckoutScreen> with Tick
   Future<void> _applyCoupon() async {
     final code = _couponController.text.trim();
     if (code.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Enter a code")));
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text("Enter a code")));
       return;
     }
 
     final userId = context.read<AuthService>().currentUid;
     if (userId == null) return;
 
-    final result = await context.read<CouponService>().applyCoupon(userId, code);
+    final result = await context.read<CouponService>().applyCoupon(
+      userId,
+      code,
+    );
 
     if (result is String) {
-      if(!_isCouponApplied) {
+      if (!_isCouponApplied) {
         _couponController.clear();
       }
-      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(result), backgroundColor: Colors.red));
+      if (mounted)
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(result), backgroundColor: Colors.red),
+        );
     } else {
       Cart cart = Cart.fromJson(result);
       setState(() {
         _isCouponApplied = true;
         _discountAmount = (cart.discountAmount ?? 0.0).toDouble();
       });
-      if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Coupon Applied!"), backgroundColor: Colors.green));
+      if (mounted)
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text("Coupon Applied!"),
+            backgroundColor: Colors.green,
+          ),
+        );
     }
   }
 
@@ -262,7 +321,12 @@ class _PaymentCheckoutScreenState extends State<PaymentCheckoutScreen> with Tick
   }
 
   void _navigateToMyCoupons() async {
-    final selectedCode = await Navigator.push(context, MaterialPageRoute(builder: (_) => const CouponsScreen(isSelectionMode: true)));
+    final selectedCode = await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => const CouponsScreen(isSelectionMode: true),
+      ),
+    );
     if (selectedCode != null && selectedCode is String) {
       _couponController.text = selectedCode;
       _applyCoupon();
@@ -286,18 +350,32 @@ class _PaymentCheckoutScreenState extends State<PaymentCheckoutScreen> with Tick
           title: Row(
             children: [
               Container(
-                height: 40, width: 40,
-                decoration: BoxDecoration(color: AppColour.lightGrey.withOpacity(0.25), borderRadius: BorderRadius.circular(50)),
+                height: 40,
+                width: 40,
+                decoration: BoxDecoration(
+                  color: AppColour.lightGrey.withOpacity(0.25),
+                  borderRadius: BorderRadius.circular(50),
+                ),
                 child: InkWell(
                   onTap: () {
                     if (_isCouponApplied) removeCoupon();
                     Navigator.pop(context);
                   },
-                  child: Icon(Icons.arrow_back_ios_rounded, size: 14, color: AppColour.black),
+                  child: Icon(
+                    Icons.arrow_back_ios_rounded,
+                    size: 14,
+                    color: AppColour.black,
+                  ),
                 ),
               ),
               const SizedBox(width: 10),
-              Text("Checkout", style: simple_text_style(fontSize: 20, fontWeight: FontWeight.w600)),
+              Text(
+                "Checkout",
+                style: simple_text_style(
+                  fontSize: 20,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
             ],
           ),
         ),
@@ -331,17 +409,41 @@ class _PaymentCheckoutScreenState extends State<PaymentCheckoutScreen> with Tick
   // --- UI WIDGETS ---
   Widget _buildAddressSection() {
     return Container(
-      decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(16), boxShadow: [BoxShadow(color: Colors.grey.shade200, blurRadius: 10, offset: const Offset(0, 4))]),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.grey.shade200,
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
       child: Column(
         children: [
           Container(
             padding: const EdgeInsets.all(20),
-            decoration: BoxDecoration(gradient: LinearGradient(colors: [AppColour.primary, AppColour.primary.withOpacity(0.8)]), borderRadius: const BorderRadius.vertical(top: Radius.circular(16))),
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: [AppColour.primary, AppColour.primary.withOpacity(0.8)],
+              ),
+              borderRadius: const BorderRadius.vertical(
+                top: Radius.circular(16),
+              ),
+            ),
             child: Row(
               children: [
                 const Icon(Icons.location_on_outlined, color: Colors.white),
                 const SizedBox(width: 12),
-                Text('Delivery Address', style: simple_text_style(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)),
+                Text(
+                  'Delivery Address',
+                  style: simple_text_style(
+                    color: Colors.white,
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
               ],
             ),
           ),
@@ -351,7 +453,15 @@ class _PaymentCheckoutScreenState extends State<PaymentCheckoutScreen> with Tick
               children: [
                 Icon(Icons.home_outlined, color: AppColour.primary),
                 const SizedBox(width: 8),
-                Expanded(child: Text(formatFullAddress(widget.address), style: simple_text_style(fontSize: 14, fontWeight: FontWeight.w500))),
+                Expanded(
+                  child: Text(
+                    formatFullAddress(widget.address),
+                    style: simple_text_style(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ),
               ],
             ),
           ),
@@ -362,19 +472,46 @@ class _PaymentCheckoutScreenState extends State<PaymentCheckoutScreen> with Tick
 
   Widget _buildOrderSummarySection() {
     return Container(
-      decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(16), boxShadow: [BoxShadow(color: Colors.grey.shade200, blurRadius: 10, offset: const Offset(0, 4))]),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.grey.shade200,
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
       child: Column(
         children: [
           Container(
             padding: const EdgeInsets.all(20),
-            decoration: BoxDecoration(gradient: LinearGradient(colors: [AppColour.primary, AppColour.primary.withOpacity(0.8)]), borderRadius: const BorderRadius.vertical(top: Radius.circular(16))),
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: [AppColour.primary, AppColour.primary.withOpacity(0.8)],
+              ),
+              borderRadius: const BorderRadius.vertical(
+                top: Radius.circular(16),
+              ),
+            ),
             child: Row(
               children: [
                 const Icon(Icons.shopping_bag_outlined, color: Colors.white),
                 const SizedBox(width: 12),
-                Text('Order Summary', style: simple_text_style(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)),
+                Text(
+                  'Order Summary',
+                  style: simple_text_style(
+                    color: Colors.white,
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
                 const Spacer(),
-                Text('${widget.cartProductList.length} items', style: simple_text_style(color: Colors.white, fontSize: 12)),
+                Text(
+                  '${widget.cartProductList.length} items',
+                  style: simple_text_style(color: Colors.white, fontSize: 12),
+                ),
               ],
             ),
           ),
@@ -387,10 +524,19 @@ class _PaymentCheckoutScreenState extends State<PaymentCheckoutScreen> with Tick
                   child: Row(
                     children: [
                       Container(
-                        width: 50, height: 50,
+                        width: 50,
+                        height: 50,
                         decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(8), color: Colors.grey[200],
-                          image: (item.product?.photosList?.isNotEmpty ?? false) ? DecorationImage(image: NetworkImage(item.product!.photosList!.first), fit: BoxFit.cover) : null,
+                          borderRadius: BorderRadius.circular(8),
+                          color: Colors.grey[200],
+                          image: (item.product?.photosList?.isNotEmpty ?? false)
+                              ? DecorationImage(
+                                  image: NetworkImage(
+                                    item.product!.photosList!.first,
+                                  ),
+                                  fit: BoxFit.cover,
+                                )
+                              : null,
                         ),
                       ),
                       const SizedBox(width: 12),
@@ -398,12 +544,29 @@ class _PaymentCheckoutScreenState extends State<PaymentCheckoutScreen> with Tick
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text(item.product?.name ?? "Product", style: simple_text_style(fontWeight: FontWeight.bold)),
-                            Text("Qty: ${item.quantity}", style: simple_text_style(fontSize: 12, color: Colors.grey)),
+                            Text(
+                              item.product?.name ?? "Product",
+                              style: simple_text_style(
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            Text(
+                              "Qty: ${item.quantity}",
+                              style: simple_text_style(
+                                fontSize: 12,
+                                color: Colors.grey,
+                              ),
+                            ),
                           ],
                         ),
                       ),
-                      Text("₹${((item.product?.price ?? 0) * (item.quantity ?? 1)).toStringAsFixed(0)}", style: simple_text_style(fontWeight: FontWeight.bold, color: AppColour.primary)),
+                      Text(
+                        "₹${((item.product?.price ?? 0) * (item.quantity ?? 1)).toStringAsFixed(0)}",
+                        style: simple_text_style(
+                          fontWeight: FontWeight.bold,
+                          color: AppColour.primary,
+                        ),
+                      ),
                     ],
                   ),
                 );
@@ -417,7 +580,17 @@ class _PaymentCheckoutScreenState extends State<PaymentCheckoutScreen> with Tick
 
   Widget _buildApplyCouponSection() {
     return Container(
-      decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(16), boxShadow: [BoxShadow(color: Colors.grey.shade200, blurRadius: 10, offset: const Offset(0, 4))]),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.grey.shade200,
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
       padding: const EdgeInsets.all(20),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -426,34 +599,75 @@ class _PaymentCheckoutScreenState extends State<PaymentCheckoutScreen> with Tick
             children: [
               Icon(Icons.local_offer_outlined, color: AppColour.primary),
               const SizedBox(width: 12),
-              Text('Apply Coupon', style: simple_text_style(fontSize: 18, fontWeight: FontWeight.bold)),
+              Text(
+                'Apply Coupon',
+                style: simple_text_style(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
             ],
           ),
           const SizedBox(height: 16),
           if (!_isCouponApplied) ...[
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 8),
-              decoration: BoxDecoration(border: Border.all(color: Colors.grey.shade300), borderRadius: BorderRadius.circular(12)),
+              decoration: BoxDecoration(
+                border: Border.all(color: Colors.grey.shade300),
+                borderRadius: BorderRadius.circular(12),
+              ),
               child: TextField(
                 controller: _couponController,
                 decoration: InputDecoration(
-                  hintText: 'Enter Code', border: InputBorder.none, contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                  suffixIcon: IconButton(icon: Icon(Icons.arrow_forward, color: AppColour.primary), onPressed: _applyCoupon),
+                  hintText: 'Enter Code',
+                  border: InputBorder.none,
+                  contentPadding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 12,
+                  ),
+                  suffixIcon: IconButton(
+                    icon: Icon(Icons.arrow_forward, color: AppColour.primary),
+                    onPressed: _applyCoupon,
+                  ),
                 ),
               ),
             ),
             const SizedBox(height: 10),
-            TextButton(onPressed: _navigateToMyCoupons, child: Text("See All Coupons", style: simple_text_style(color: AppColour.primary, fontWeight: FontWeight.bold))),
+            TextButton(
+              onPressed: _navigateToMyCoupons,
+              child: Text(
+                "See All Coupons",
+                style: simple_text_style(
+                  color: AppColour.primary,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
           ] else ...[
             Container(
               padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(color: Colors.green.shade50, borderRadius: BorderRadius.circular(12), border: Border.all(color: Colors.green)),
+              decoration: BoxDecoration(
+                color: Colors.green.shade50,
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: Colors.green),
+              ),
               child: Row(
                 children: [
                   const Icon(Icons.check_circle, color: Colors.green),
                   const SizedBox(width: 12),
-                  Expanded(child: Text("Coupon Applied! -₹$_discountAmount", style: simple_text_style(color: Colors.green.shade800, fontWeight: FontWeight.bold))),
-                  IconButton(icon: const Icon(Icons.close, color: Colors.red), onPressed: removeCoupon),
+                  Expanded(
+                    child: Text(
+                      "Coupon Applied! -₹$_discountAmount",
+                      style: simple_text_style(
+                        color: Colors.green.shade800,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.close, color: Colors.red),
+                    onPressed: removeCoupon,
+                  ),
                 ],
               ),
             ),
@@ -465,18 +679,39 @@ class _PaymentCheckoutScreenState extends State<PaymentCheckoutScreen> with Tick
 
   Widget _buildPaymentMethodSection() {
     return Container(
-      decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(16), boxShadow: [BoxShadow(color: Colors.grey.shade200, blurRadius: 10, offset: const Offset(0, 4))]),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.grey.shade200,
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
       padding: const EdgeInsets.all(20),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('Payment Method', style: simple_text_style(fontSize: 18, fontWeight: FontWeight.bold)),
+          Text(
+            'Payment Method',
+            style: simple_text_style(fontSize: 18, fontWeight: FontWeight.bold),
+          ),
           const SizedBox(height: 16),
           Row(
             children: [
-              Expanded(child: _paymentOption("Cash On Delivery", "cod", Icons.money)),
+              Expanded(
+                child: _paymentOption("Cash On Delivery", "cod", Icons.money),
+              ),
               const SizedBox(width: 12),
-              Expanded(child: _paymentOption("Pay Online", "online", Icons.credit_card)),
+              Expanded(
+                child: _paymentOption(
+                  "Pay Online",
+                  "online",
+                  Icons.credit_card,
+                ),
+              ),
             ],
           ),
         ],
@@ -492,14 +727,24 @@ class _PaymentCheckoutScreenState extends State<PaymentCheckoutScreen> with Tick
         padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
           color: selected ? AppColour.primary.withOpacity(0.1) : Colors.white,
-          border: Border.all(color: selected ? AppColour.primary : Colors.grey.shade300, width: selected ? 2 : 1),
+          border: Border.all(
+            color: selected ? AppColour.primary : Colors.grey.shade300,
+            width: selected ? 2 : 1,
+          ),
           borderRadius: BorderRadius.circular(12),
         ),
         child: Column(
           children: [
             Icon(icon, color: selected ? AppColour.primary : Colors.grey),
             const SizedBox(height: 8),
-            Text(title, style: simple_text_style(color: selected ? AppColour.primary : Colors.black, fontWeight: FontWeight.bold), textAlign: TextAlign.center),
+            Text(
+              title,
+              style: simple_text_style(
+                color: selected ? AppColour.primary : Colors.black,
+                fontWeight: FontWeight.bold,
+              ),
+              textAlign: TextAlign.center,
+            ),
           ],
         ),
       ),
@@ -509,31 +754,70 @@ class _PaymentCheckoutScreenState extends State<PaymentCheckoutScreen> with Tick
   Widget _buildPriceDetailsSection() {
     return Container(
       padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(16)),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+      ),
       child: Column(
         children: [
           _row("MRP Total", "₹${widget.mrpTotal}", isThroughLine: true),
           _row("Cart Total", "₹$_originalTotal"),
-          _row("Delivery Fee", _deliveryCharge == 0 ? "Free" : "₹$_deliveryCharge"),
+          _row(
+            "Delivery Fee",
+            _deliveryCharge == 0 ? "Free" : "₹$_deliveryCharge",
+          ),
           _row("Platform Fee", "₹$platformFee"),
-          if (_isCouponApplied) _row("Coupon Discount", "-₹${_discountAmount.toStringAsFixed(0)}", color: Colors.green),
-          const Divider(height: 2.5,color: Colors.black,),
-          _row("Total Amount", "₹${_finalTotal.toStringAsFixed(0)}", isBold: true, size: 18),
-          _row("You Save", "₹${(double.parse(widget.mrpTotal) - _finalTotal + platformFee).toStringAsFixed(0)}", isBold: true, color: AppColour.green, size: 18),
-
+          if (_isCouponApplied)
+            _row(
+              "Coupon Discount",
+              "-₹${_discountAmount.toStringAsFixed(0)}",
+              color: Colors.green,
+            ),
+          const Divider(height: 2.5, color: Colors.black),
+          _row(
+            "Total Amount",
+            "₹${_finalTotal.toStringAsFixed(0)}",
+            isBold: true,
+            size: 18,
+          ),
+          _row(
+            "You Save",
+            "₹${(double.parse(widget.mrpTotal) - _finalTotal + platformFee).toStringAsFixed(0)}",
+            isBold: true,
+            color: AppColour.green,
+            size: 18,
+          ),
         ],
       ),
     );
   }
 
-  Widget _row(String label, String val, {Color? color, bool isBold = false, bool isThroughLine = false, double size = 14}) {
+  Widget _row(
+    String label,
+    String val, {
+    Color? color,
+    bool isBold = false,
+    bool isThroughLine = false,
+    double size = 14,
+  }) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 4),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Text(label, style: simple_text_style(fontSize: size, color: Colors.grey[700]!)),
-          Text(val, style: simple_text_style(fontSize: size, isLineThrough: isThroughLine, fontWeight: isBold ? FontWeight.bold : FontWeight.normal, color: color ?? Colors.black)),
+          Text(
+            label,
+            style: simple_text_style(fontSize: size, color: Colors.grey[700]!),
+          ),
+          Text(
+            val,
+            style: simple_text_style(
+              fontSize: size,
+              isLineThrough: isThroughLine,
+              fontWeight: isBold ? FontWeight.bold : FontWeight.normal,
+              color: color ?? Colors.black,
+            ),
+          ),
         ],
       ),
     );
@@ -545,19 +829,31 @@ class _PaymentCheckoutScreenState extends State<PaymentCheckoutScreen> with Tick
       height: 55,
       child: ElevatedButton(
         style: elevated_button_style(),
-        onPressed: () {
-          print("Button Clicked. isVerified: ${widget.isVerified}, isProcessing: $_isProcessingOrder, isCod: $isCOD");
-          
-          // TEMPORARY BYPASS: Allowing unverified users to place orders for testing
+        onPressed: () async {
+          print(
+            "Button Clicked. isVerified: ${widget.isVerified}, isProcessing: $_isProcessingOrder, isCod: $isCOD",
+          );
+
           if (_isProcessingOrder) {
-             // do nothing
+            // do nothing
           } else {
-             _placeOrder(isCod: isCOD);
+            final signedIn = await ensureCustomerSignedIn(context);
+            if (!signedIn || !mounted) return;
+            final mobileVerified = await ensureCustomerMobileVerified(context);
+            if (!mobileVerified || !mounted) return;
+            _placeOrder(isCod: isCOD);
           }
         },
         child: _isProcessingOrder
             ? const CircularProgressIndicator(color: Colors.white)
-            : Text(isCOD ? "PLACE ORDER" : "PAY & ORDER", style: simple_text_style(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16)),
+            : Text(
+                isCOD ? "PLACE ORDER" : "PAY & ORDER",
+                style: simple_text_style(
+                  color: Colors.white,
+                  fontWeight: FontWeight.bold,
+                  fontSize: 16,
+                ),
+              ),
       ),
     );
   }

@@ -22,7 +22,7 @@ class _AdminBrandScreenState extends State<AdminBrandScreen> {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      context.read<BrandService>().fetchBrands();
+      context.read<BrandService>().fetchBrands(forceRefresh: true);
     });
   }
 
@@ -40,7 +40,10 @@ class _AdminBrandScreenState extends State<AdminBrandScreen> {
             const SizedBox(width: 8),
             Text(
               'Brands',
-              style: simple_text_style(fontSize: 20, fontWeight: FontWeight.bold),
+              style: simple_text_style(
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
+              ),
             ),
           ],
         ),
@@ -56,11 +59,13 @@ class _AdminBrandScreenState extends State<AdminBrandScreen> {
       body: Consumer<BrandService>(
         builder: (context, brandService, child) {
           if (brandService.isLoading && brandService.brands.isEmpty) {
-            return Center(child: CircularProgressIndicator(color: AppColour.primary));
+            return Center(
+              child: CircularProgressIndicator(color: AppColour.primary),
+            );
           }
-          
-          if(brandService.error.isNotEmpty){
-            return _buildErrorState(context,brandService.error);
+
+          if (brandService.error.isNotEmpty && brandService.brands.isEmpty) {
+            return _buildErrorState(context, brandService.error);
           }
 
           if (brandService.brands.isEmpty) {
@@ -69,7 +74,7 @@ class _AdminBrandScreenState extends State<AdminBrandScreen> {
 
           if (isDesktop(context)) {
             return RefreshIndicator(
-              onRefresh: () => brandService.fetchBrands(),
+              onRefresh: () => brandService.fetchBrands(forceRefresh: true),
               color: AppColour.primary,
               child: GridView.builder(
                 padding: const EdgeInsets.all(16),
@@ -88,7 +93,7 @@ class _AdminBrandScreenState extends State<AdminBrandScreen> {
           }
 
           return RefreshIndicator(
-            onRefresh: () => brandService.fetchBrands(),
+            onRefresh: () => brandService.fetchBrands(forceRefresh: true),
             color: AppColour.primary,
             child: ListView.separated(
               padding: const EdgeInsets.all(16),
@@ -110,7 +115,11 @@ class _AdminBrandScreenState extends State<AdminBrandScreen> {
         color: Colors.white,
         borderRadius: BorderRadius.circular(12),
         boxShadow: [
-          BoxShadow(color: Colors.grey.shade200, blurRadius: 6, offset: const Offset(0, 3)),
+          BoxShadow(
+            color: Colors.grey.shade200,
+            blurRadius: 6,
+            offset: const Offset(0, 3),
+          ),
         ],
       ),
       child: ListTile(
@@ -127,10 +136,11 @@ class _AdminBrandScreenState extends State<AdminBrandScreen> {
             borderRadius: BorderRadius.circular(8),
             child: (brand.imageUrl != null && brand.imageUrl!.isNotEmpty)
                 ? CachedNetworkImage(
-              imageUrl: brand.imageUrl!,
-              fit: BoxFit.contain,
-              errorWidget: (_, __, ___) => Icon(Icons.broken_image, color: Colors.grey),
-            )
+                    imageUrl: brand.imageUrl!,
+                    fit: BoxFit.contain,
+                    errorWidget: (_, __, ___) =>
+                        Icon(Icons.broken_image, color: Colors.grey),
+                  )
                 : Icon(Icons.branding_watermark, color: AppColour.primary),
           ),
         ),
@@ -162,11 +172,19 @@ class _AdminBrandScreenState extends State<AdminBrandScreen> {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(Icons.branding_watermark_outlined, size: 80, color: Colors.grey.shade300),
+          Icon(
+            Icons.branding_watermark_outlined,
+            size: 80,
+            color: Colors.grey.shade300,
+          ),
           const SizedBox(height: 16),
           Text(
             'Some Error Occurred',
-            style: simple_text_style(fontSize: 18, color: Colors.red, fontWeight: FontWeight.bold),
+            style: simple_text_style(
+              fontSize: 18,
+              color: Colors.red,
+              fontWeight: FontWeight.bold,
+            ),
           ),
           const SizedBox(height: 8),
           Text(
@@ -179,12 +197,17 @@ class _AdminBrandScreenState extends State<AdminBrandScreen> {
             style: ElevatedButton.styleFrom(
               backgroundColor: AppColour.primary,
               padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
             ),
             icon: const Icon(Icons.add, color: Colors.white),
             label: Text(
               'Retry',
-              style: simple_text_style(color: Colors.white, fontWeight: FontWeight.bold),
+              style: simple_text_style(
+                color: Colors.white,
+                fontWeight: FontWeight.bold,
+              ),
             ),
           ),
         ],
@@ -197,11 +220,19 @@ class _AdminBrandScreenState extends State<AdminBrandScreen> {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(Icons.branding_watermark_outlined, size: 80, color: Colors.grey.shade300),
+          Icon(
+            Icons.branding_watermark_outlined,
+            size: 80,
+            color: Colors.grey.shade300,
+          ),
           const SizedBox(height: 16),
           Text(
             'No Brands Found',
-            style: simple_text_style(fontSize: 18, color: Colors.grey.shade600, fontWeight: FontWeight.bold),
+            style: simple_text_style(
+              fontSize: 18,
+              color: Colors.grey.shade600,
+              fontWeight: FontWeight.bold,
+            ),
           ),
           const SizedBox(height: 8),
           Text(
@@ -214,12 +245,17 @@ class _AdminBrandScreenState extends State<AdminBrandScreen> {
             style: ElevatedButton.styleFrom(
               backgroundColor: AppColour.primary,
               padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
             ),
             icon: const Icon(Icons.add, color: Colors.white),
             label: Text(
               'Add Brand',
-              style: simple_text_style(color: Colors.white, fontWeight: FontWeight.bold),
+              style: simple_text_style(
+                color: Colors.white,
+                fontWeight: FontWeight.bold,
+              ),
             ),
           ),
         ],
@@ -241,7 +277,10 @@ class _AdminBrandScreenState extends State<AdminBrandScreen> {
         title: const Text('Delete Brand'),
         content: Text('Are you sure you want to delete ${brand.name}?'),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Cancel'),
+          ),
           TextButton(
             onPressed: () {
               Navigator.pop(ctx);
@@ -255,9 +294,8 @@ class _AdminBrandScreenState extends State<AdminBrandScreen> {
   }
 
   void _retryFetchBrands(BuildContext context) {
-    context.read<BrandService>().fetchBrands();
+    context.read<BrandService>().fetchBrands(forceRefresh: true);
   }
-
 
   void _navigateToBrandProducts(BuildContext context, Brand brand) {
     Navigator.push(

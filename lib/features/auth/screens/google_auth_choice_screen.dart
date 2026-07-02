@@ -8,7 +8,12 @@ import 'package:raising_india/features/auth/screens/signup_screen.dart';
 import 'package:raising_india/features/user/main_screen_u.dart';
 
 class GoogleAuthChoiceScreen extends StatefulWidget {
-  const GoogleAuthChoiceScreen({super.key});
+  const GoogleAuthChoiceScreen({
+    super.key,
+    this.returnToPreviousOnSuccess = false,
+  });
+
+  final bool returnToPreviousOnSuccess;
 
   @override
   State<GoogleAuthChoiceScreen> createState() => _GoogleAuthChoiceScreenState();
@@ -30,6 +35,10 @@ class _GoogleAuthChoiceScreenState extends State<GoogleAuthChoiceScreen> {
     setState(() => _isLoading = false);
 
     if (error == null) {
+      if (widget.returnToPreviousOnSuccess) {
+        Navigator.pop(context, true);
+        return;
+      }
       Navigator.pushAndRemoveUntil(
         context,
         MaterialPageRoute(builder: (_) => const MainScreenU()),

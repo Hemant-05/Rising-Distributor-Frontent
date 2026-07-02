@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:persistent_bottom_nav_bar/persistent_bottom_nav_bar.dart';
+import 'package:raising_india/comman/auth_gate.dart';
 import 'package:raising_india/comman/simple_text_style.dart';
 import 'package:raising_india/constant/AppColour.dart';
 import 'package:raising_india/constant/ConPath.dart';
@@ -11,9 +12,9 @@ import 'package:raising_india/data/services/auth_service.dart';
 import 'package:raising_india/data/services/coupon_service.dart';
 
 // Screens
-import 'package:raising_india/features/on_boarding/screens/welcome_screen.dart';
 import 'package:raising_india/features/user/coupon/screens/coupons_screen.dart';
 import 'package:raising_india/features/user/address/screens/select_address_screen.dart';
+import 'package:raising_india/features/user/main_screen_u.dart';
 import 'package:raising_india/features/user/profile/screens/personal_info_screen.dart';
 import 'package:raising_india/features/user/wishlist/wishlist_screen.dart';
 import 'package:raising_india/screens/policy_screen.dart';
@@ -48,7 +49,11 @@ class ProfileScreen extends StatelessWidget {
                 children: [
                   // --- PROFILE HEADER ---
                   InkWell(
-                    onTap: () {
+                    onTap: () async {
+                      if (user == null) {
+                        await ensureCustomerSignedIn(context);
+                        return;
+                      }
                       Navigator.push(
                         context,
                         MaterialPageRoute(
@@ -60,11 +65,7 @@ class ProfileScreen extends StatelessWidget {
                       height: 150,
                       width: double.infinity,
                       child: user == null
-                          ? Center(
-                              child: CircularProgressIndicator(
-                                color: AppColour.primary,
-                              ),
-                            )
+                          ? _guestProfileHeader(context)
                           : Row(
                               crossAxisAlignment: CrossAxisAlignment.center,
                               children: [
@@ -121,6 +122,10 @@ class ProfileScreen extends StatelessWidget {
                     Column(
                       children: [
                         optionListTile(map_svg, 'Addresses', () {
+                          if (authService.customer == null) {
+                            ensureCustomerSignedIn(context);
+                            return;
+                          }
                           PersistentNavBarNavigator.pushNewScreen(
                             context,
                             screen: const SelectAddressScreen(
@@ -132,6 +137,10 @@ class ProfileScreen extends StatelessWidget {
                           );
                         }),
                         optionListTile(coupon_svg, 'Coupons & Cashback\'s', () {
+                          if (authService.customer == null) {
+                            ensureCustomerSignedIn(context);
+                            return;
+                          }
                           // Load coupons before navigating
                           context
                               .read<CouponService>()
@@ -153,12 +162,16 @@ class ProfileScreen extends StatelessWidget {
                     Column(
                       children: [
                         optionListTile(border_heart_svg, 'Wishlist', () {
+                          if (authService.customer == null) {
+                            ensureCustomerSignedIn(context);
+                            return;
+                          }
                           PersistentNavBarNavigator.pushNewScreen(
                             context,
                             screen: const WishlistScreen(),
                             withNavBar: false,
                             pageTransitionAnimation:
-                            PageTransitionAnimation.cupertino,
+                                PageTransitionAnimation.cupertino,
                           );
                         }),
                         optionListTile(policy_svg, 'Term & Conditions', () {
@@ -176,9 +189,13 @@ class ProfileScreen extends StatelessWidget {
 
                   // --- LOGOUT ---
                   customContainer(
-                    optionListTile(logout_svg, 'Log Out', () {
-                      _handleLogout(context, authService);
-                    }),
+                    authService.customer == null
+                        ? optionListTile(logout_svg, 'Sign In', () {
+                            ensureCustomerSignedIn(context);
+                          })
+                        : optionListTile(logout_svg, 'Log Out', () {
+                            _handleLogout(context, authService);
+                          }),
                   ),
                 ],
               ),
@@ -199,6 +216,63 @@ class ProfileScreen extends StatelessWidget {
       ),
       padding: const EdgeInsets.all(8),
       child: widget,
+    );
+  }
+
+  Widget _guestProfileHeader(BuildContext context) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.center,
+      children: [
+        Container(
+          height: 82,
+          width: 82,
+          decoration: BoxDecoration(
+            color: AppColour.primary.withOpacity(0.1),
+            borderRadius: BorderRadius.circular(100),
+          ),
+          child: Icon(Icons.person_outline, color: AppColour.primary, size: 42),
+        ),
+        const SizedBox(width: 15),
+        Expanded(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Guest customer',
+                style: simple_text_style(
+                  fontSize: 22,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                'Sign in only when you want to order.',
+                style: simple_text_style(
+                  color: AppColour.lightGrey,
+                  isEllipsisAble: false,
+                ),
+              ),
+              const SizedBox(height: 10),
+              TextButton(
+                onPressed: () => ensureCustomerSignedIn(context),
+                style: TextButton.styleFrom(
+                  padding: EdgeInsets.zero,
+                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                  minimumSize: const Size(0, 0),
+                ),
+                child: Text(
+                  'Sign in with Google',
+                  style: simple_text_style(
+                    color: AppColour.primary,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
     );
   }
 
@@ -265,7 +339,7 @@ class ProfileScreen extends StatelessWidget {
                 );
                 await context.read<AuthService>().signOut();
                 Navigator.of(context, rootNavigator: true).pushAndRemoveUntil(
-                  MaterialPageRoute(builder: (_) => const WelcomeScreen()),
+                  MaterialPageRoute(builder: (_) => const MainScreenU()),
                   (route) => false,
                 );
               }

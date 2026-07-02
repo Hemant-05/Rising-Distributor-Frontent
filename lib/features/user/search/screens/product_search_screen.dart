@@ -28,6 +28,7 @@ class _ProductSearchScreenState extends State<ProductSearchScreen> {
   final TextEditingController _controller = TextEditingController();
   List<Product> _searchResults = [];
   bool _hasSearched = false;
+  bool _isLoading = false;
 
   void _onSearch(String query) async {
     if (query.isEmpty) return;
@@ -36,6 +37,7 @@ class _ProductSearchScreenState extends State<ProductSearchScreen> {
     setState(() {
       _searchResults = [];
       _hasSearched = true;
+      _isLoading = true;
     });
 
     // Call Service
@@ -44,6 +46,7 @@ class _ProductSearchScreenState extends State<ProductSearchScreen> {
     if (mounted) {
       setState(() {
         _searchResults = results;
+        _isLoading = false;
       });
     }
   }
@@ -84,6 +87,7 @@ class _ProductSearchScreenState extends State<ProductSearchScreen> {
                     setState(() {
                       _searchResults = [];
                       _hasSearched = false;
+                      _isLoading = false;
                     });
                   },
                   child: Icon(Icons.cancel, color: AppColour.lightGrey),
@@ -108,6 +112,10 @@ class _ProductSearchScreenState extends State<ProductSearchScreen> {
   Widget _buildResults() {
     // Check loading state from service if needed, or rely on local async logic
     // For simplicity, we just check lists
+    if (_isLoading) {
+      return Center(child: CircularProgressIndicator(color: AppColour.primary));
+    }
+
     if (!_hasSearched) {
       return Center(child: Text("Search for a product.", style: simple_text_style()));
     }

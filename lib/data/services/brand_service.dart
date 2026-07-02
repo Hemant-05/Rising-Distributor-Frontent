@@ -22,17 +22,22 @@ class BrandService extends ChangeNotifier {
   String _error = "";
   String get error => _error;
 
-
   // --- 1. Fetch All Brands ---
-  Future<void> fetchBrands() async {
+  Future<void> fetchBrands({bool forceRefresh = false}) async {
     // Avoid refreshing if we already have data (optional optimization)
-    if (_brands.isNotEmpty) return;
+    if (_brands.isNotEmpty && !forceRefresh) {
+      if (_error.isNotEmpty) {
+        _error = "";
+        notifyListeners();
+      }
+      return;
+    }
 
     _isLoading = true;
+    _error = "";
     notifyListeners();
     try {
       _brands = await _repo.getAllBrands();
-
     } catch (e) {
       _error = "Failed to load brands. ${e.toString()}";
       print("Brand Fetch Error: $e");
@@ -44,11 +49,12 @@ class BrandService extends ChangeNotifier {
 
   // --- 2. Add Brand (Admin) ---
   Future<String?> addBrand(Brand brand) async {
+    _error = "";
     try {
       await _repo.addBrand(brand);
       // Clear list to force refresh next time user visits brands page
       _brands.clear();
-      await fetchBrands();
+      await fetchBrands(forceRefresh: true);
       return null; // Success
     } on AppError catch (e) {
       _error = e.toString();
@@ -60,9 +66,15 @@ class BrandService extends ChangeNotifier {
   }
 
   // --- 3. Get Products by Brand ---
-  Future<String?> fetchProductsByBrand(int brandId) async {
-    _isLoading = true;
+  Future<String?> fetchProductsByBrand(
+    int brandId, {
+    bool showLoader = true,
+  }) async {
+    if (showLoader) {
+      _isLoading = true;
+    }
     _brandProducts = []; // Clear previous selection
+    _error = "";
     notifyListeners();
     try {
       _brandProducts = await _repo.getProductsByBrand(brandId);
@@ -74,17 +86,20 @@ class BrandService extends ChangeNotifier {
       _error = "Failed to load products for this brand. ${e.toString()}";
       return "Failed to load products for this brand.";
     } finally {
-      _isLoading = false;
+      if (showLoader) {
+        _isLoading = false;
+      }
       notifyListeners();
     }
   }
 
   // --- 4. Update Brand ---
   Future<String?> updateBrand(int id, Brand brand) async {
+    _error = "";
     try {
       await _repo.updateBrand(id, brand);
       _brands.clear();
-      await fetchBrands();
+      await fetchBrands(forceRefresh: true);
       return null;
     } on AppError catch (e) {
       _error = e.toString();
@@ -97,6 +112,7 @@ class BrandService extends ChangeNotifier {
 
   // --- 5. Delete Brand ---
   Future<String?> deleteBrand(int id) async {
+    _error = "";
     try {
       await _repo.deleteBrand(id);
       _brands.removeWhere((b) => b.id == id);

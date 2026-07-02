@@ -4,6 +4,7 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:persistent_bottom_nav_bar/persistent_bottom_nav_bar.dart';
 import 'package:provider/provider.dart';
+import 'package:raising_india/comman/auth_gate.dart';
 import 'package:raising_india/comman/back_button.dart';
 import 'package:raising_india/comman/helper_functions.dart';
 import 'package:raising_india/comman/simple_text_style.dart';
@@ -88,12 +89,13 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> {
     final similarCategoryProducts = allProducts
         .where(
           (p) =>
-              p.category?.id == _product.category?.id &&
-              p.pid != _product.pid,
+              p.category?.id == _product.category?.id && p.pid != _product.pid,
         )
         .toList();
     final similarBrandProducts = allProducts
-        .where((p) => p.brand?.id == _product.brand?.id && p.pid != _product.pid)
+        .where(
+          (p) => p.brand?.id == _product.brand?.id && p.pid != _product.pid,
+        )
         .toList();
 
     return Scaffold(
@@ -152,12 +154,15 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> {
                                         color: AppColour.black,
                                       ),
                                     ),
-                                    if (_product.brand?.name != null || _product.category?.name != null) ...[
+                                    if (_product.brand?.name != null ||
+                                        _product.category?.name != null) ...[
                                       const SizedBox(height: 8),
                                       Text(
                                         [
-                                          if (_product.brand?.name != null) 'Brand: ${_product.brand!.name}',
-                                          if (_product.category?.name != null) 'Category: ${_product.category!.name}'
+                                          if (_product.brand?.name != null)
+                                            'Brand: ${_product.brand!.name}',
+                                          if (_product.category?.name != null)
+                                            'Category: ${_product.category!.name}',
                                         ].join('  •  '),
                                         style: simple_text_style(
                                           fontSize: 14,
@@ -417,7 +422,8 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> {
             physics: const BouncingScrollPhysics(),
             padding: const EdgeInsets.symmetric(horizontal: 12),
             itemCount: products.length,
-            itemBuilder: (context, index) => _buildMiniProductCard(products[index]),
+            itemBuilder: (context, index) =>
+                _buildMiniProductCard(products[index]),
           ),
         ),
         const SizedBox(height: 24),
@@ -461,7 +467,9 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> {
           children: [
             Expanded(
               child: ClipRRect(
-                borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
+                borderRadius: const BorderRadius.vertical(
+                  top: Radius.circular(16),
+                ),
                 child: CachedNetworkImage(
                   imageUrl: imageUrl,
                   width: double.infinity,
@@ -546,7 +554,9 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> {
             mainAxisSize: MainAxisSize.min,
             children: [
               GestureDetector(
-                onTap: () {
+                onTap: () async {
+                  final signedIn = await ensureCustomerSignedIn(context);
+                  if (!signedIn || !context.mounted) return;
                   if (isInCart) {
                     if (displayQty > 1) {
                       cartService.updateQuantity(_product.pid!, displayQty - 1);
@@ -570,7 +580,9 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> {
               ),
               const SizedBox(width: 12),
               GestureDetector(
-                onTap: () {
+                onTap: () async {
+                  final signedIn = await ensureCustomerSignedIn(context);
+                  if (!signedIn || !context.mounted) return;
                   if (isInCart) {
                     cartService.updateQuantity(_product.pid!, displayQty + 1);
                   } else {
@@ -654,9 +666,11 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> {
                 );
                 final int qty = isInCart
                     ? (cartService.cartItems
-                            .firstWhere((item) => item.product?.pid == _product.pid)
-                            .quantity ??
-                        1)
+                              .firstWhere(
+                                (item) => item.product?.pid == _product.pid,
+                              )
+                              .quantity ??
+                          1)
                     : _currentQuantity;
                 final double finalTotal = price * qty;
                 final double finalMrpTotal = mrp * qty;
@@ -732,7 +746,11 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> {
                             borderRadius: BorderRadius.circular(12),
                           ),
                         ),
-                        onPressed: () {
+                        onPressed: () async {
+                          final signedIn = await ensureCustomerSignedIn(
+                            context,
+                          );
+                          if (!signedIn || !context.mounted) return;
                           if (isInCart) {
                             PersistentNavBarNavigator.pushNewScreen(
                               context,
@@ -742,7 +760,10 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> {
                                   PageTransitionAnimation.cupertino,
                             );
                           } else {
-                            cartService.addToCart(_product.pid!, _currentQuantity);
+                            cartService.addToCart(
+                              _product.pid!,
+                              _currentQuantity,
+                            );
                           }
                         },
                         child: cartService.isLoading

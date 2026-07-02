@@ -51,19 +51,27 @@ void setupServiceLocator() {
         if (e.type == DioExceptionType.connectionTimeout ||
             e.type == DioExceptionType.receiveTimeout ||
             e.type == DioExceptionType.connectionError) {
-          // If the screen isn't already showing, show it!
+          // If the screen isn't already showing, verify health first
           if (!_isServerDownScreenShowing &&
               navigatorKey.currentState != null) {
             _isServerDownScreenShowing = true;
 
-            navigatorKey.currentState
-                ?.push(
-                  MaterialPageRoute(builder: (_) => const ServerDownScreen()),
-                )
-                .then((_) {
-                  // When the user taps "Try Again" and the screen pops, reset the flag
-                  _isServerDownScreenShowing = false;
-                });
+            // Fire and forget health check
+            Future.microtask(() async {
+              try {
+                // Silently verify if the server is ACTUALLY down.
+                final isHealthy = await getIt<HealthService>().checkStatus();
+                
+                if (!isHealthy && navigatorKey.currentState != null) {
+                  await navigatorKey.currentState?.push(
+                    MaterialPageRoute(builder: (_) => const ServerDownScreen()),
+                  );
+                }
+              } finally {
+                // Reset the flag after the screen is popped, or immediately if it was healthy
+                _isServerDownScreenShowing = false;
+              }
+            });
           }
         }
         return handler.next(e);
